@@ -2,260 +2,287 @@
 // Sprites
 // (sprites are created using canvas paths)
 
+var scl = function(scale, value) { return scale * value }
+var setColor = function(ctx, color) { ctx.strokeStyle = color; ctx.fillStyle = color; }
+var drawLine = function(ctx, x, y, dx, dy, lineWidth, color) {
+    if(color !== null) setColor(ctx, color);
+
+    var cx = dx == 0 ? x + lineWidth / 2 : x; // X value corrected for line width
+    var cy = dy == 0 ? y + lineWidth / 2 : y; // Y value corrected for line width
+
+    ctx.lineWidth = lineWidth;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + dx, cy + dy);
+    ctx.stroke();
+}
+var drawPixel = function(ctx, x, y, scale, color) { drawLine(ctx, x, y, scl(scale, 1), 0, scl(scale, 1), color) };
+
 var drawGhostSprite = (function(){
+    var drawSyringe = function(ctx, dirEnum, flash, color, eyesOnly) {
+        var s = 0.6; // scale factor
 
-    // add top of the ghost head to the current canvas path
-    var addHead = (function() {
+        var EMPTY_COLOR = "#3F3F3F";
+        var OUTLINE_COLOR = "#FFF";
+        var PLUNGER_COLOR = "#E2E2E2"
+        var FACE_COLOR = "#FFF";
+        var PUPIL_COLOR = "#000";
+        var ARM_COLOR = "#3F3F3F";
 
-        // pixel coordinates for the top of the head
-        // on the original arcade ghost sprite
-        var coords = [
-            0,6,
-            1,3,
-            2,2,
-            3,1,
-            4,1,
-            5,0,
-            8,0,
-            9,1,
-            10,1,
-            11,2,
-            12,3,
-            13,6,
-        ];
+        var FLASH_FILL_COLOR = "#0000C9";
+        var FLASH_PUPIL_COLOR = "#0000C9";
+        var FLASH_FACE_COLOR = "#DE373A";
+        var FLASH_OUTLINE_COLOR = "3F3F3F";
+        var FLASH_ARM_COLOR = "#3F3F3F";
+        var FLASH_PLUNGER_COLOR = "#0000C9";
 
-        return function(ctx) {
-            var i;
-            ctx.save();
+        var addEyes = function(ctx, dirEnum , flash, eyesOnly) {
+            var pupilColor = flash ? FLASH_PUPIL_COLOR : PUPIL_COLOR;
+            var faceColor = flash ? FLASH_FACE_COLOR : FACE_COLOR;
+            
+            var drawEye = function(x, y) {
+                var drawPupil = function(x, y) {
+                    var pdx = 0; // Offset of Pupil in X axis
+                    var pdy = 0; // Offset of Pupil in Y axis
 
-            // translate by half a pixel to the right
-            // to try to force centering
-            ctx.translate(0.5,0);
+                    switch(dirEnum) {
+                        case DIR_LEFT:
+                            pdx = x;
+                            pdy = y + 1;
+                            break;
+                        case DIR_RIGHT:
+                            pdx = x + 2;
+                            pdy = y + 1;
+                            break;
+                        case DIR_UP:
+                            pdx = x + 1;
+                            pdy = y + 1;
+                            break; 
+                        case DIR_DOWN:
+                            pdx = x + 1;
+                            pdy = y + 2;
+                            break;
+                    }
+                    
+                    drawLine(ctx, scl(s, pdx), scl(s, pdy), scl(s, 2), scl(s, 0), scl(s, 1), pupilColor);
+                }
+                
+                setColor(ctx, faceColor);
+                ctx.fillRect(scl(s, x), scl(s, y + 1), scl(s, 4), scl(s, 2));
+                drawLine(ctx, scl(s, x + 1), scl(s, y), scl(s, 2), scl(s, 0), scl(s, 1));
+                drawPupil(x, y);
+            }
 
-            ctx.moveTo(0,6);
-            ctx.quadraticCurveTo(1.5,0,6.5,0);
-            ctx.quadraticCurveTo(11.5,0,13,6);
-
-            // draw lines between pixel coordinates
-            /*
-            ctx.moveTo(coords[0],coords[1]);
-            for (i=2; i<coords.length; i+=2)
-                ctx.lineTo(coords[i],coords[i+1]);
-            */
-
-            ctx.restore();
-        };
-    })();
-
-    // add first ghost animation frame feet to the current canvas path
-    var addFeet1 = (function(){
-
-        // pixel coordinates for the first feet animation
-        // on the original arcade ghost sprite
-        var coords = [
-            13,13,
-            11,11,
-            9,13,
-            8,13,
-            8,11,
-            5,11,
-            5,13,
-            4,13,
-            2,11,
-            0,13,
-        ];
-
-        return function(ctx) {
-            var i;
-            ctx.save();
-
-            // translate half a pixel right and down
-            // to try to force centering and proper height
-            ctx.translate(0.5,0.5);
-
-            // continue previous path (assuming ghost head)
-            // by drawing lines to each of the pixel coordinates
-            for (i=0; i<coords.length; i+=2)
-                ctx.lineTo(coords[i],coords[i+1]);
-
-            ctx.restore();
-        };
-
-    })();
-
-    // add second ghost animation frame feet to the current canvas path
-    var addFeet2 = (function(){
-
-        // pixel coordinates for the second feet animation
-        // on the original arcade ghost sprite
-        var coords = [
-            13,12,
-            12,13,
-            11,13,
-            9,11,
-            7,13,
-            6,13,
-            4,11,
-            2,13,
-            1,13,
-            0,12,
-        ];
-
-        return function(ctx) {
-            var i;
-            ctx.save();
-
-            // translate half a pixel right and down
-            // to try to force centering and proper height
-            ctx.translate(0.5,0.5);
-
-            // continue previous path (assuming ghost head)
-            // by drawing lines to each of the pixel coordinates
-            for (i=0; i<coords.length; i+=2)
-                ctx.lineTo(coords[i],coords[i+1]);
-
-            ctx.restore();
-        };
-
-    })();
-
-    // draw regular ghost eyes
-    var addEyes = function(ctx,dirEnum){
-        var i;
-
-        ctx.save();
-        ctx.translate(2,3);
-
-        var coords = [
-            0,1,
-            1,0,
-            2,0,
-            3,1,
-            3,3,
-            2,4,
-            1,4,
-            0,3
-        ];
-
-        var drawEyeball = function() {
-            ctx.translate(0.5,0.5);
-            ctx.beginPath();
-            ctx.moveTo(coords[0],coords[1]);
-            for (i=2; i<coords.length; i+=2)
-                ctx.lineTo(coords[i],coords[i+1]);
-            ctx.closePath();
-            ctx.fill();
+            ctx.lineWidth = 0.0;
             ctx.lineJoin = 'round';
-            ctx.stroke();
-            ctx.translate(-0.5,-0.5);
-            //ctx.fillRect(1,0,2,5); // left
-            //ctx.fillRect(0,1,4,3);
-        };
 
-        // translate eye balls to correct position
-        if (dirEnum == DIR_LEFT) ctx.translate(-1,0);
-        else if (dirEnum == DIR_RIGHT) ctx.translate(1,0);
-        else if (dirEnum == DIR_UP) ctx.translate(0,-1);
-        else if (dirEnum == DIR_DOWN) ctx.translate(0,1);
+            var ex = 21;
+            var ey = 20;
 
-        // draw eye balls
-        ctx.fillStyle = "#FFF";
-        ctx.strokeStyle = "#FFF";
-        ctx.lineWidth = 1.0;
-        ctx.lineJoin = 'round';
-        drawEyeball();
-        ctx.translate(6,0);
-        drawEyeball();
+            var edx = eyesOnly ? ex - 8 : ex;
+            var edy = eyesOnly ? ey - 1 : ey;
 
-        // translate pupils to correct position
-        if (dirEnum == DIR_LEFT) ctx.translate(0,2);
-        else if (dirEnum == DIR_RIGHT) ctx.translate(2,2);
-        else if (dirEnum == DIR_UP) ctx.translate(1,0);
-        else if (dirEnum == DIR_DOWN) ctx.translate(1,3);
+            drawEye(edx, ey);
+            drawEye(edx + 5, ey);
 
-        // draw pupils
-        ctx.fillStyle = "#00F";
-        ctx.fillRect(0,0,2,2); // right
-        ctx.translate(-6,0);
-        ctx.fillRect(0,0,2,2); // left
+            // Draw Left Eyebrow
+            drawPixel(ctx, scl(s, edx), scl(s, edy - 4), scl(s, 1), faceColor);
+            drawPixel(ctx, scl(s, edx + 1), scl(s, edy - 3), scl(s, 1), faceColor);
+            drawLine(ctx, scl(s, edx + 2), scl(s, edy - 2), scl(s, 2), scl(s, 0), scl(s, 1), faceColor);
 
-        ctx.restore();
-    };
-
-    // draw scared ghost face
-    var addScaredFace = function(ctx,flash){
-        ctx.strokeStyle = ctx.fillStyle = flash ? "#F00" : "#FF0";
-
-        // eyes
-        ctx.fillRect(4,5,2,2);
-        ctx.fillRect(8,5,2,2);
-
-        // mouth
-        var coords = [
-            1,10,
-            2,9,
-            3,9,
-            4,10,
-            5,10,
-            6,9,
-            7,9,
-            8,10,
-            9,10,
-            10,9,
-            11,9,
-            12,10,
-        ];
-        ctx.translate(0.5,0.5);
-        ctx.beginPath();
-        ctx.moveTo(coords[0],coords[1]);
-        for (i=2; i<coords.length; i+=2)
-            ctx.lineTo(coords[i],coords[i+1]);
-        ctx.lineWidth = 1.0;
-        ctx.stroke();
-        ctx.translate(-0.5,-0.5);
-        /*
-        ctx.fillRect(1,10,1,1);
-        ctx.fillRect(12,10,1,1);
-        ctx.fillRect(2,9,2,1);
-        ctx.fillRect(6,9,2,1);
-        ctx.fillRect(10,9,2,1);
-        ctx.fillRect(4,10,2,1);
-        ctx.fillRect(8,10,2,1);
-        */
-    };
-
-
-    return function(ctx,x,y,frame,dirEnum,scared,flash,eyes_only,color) {
-        ctx.save();
-        ctx.translate(x-7,y-7);
-
-        if (scared)
-            color = flash ? "#FFF" : "#2121ff";
-
-        if (!eyes_only) {
-            // draw body
-            ctx.beginPath();
-            addHead(ctx);
-            if (frame == 0)
-                addFeet1(ctx);
-            else
-                addFeet2(ctx);
-            ctx.closePath();
-            ctx.lineJoin = 'round';
-            ctx.lineCap = 'round';
-            ctx.lineWidth = 0.5;
-            ctx.strokeStyle = color;
-            ctx.stroke();
-            ctx.lineWidth = 1;
-            ctx.fillStyle = color;
-            ctx.fill();
+            // Draw Right Eyebrow
+            drawPixel(ctx, scl(s, edx + 8), scl(s, edy - 4), scl(s, 1), faceColor);
+            drawPixel(ctx, scl(s, edx + 7), scl(s, edy - 3), scl(s, 1), faceColor);
+            drawLine(ctx, scl(s, edx + 5), scl(s, edy - 2), scl(s, 2), scl(s, 0), scl(s, 1), faceColor);
         }
 
-        // draw face
-        if (scared)
-            addScaredFace(ctx, flash);
-        else
-            addEyes(ctx,dirEnum);
+        var addMouth = function(ctx, flash) {
+            ctx.lineWidth = 0.0;
+            ctx.lineJoin = 'round';
+
+            var mouthColor = flash ? FLASH_FACE_COLOR : FACE_COLOR;
+
+            setColor(ctx, mouthColor);
+            ctx.fillRect(scl(s, 22), scl(s, 24), scl(s, 6), scl(s, 2));
+            drawLine(ctx, scl(s, 21), scl(s, 25), scl(s, 0), scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 22), scl(s, 26), scl(s, 0), scl(s, 1), scl(s, 1));
+            drawLine(ctx, scl(s, 28), scl(s, 25), scl(s, 0), scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 27), scl(s, 26), scl(s, 0), scl(s, 1), scl(s, 1));
+            
+        }
+
+        var addOutline = function(ctx, flash) {
+            ctx.lineWidth = 0.0;
+            ctx.lineJoin = 'round';
+
+            setColor(ctx, flash ? FLASH_OUTLINE_COLOR : OUTLINE_COLOR);
+
+            // Plunger Outline
+            drawLine(ctx, scl(s, 19), scl(s, 1), scl(s, 10), 0, scl(s, 1));
+            drawLine(ctx, scl(s, 18), scl(s, 2), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 29), scl(s, 2), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 19), scl(s, 5), scl(s, 3), 0, scl(s, 1));
+            drawLine(ctx, scl(s, 26), scl(s, 5), scl(s, 3), 0, scl(s, 1));
+            drawLine(ctx, scl(s, 21), scl(s, 6), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 26), scl(s, 6), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 27), scl(s, 8), scl(s, 6), 0, scl(s, 1));
+            drawLine(ctx, scl(s, 21), scl(s, 8), scl(s, -6), 0, scl(s, 1));
+            drawLine(ctx, scl(s, 14), scl(s, 9), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 33), scl(s, 9), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 14), scl(s, 12), scl(s, 19), 0, scl(s, 1));
+
+            // Body Outline
+            drawLine(ctx, scl(s, 17), scl(s, 13), 0, scl(s, 22), scl(s, 1));
+            drawPixel(ctx, scl(s, 18), scl(s, 34), s);
+            drawLine(ctx, scl(s, 18), scl(s, 35), scl(s, 12), 0, scl(s, 1));
+            drawPixel(ctx, scl(s, 29), scl(s, 34), s);
+            drawLine(ctx, scl(s, 30), scl(s, 13), 0, scl(s, 22), scl(s, 1));
+            
+            // Lower Body Outline
+            drawLine(ctx, scl(s, 21), scl(s, 36), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 26), scl(s, 36), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 22), scl(s, 39), scl(s, 4), 0, scl(s, 1));
+
+            // Tip
+            ctx.fillRect(scl(s, 23), scl(s, 40), scl(s, 2), scl(s, 7));
+            drawPixel(ctx, scl(s, 23), scl(s, 47), s);
+
+        }
+
+        var addFill = function(ctx,flash,fillColor) {
+            // Colored Fill
+            setColor(ctx, flash ? FLASH_FILL_COLOR : fillColor);
+            
+            ctx.lineWidth = 0.0;
+            ctx.lineJoin = 'round';
+            ctx.fillRect(scl(s, 18), scl(s, 24), scl(s, 12), scl(s, 11));
+            ctx.fillRect(scl(s, 22), scl(s, 36), scl(s, 4), scl(s, 3));
+
+            // 'Empty' Fill
+            setColor(ctx, EMPTY_COLOR);
+            ctx.fillRect(scl(s, 18), scl(s, 13), scl(s, 12), scl(s, 11));
+        }
+
+        var addArms = function(ctx, flash) {
+            ctx.lineWidth = 0.0;
+            ctx.lineJoin = 'round';
+
+            var outlineColor = flash ? FLASH_OUTLINE_COLOR : OUTLINE_COLOR;
+            var armColor = flash ?  FLASH_ARM_COLOR : ARM_COLOR;
+
+            // Left Arm outline
+            setColor(ctx, outlineColor);
+            ctx.fillRect(scl(s, 17), scl(s, 23), scl(s, -2), scl(s, 5));
+            ctx.fillRect(scl(s, 15), scl(s, 24), scl(s, -1), scl(s, 5));
+            ctx.fillRect(scl(s, 14), scl(s, 24), scl(s, -3), scl(s, 6));
+            ctx.fillRect(scl(s, 11), scl(s, 25), scl(s, -1), scl(s, 5));
+            ctx.fillRect(scl(s, 10), scl(s, 25), scl(s, -1), scl(s, 4));
+            ctx.fillRect(scl(s, 9), scl(s, 25), scl(s, -1), scl(s, 3));
+            ctx.fillRect(scl(s, 8), scl(s, 25), scl(s, -1), scl(s, 3));
+            ctx.fillRect(scl(s, 5), scl(s, 23), scl(s, 2), scl(s, 4));
+            drawLine(ctx, scl(s, 4), scl(s, 22), 0, scl(s, 4), scl(s, 1));
+            drawLine(ctx, scl(s, 3), scl(s, 17), 0, scl(s, 8), scl(s, 1));
+            drawLine(ctx, scl(s, 2), scl(s, 18), 0, scl(s, 5), scl(s, 1));
+            drawLine(ctx, scl(s, 1), scl(s, 19), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 4), scl(s, 16), 0, scl(s, 5), scl(s, 1));
+            ctx.fillRect(scl(s, 5), scl(s, 15), scl(s, 3), scl(s, 8));
+            drawPixel(ctx, scl(s, 7), scl(s, 23), s);
+            ctx.fillRect(scl(s, 8), scl(s, 16), scl(s, 2), scl(s, 9));
+            drawLine(ctx, scl(s, 10), scl(s, 17), 0, scl(s, 8), scl(s, 1));
+            drawLine(ctx, scl(s, 11), scl(s, 19), 0, scl(s, 5), scl(s, 1));
+            drawLine(ctx, scl(s, 12), scl(s, 20), 0, scl(s, 2), scl(s, 1));
+            drawPixel(ctx, scl(s, 12), scl(s, 23), s);
+
+            // Right Arm Outline
+            setColor(ctx, outlineColor);
+            ctx.fillRect(scl(s, 31), scl(s, 24), scl(s, 1), scl(s, 5));
+            ctx.fillRect(scl(s, 32), scl(s, 25), scl(s, 3), scl(s, 5));
+            ctx.fillRect(scl(s, 35), scl(s, 24), scl(s, 3), scl(s, 5));
+            ctx.fillRect(scl(s, 38), scl(s, 25), scl(s, 2), scl(s, 3));
+            drawPixel(ctx, scl(s, 40), scl(s, 26), s, outlineColor);
+            drawLine(ctx, scl(s, 40), scl(s, 25), scl(s, 2), 0, scl(s, 1), outlineColor);
+            ctx.fillRect(scl(s, 37), scl(s, 18), scl(s, 7), scl(s, 7));
+            drawLine(ctx, scl(s, 36), scl(s, 19), 0, scl(s, 5), scl(s, 1), outlineColor);
+            drawLine(ctx, scl(s, 35), scl(s, 20), 0, scl(s, 2), scl(s, 1), outlineColor);
+            ctx.fillRect(scl(s, 38), scl(s, 16), scl(s, 6), scl(s, 2));
+            drawLine(ctx, scl(s, 39), scl(s, 15), scl(s, 3), 0, scl(s, 1), outlineColor);
+            drawLine(ctx, scl(s, 44), scl(s, 17), 0, scl(s, 7), scl(s, 1), outlineColor);
+            drawLine(ctx, scl(s, 45), scl(s, 19), 0, scl(s, 3), scl(s, 1), outlineColor);
+
+            // Left Arm
+            setColor(ctx, armColor);
+            ctx.fillRect(scl(s, 17), scl(s, 24), scl(s, -2), scl(s, 3));
+            ctx.fillRect(scl(s, 15), scl(s, 25), scl(s, -1), scl(s, 3));
+            ctx.fillRect(scl(s, 14), scl(s, 25), scl(s, -3), scl(s, 4));
+            ctx.fillRect(scl(s, 11), scl(s, 26), scl(s, -1), scl(s, 3));
+            ctx.fillRect(scl(s, 10), scl(s, 26), scl(s, -1), scl(s, 2));
+            drawPixel(ctx, scl(s, 8), scl(s, 26), s, armColor);
+            drawPixel(ctx, scl(s, 4), scl(s, 21), s, armColor);
+            drawPixel(ctx, scl(s, 5), scl(s, 17), s, armColor);
+            drawPixel(ctx, scl(s, 6), scl(s, 18), s, armColor);
+            drawLine(ctx, scl(s, 5), scl(s, 22), scl(s, 2), 0, scl(s, 1), armColor);
+            drawLine(ctx, scl(s, 7), scl(s, 19), 0, scl(s, 3), scl(s, 1), armColor);
+            drawPixel(ctx, scl(s, 7), scl(s, 24), s, armColor);
+            drawPixel(ctx, scl(s, 8), scl(s, 20), s, armColor);
+            drawPixel(ctx, scl(s, 8), scl(s, 22), s, armColor);
+            drawPixel(ctx, scl(s, 9), scl(s, 22), s, armColor);
+            drawLine(ctx, scl(s, 9), scl(s, 19), scl(s, 2), 0, scl(s, 1), armColor);
+            drawLine(ctx, scl(s, 9), scl(s, 24), scl(s, 2), 0, scl(s, 1), armColor);
+            drawPixel(ctx, scl(s, 11), scl(s, 23), s, armColor);
+
+            //Right Arm
+            setColor(ctx, armColor);
+            ctx.fillRect(scl(s, 31), scl(s, 25), scl(s, 1), scl(s, 3));
+            ctx.fillRect(scl(s, 32), scl(s, 26), scl(s, 3), scl(s, 3));
+            ctx.fillRect(scl(s, 35), scl(s, 25), scl(s, 2), scl(s, 3));
+            drawPixel(ctx, scl(s, 36), scl(s, 24), s, armColor);
+            drawPixel(ctx, scl(s, 37), scl(s, 27), s, armColor);
+            drawLine(ctx, scl(s, 37), scl(s, 26), scl(s, 3), 0, scl(s, 1), armColor);
+            drawPixel(ctx, scl(s, 38), scl(s, 23), s, armColor);
+            drawPixel(ctx, scl(s, 39), scl(s, 24), s, armColor);
+            drawPixel(ctx, scl(s, 38), scl(s, 20), s, armColor);
+            drawLine(ctx, scl(s, 38), scl(s, 18), scl(s, 2), 0, scl(s, 1), armColor);
+            drawLine(ctx, scl(s, 40), scl(s, 19), 0, scl(s, 4), scl(s, 1), armColor);
+            drawPixel(ctx, scl(s, 39), scl(s, 21), s, armColor);
+            drawLine(ctx, scl(s, 41), scl(s, 17), 0, scl(s, 2), scl(s, 1), armColor);
+            drawLine(ctx, scl(s, 41), scl(s, 22), scl(s, 2), 0, scl(s, 1), armColor);
+            drawPixel(ctx, scl(s, 43), scl(s, 21), s, armColor);
+        }
+
+        var addPlunger = function(ctx, flash) {
+            ctx.lineWidth = 0.0;
+            ctx.lineJoin = 'round';
+
+            setColor(ctx, flash ? FLASH_PLUNGER_COLOR : PLUNGER_COLOR);
+            ctx.fillRect(scl(s, 19), scl(s, 2), scl(s, 10), scl(s, 3));
+            ctx.fillRect(scl(s, 22), scl(s, 5), scl(s, 4), scl(s, 4));
+            ctx.fillRect(scl(s, 15), scl(s, 9), scl(s, 18), scl(s, 3));
+        }
+
+
+        ctx.save();
+        ctx.translate(-3, -3);
+
+        if(!eyesOnly) {
+            s = s * 2/3;
+            addFill(ctx,flash,color);
+            addPlunger(ctx, flash);
+            addMouth(ctx, flash);
+            addOutline(ctx, flash);
+            addArms(ctx, flash);
+        }
+    
+        addEyes(ctx, dirEnum, flash, eyesOnly);
+
+        ctx.restore();
+    }
+
+
+    return function(ctx, x, y, frame, dirEnum, scared, flash, eyesOnly, color) {
+        ctx.save();
+        ctx.translate(x-7, y-7);
+
+        drawSyringe(ctx, dirEnum, flash, color, eyesOnly)
 
         ctx.restore();
     };
@@ -1631,6 +1658,7 @@ var drawCookiemanSprite = (function(){
 
     var er = 2.1; // eye radius
     var pr = 1; // pupil radius
+    var tr = 0.7 // tube circle radius
 
     var movePupils = function() {
         var a1 = Math.random()*Math.PI*2;
@@ -1650,7 +1678,7 @@ var drawCookiemanSprite = (function(){
         // draw body
         var draw = function(angle) {
             //angle = Math.PI/6*frame;
-            drawPacmanSprite(ctx,x,y,dirEnum,angle,undefined,undefined,undefined,undefined,"#47b8ff",rot_angle);
+            drawPacmanSprite(ctx,x,y,dirEnum,angle,undefined,undefined,undefined,undefined,"#ff6e31",rot_angle);
         };
         if (frame == 0) {
             // closed
@@ -1686,8 +1714,11 @@ var drawCookiemanSprite = (function(){
 
         var x = -4; // pivot point
         var y = -3.5;
-        var r1 = 3;   // distance from pivot of first eye
-        var r2 = 6; // distance from pivot of second eye
+        var tx = -4;
+        var ty = 2;
+        var r1 = 3; // distance from pivot of first eye
+        var r2 = 6.5; // distance from pivot of second eye
+        var r3 = 0; // distance from pivot of tube
         angle /= 3; // angle from pivot point
         angle += Math.PI/8;
         var c = Math.cos(angle);
@@ -1713,13 +1744,38 @@ var drawCookiemanSprite = (function(){
 
         // first eyeball
         ctx.beginPath();
-        ctx.arc(x+r1*c, y-r1*s, er, 0, Math.PI*2);
+        ctx.arc(x+r1*c, y-r1*1.8*s, er, 0, Math.PI*2);
         ctx.fillStyle = "#FFF";
         ctx.fill();
         // first pupil
         ctx.beginPath();
-        ctx.arc(x+r1*c+sx1, y-r1*s+sy1, pr, 0, Math.PI*2);
+        ctx.arc(x+r1*c+sx1, y-r1*1.8*s+sy1, pr, 0, Math.PI*2);
         ctx.fillStyle = "#000";
+        ctx.fill();
+
+        var tubeColor = "#FFF";
+        var tubeAccentColor = "#808080";
+        var tubeLength = 2.2;
+        var tubeThickness = 0.65
+
+        //tube
+        //tube-line
+        ctx.beginPath();
+        ctx.moveTo(tx+r3*c+tubeLength/3, ty-r3*s);
+        ctx.lineTo(tx+r3*c-tubeLength/2,ty-r3*s);
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = tubeColor;
+        ctx.lineWidth = tubeThickness;
+        ctx.stroke();
+        //tube-center
+        ctx.beginPath();
+        ctx.arc(tx+r3*c, ty-r3*s, tr, 0, Math.PI*2);
+        ctx.fillStyle = tubeColor;
+        ctx.fill();
+        //tube-center
+        ctx.beginPath();
+        ctx.arc(tx+r3*c, ty-r3*s, tr/2.5, 0, Math.PI*2);
+        ctx.fillStyle = tubeAccentColor;
         ctx.fill();
 
         ctx.restore();
@@ -1730,7 +1786,8 @@ var drawCookiemanSprite = (function(){
 ////////////////////////////////////////////////////////////////////
 // FRUIT SPRITES
 
-var drawCherry = function(ctx,x,y) {
+// G-Tube
+var drawGTube = function(ctx,x,y) {
 
     // cherry
     var cherry = function(x,y) {
@@ -1777,7 +1834,8 @@ var drawCherry = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawStrawberry = function(ctx,x,y) {
+// Infinity Pump
+var drawInfinityPump = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -1845,7 +1903,8 @@ var drawStrawberry = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawOrange = function(ctx,x,y) {
+// Omni Pump
+var drawOmniPump = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -1890,7 +1949,8 @@ var drawOrange = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawApple = function(ctx,x,y) {
+// Joey Pump
+var drawJoeyPump = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -1928,7 +1988,8 @@ var drawApple = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawMelon = function(ctx,x,y) {
+// Infinity Charger
+var drawInfinityCharger = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -2029,7 +2090,8 @@ var drawMelon = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawGalaxian = function(ctx,x,y) {
+// Infinity Bag
+var drawInfinityBag = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -2085,7 +2147,8 @@ var drawGalaxian = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawBell = function(ctx,x,y) {
+// Formula Bottle
+var drawFormulaBottle = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -2125,7 +2188,8 @@ var drawBell = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawKey = function(ctx,x,y) {
+// Y-Port Extension
+var drawExtension = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -2167,7 +2231,8 @@ var drawKey = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawPretzel = function(ctx,x,y) {
+// EnFIT Wrench
+var drawEnFitWrench = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -2213,7 +2278,8 @@ var drawPretzel = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawPear = function(ctx,x,y) {
+// Flying Squirrel
+var drawFlyingSquirrel = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -2249,7 +2315,8 @@ var drawPear = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawBanana = function(ctx,x,y) {
+// Curlin Pump
+var drawCurlinPump = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -2363,17 +2430,17 @@ var drawCookieFlash = function(ctx,x,y) {
 
 var getSpriteFuncFromFruitName = function(name) {
     var funcs = {
-        'cherry': drawCherry,
-        'strawberry': drawStrawberry,
-        'orange': drawOrange,
-        'apple': drawApple,
-        'melon': drawMelon,
-        'galaxian': drawGalaxian,
-        'bell': drawBell,
-        'key': drawKey,
-        'pretzel': drawPretzel,
-        'pear': drawPear,
-        'banana': drawBanana,
+        'cherry': drawGTube,
+        'strawberry': drawInfinityPump,
+        'orange': drawOmniPump,
+        'apple': drawJoeyPump,
+        'melon': drawInfinityCharger,
+        'galaxian': drawInfinityBag,
+        'bell': drawFormulaBottle,
+        'key': drawExtension,
+        'pretzel': drawEnFitWrench,
+        'pear': drawFlyingSquirrel,
+        'banana': drawCurlinPump,
         'cookie': drawCookie,
     };
 
