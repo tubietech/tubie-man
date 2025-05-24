@@ -51,7 +51,7 @@ Ghost.prototype.getBounceY = (function(){
             dirEnum = this.dirEnum;
         }
 
-        if (this.mode != GHOST_OUTSIDE || !this.scared || gameMode != GAME_COOKIE) {
+        if (this.mode != GHOST_OUTSIDE || !this.scared) {
             return py;
         }
 
@@ -110,7 +110,7 @@ Ghost.prototype.save = function(t) {
     this.savedSigLeaveHome[t] = this.sigLeaveHome;
     this.savedMode[t] = this.mode;
     this.savedScared[t] = this.scared;
-    if (this == blinky) {
+    if (this == enemy1) {
         this.savedElroy[t] = this.elroy;
     }
     this.savedFaceDirEnum[t] = this.faceDirEnum;
@@ -122,20 +122,16 @@ Ghost.prototype.load = function(t) {
     this.sigLeaveHome = this.savedSigLeaveHome[t];
     this.mode = this.savedMode[t];
     this.scared = this.savedScared[t];
-    if (this == blinky) {
+    if (this == enemy1) {
         this.elroy = this.savedElroy[t];
     }
     this.faceDirEnum = this.savedFaceDirEnum[t];
     Actor.prototype.load.call(this,t);
 };
 
-// indicates if we slow down in the tunnel
+// Slow down in the tunnel for first 3 levels
 Ghost.prototype.isSlowInTunnel = function() {
-    // special case for Ms. Pac-Man (slow down only for the first three levels)
-    if (gameMode == GAME_MSPACMAN || gameMode == GAME_OTTO || gameMode == GAME_COOKIE)
-        return level <= 3;
-    else
-        return true;
+    return level <= 3;
 };
 
 // gets the number of steps to move in this frame
@@ -209,7 +205,7 @@ Ghost.prototype.playSounds = function() {
     }
 }
 
-// function called when pacman eats an energizer
+// function called when player eats an energizer
 Ghost.prototype.onEnergized = function() {
 
     this.reverse();
@@ -321,12 +317,7 @@ Ghost.prototype.homeSteer = (function(){
 Ghost.prototype.isScatterBrain = function() {
     var scatter = false;
     if (ghostCommander.getCommand() == GHOST_CMD_SCATTER) {
-        if (gameMode == GAME_MSPACMAN || gameMode == GAME_COOKIE) {
-            scatter = (this == blinky || this == pinky);
-        }
-        else if (gameMode == GAME_OTTO) {
-            scatter = true;
-        }
+        scatter = (this == enemy1 || this == enemy2);
     }
     return scatter;
 };
@@ -446,7 +437,7 @@ Ghost.prototype.steer = function() {
 Ghost.prototype.getPathDistLeft = function(fromPixel, dirEnum) {
     var distLeft = tileSize;
     var pixel = this.getTargetPixel();
-    if (this.targetting == 'pacman') {
+    if (this.targetting == 'player') {
         if (dirEnum == DIR_UP || dirEnum == DIR_DOWN)
             distLeft = Math.abs(fromPixel.y - pixel.y);
         else {
@@ -459,13 +450,13 @@ Ghost.prototype.getPathDistLeft = function(fromPixel, dirEnum) {
 Ghost.prototype.setTarget = function() {
     // This sets the target tile when in chase mode.
     // The "target" is always Pac-Man when in this mode,
-    // except for Clyde.  He runs away back home sometimes,
+    // except for enemy4.  He runs away back home sometimes,
     // so the "targetting" parameter is set in getTargetTile
     // for Clyde only.
 
     this.targetTile = this.getTargetTile();
 
-    if (this != clyde) {
+    if (this != enemy4) {
         this.targetting = 'pacman';
     }
 };

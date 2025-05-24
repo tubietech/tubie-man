@@ -6,7 +6,7 @@ var Player = function() {
 
     // inherit data from Actor
     Actor.apply(this);
-    if (gameMode == GAME_MSPACMAN || gameMode == GAME_COOKIE) {
+    if (gameMode == GAME_MSPACMAN || gameMode == GAME_TUBIE_MAN) {
         this.frames = 1; // start with mouth open
     }
 
@@ -81,15 +81,14 @@ Player.prototype.getAnimFrame = function(frame) {
     if (frame == undefined) {
         frame = this.getStepFrame();
     }
-    if (gameMode == GAME_MSPACMAN || gameMode == GAME_COOKIE) { // ms. pacman starts with mouth open
-        frame = (frame+1)%4;
-        if (state == deadState)
-            frame = 1; // hack to force this frame when dead
-    }
-    if (gameMode != GAME_OTTO) {
-        if (frame == 3) 
-            frame = 1;
-    }
+    
+    frame = (frame+1)%4;
+    if (state == deadState)
+        frame = 1; // hack to force this frame when dead
+
+    if (frame == 3) 
+        frame = 1;
+
     return frame;
 };
 
@@ -134,7 +133,6 @@ Player.prototype.step = (function(){
             // Drift toward the center of the track (a.k.a. cornering)
             this.pixel[b] += sign(this.distToMid[b]);
         }
-
 
         this.commitPos();
         return this.stopped ? 0 : 1;

@@ -211,48 +211,48 @@ var tileSize = 8;
 midTile = {x:3,y:4};
 
 var blinky = {};
-blinky.color = "#FF0000";
+enemy1.color = "#FF0000";
 
 var pinky = {};
-pinky.color = "#FFB8FF";
+enemy2.color = "#FFB8FF";
 
 var inky = {};
-inky.color = "#00FFFF";
+enemy3.color = "#00FFFF";
 
-var clyde = {};
-clyde.color = "#FFB851";
+var enemy4 = {};
+enemy4.color = "#FFB851";
 
-var pacman = {};
-pacman.color = "#FFFF00";
+var player = {};
+player.color = "#FFFF00";
 
-var ghosts = [blinky,inky,pinky,clyde];
+var ghosts = [blinky,inky,pinky,enemy4];
 
-blinky.dirEnum = DIR_LEFT;
-blinky.pixel = {
+enemy1.dirEnum = DIR_LEFT;
+enemy1.pixel = {
     x: 14*tileSize-1,
     y: 14*tileSize+midTile.y
 };
 
-pinky.dirEnum = DIR_DOWN;
-pinky.pixel = {
+enemy2.dirEnum = DIR_DOWN;
+enemy2.pixel = {
     x: 14*tileSize-1,
     y: 17*tileSize+midTile.y,
 };
 
-inky.dirEnum = DIR_UP;
-inky.pixel = {
+enemy3.dirEnum = DIR_UP;
+enemy3.pixel = {
     x: 12*tileSize-1,
     y: 17*tileSize + midTile.y,
 };
 
-clyde.dirEnum = DIR_UP;
-clyde.pixel = {
+enemy4.dirEnum = DIR_UP;
+enemy4.pixel = {
     x: 16*tileSize-1,
     y: 17*tileSize + midTile.y,
 };
 
-pacman.dirEnum = DIR_LEFT;
-pacman.pixel = {
+player.dirEnum = DIR_LEFT;
+player.pixel = {
     x: 14*tileSize-1,
     y: 26*tileSize + midTile.y,
 };
@@ -507,7 +507,7 @@ var drawGhostSprite = (function(){
     };
 })();
 
-// draw pacman body
+// draw player body
 var drawPacmanSprite = function(ctx,dirEnum,angle,mouthShift,scale,centerShift,alpha) {
 
     if (mouthShift == undefined) mouthShift = 0;
@@ -553,9 +553,9 @@ var drawGhosts = function(ctx) {
 
 var drawPlayer = function(ctx) {
     ctx.save();
-    ctx.translate(pacman.pixel.x+1, pacman.pixel.y);
+    ctx.translate(player.pixel.x+1, player.pixel.y);
     var frame = 1;
-    drawPacmanSprite(ctx, pacman.dirEnum, frame*Math.PI/6);
+    drawPacmanSprite(ctx, player.dirEnum, frame*Math.PI/6);
     ctx.restore();
 };
 

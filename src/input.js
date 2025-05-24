@@ -1,196 +1,456 @@
-//////////////////////////////////////////////////////////////////////////////////////
-// Input
-// (Handles all key presses and touches)
+// Accept input from Keyboard, Touch and Game Controller and combine into a unified list of inputs
+
+// The input handling seems over-complicated (and probably is a bit), but the goal of this implementation
+// was to de-couple the way that an 'Action' is generated from the underlying representation of the
+// Action and it's execution.
+
+// Each entry in the map 'Actions' represents a single 'Action' that can be taken. Actions are
+// usually context specific (e.g. the UP action is used for player movement, whereas the MENU_UP action
+// is used for menu navigation)
+// An action should be named based on what happens, not what the input method was.
+
+// Values in InputSources describe/are linked to the physical method that was used to generate the input.
+// The same Action may be tied to different 'Input Sources', and may be handled the same or different.
+
+// An Input is the combination of an 'Action', InputSource and other attributes that provide context
+// To the input. (See the class for an in-depth description of each attribute).
+
+// The InputQueue class should have 1 global instance typically. This class serves 2 purposes.
+// 1. To 'queue' up non-instantaneous inputs. This is usefull as it allows for multiple
+// Inputs occur at the same time, and then when one falls off the other takes the formers place
+// as the active inpupt. This queue was implemented because of an issue using 8-way controllers
+// with just the 'keydown' action.
+
+// An 8-way joystick allows for 2 directions to be active by the same time (e.g. if you picture the 
+// joystick as a compass with UP being North and LEFT being West, the direction NW is a combination of
+// bot the UP and LEFT keys/inputs being triggered at the same time)
+
+// The issues was when moving the joystick from the N to NW directions, the 'UP' action would be lost
+// when the 'LEFT' action was issued. If the player then moved the stick from NW to N without re-centering,
+// no additonal keydown event would be triggered as N/UP was down the entire time. This would cause the
+// Player sprite to continue to move to the LEFT/W until the joystick was re-centered.
+// 
+// Another benefit of the input-queue system is that it allows for 'sticky' inputs, which is an input
+// that occurs 1 time and stops, but the action associated with the input continues to occurr until a
+// clear command is issued, or another input is created.
+
+const InputSources = Object.freeze({
+    _typeName: "InputSources", // Used to identify the object 'type' at runtime. Used for typechecking params
+    KEYBOARD: "keyboard",
+    SWIPE: "swipe",
+    CONTROLLER: "controller"
+});
+
+const Actions = Object.freeze({
+    _typeName: "Actions", // Used to identify the object 'type' at runtime. Used for typechecking params
+    UP: "up",
+    DOWN: "down",
+    LEFT: "left",
+    RIGHT: "right",
+    ENTER : "enter",
+    EXIT: "exit",
+    MENU_UP: "menuUp",
+    MENU_DOWN: "menuDown",
+    MENU_CLOSE: "menuClose",
+    PAUSE: "pause",
+    CHEAT: "cheat",
+    UNUSED: "unused"
+});
+
+const Keys = Object.freeze({
+    _typeName: "Keys", // Used to identify the object 'type' at runtime. Used for typechecking params
+    ENTER: "Enter",
+    ESC: "Escape",
+    END: "End",
+
+    LEFT: "ArrowLeft",
+    RIGHT: "ArrowRight",
+    UP: "ArrowUp",
+    DOWN: "ArrowDown",
+
+    SHIFT: "ShiftLeft",
+    CTRL: "ControlLeft",
+    ALT: "AltLeft",
+    SPACE: "Space",
+
+    W:  "KeyW",
+    A:  "KeyA",
+    S:  "KeyS",
+    D:  "KeyD",
+
+    // A: "KeyA",
+    B: "KeyB",
+    C: "KeyC",
+    // D: "KeyD",
+    E: "KeyE",
+    F: "KeyF",
+    G: "KeyG",
+    H: "KeyH",
+    I: "KeyI",
+    J: "KeyJ",
+    K: "KeyK",
+    L: "KeyL",
+    M: "KeyM",
+    N: "KeyN",
+    O: "KeyO",
+    P: "KeyP",
+    Q: "KeyQ",
+    R: "KeyR",
+    //S: "KeyS",
+    T: "KeyT",
+    U: "KeyU",
+    V: "KeyV",
+    //W: "KeyW",
+    X: "KeyX",
+    Y: "KeyY",
+    Z: "KeyZ",
+
+    0: "Digit0",
+    1: "Digit1",
+    2: "Digit2",
+    3: "Digit3",
+    4: "Digit4",
+    5: "Digit5",
+    6: "Digit6",
+    7: "Digit7",
+    8: "Digit8",
+    9: "Digit9",
+
+    NUM_0: "Numpad0",
+    NUM_1: "Numpad1",
+    NUM_2: "Numpad2",
+    NUM_3: "Numpad3", 
+    NUM_4: "Numpad4",
+    NUM_5: "Numpad5",
+    NUM_6: "Numpad6",
+    NUM_7: "Numpad7",
+    NUM_8: "Numpad8",
+    NUM_9: "Numpad9",
+    NUM_ENTER: "NumpadEnterA"
+});
+
+// Maps Keys to Input Types
+const KeyInputMap = {};
+
+// Immutable representation of an input
+class Input {
+    #source;  // Source of the input. Must be one of InputSources
+    #action; // Action to be taken
+    #isVolatile; // Volatility means that an Input will be removed from the queue whenever a new Input is added. The input will continue to move up the queue if previous inputs are dequeued. Volatility can be used to handle InputSources that do not have an exit or cancel event (like swipes, as opposed to 'keyreleased' or 'buttonUp' events for keyboards and controllers respectivley)
+    #isInstantaneous; // If an Input is instantaneous, then it will not be added to the input queue, and only used to process the instant it occurrs. Instantaneous events will still be saved to the recent history of the queue.
+    #conditionFunc; // This is a function that when called evaluates to a boolean, which determines if the input handler should be run.
+
+    constructor(action, source, isVolatile, isInstantaneous, conditionFunc) {
+        // validate params
+        !Input.#isValidInstanceOfType(Actions, action)
+        !Input.#isValidInstanceOfType(InputSources, source)
+        if(typeof isVolatile !== "boolean")
+            throw new Error(`Value ${isVolatile} of parameter 'isVolatile must be a boolean`);
+        if(typeof isInstantaneous !== "boolean")
+            throw new Error(`Value ${isInstantaneous} of parameter 'isInstantaneous must be a boolean`);
+        if(!(conditionFunc === null || conditionFunc === undefined) && typeof conditionFunc !== "function")
+            throw new Error("If a value is provided for conditionFunc, it myst be of type 'function'");
+
+        this.#action = action;
+        this.#source = source;
+        this.#isVolatile = isVolatile;
+        this.#isInstantaneous = isInstantaneous;
+        this.#conditionFunc = conditionFunc;
+    }
+
+    static #isValidInstanceOfType (type, instance) {
+        if (!Object.values(type).includes(instance))
+            throw new Error(`Value ${instance} does not exist in type ${type._typeName}`);
+    }
+
+    getSoruce() {
+        return this.#source;
+    }
+
+    getAction() {
+        return this.#action;
+    }
+
+    evaluateCondition() {
+        // Always execute if no condition was provied
+        return typeof this.#conditionFunc === "function" ? this.#conditionFunc() : true;
+    }
+
+    isVolatile() {
+        return this.#isVolatile;
+    }
+
+    isInstantaneous() {
+        return this.#isInstantaneous;
+    }
+
+    getHash() {
+        const input = `${this.#source}|${this.#isVolatile}|${this.#action}|${this.#isInstantaneous}`;
+
+        // Simple, non-cryptographic
+        let hash = 0;
+        for (let i = 0; i < input.length; i++) {
+          hash = (hash << 5) - hash + input.charCodeAt(i);
+          hash |= 0; // Convert to 32bit integer
+        }
+
+        return hash;
+    }
+
+    isEqual(input) {
+        return this.getHash() === input.getHash();
+    }
+
+    serialize(toString) {
+        if(!(toString === null || toString === undefined) && typeof toString !== "boolean")
+            throw new Error("toString must be a boolean when provided to the method Input.serialize");
+
+        const json = {
+            "hash": this.getHash(),
+            "action": this.#action,
+            "source": this.#source,
+            "isVolatile": this.#isVolatile,
+            "isInstantaneous": this.#isInstantaneous,
+            "hasConditionFunc": typeof this.#conditionFunc === "function",
+        };
+
+        return toString ? JSON.stringify(json, null, 2) : json;
+    }
+}
+
+class InputQueue {
+    #queue = [];
+    #recentHistory = [];
+    #instantaneousInputHandlers = {};
+
+    historyRetentionSize = 10;
+
+    constructor(){}
+
+    set historyRetentionSize(size) {
+        if(typeof size != "number" || size < 0)
+            throw new Error("A number must be used when setting the historyRetentionSize of an InputQueue");
+
+        this.historyRetentionSize = size;
+
+        if(this.#recentHistory.length > this.historyRetentionSize)
+            this.#trimHistory();
+    }
+
+    #trimHistory() {
+        this.#recentHistory = this.#recentHistory.slice(this.#recentHistory.length - this.historyRetentionSize)
+    }
+
+    #updateHistory(input) {
+        this.#recentHistory.push(input);
+        this.#trimHistory();
+    }
+
+    #removeExistingInputInstances(input) {
+        this.#queue = this.#queue.filter((element) => !input.isEqual(element))
+    }
+
+    #removeVolatileInputs() {
+        this.#queue = this.#queue.filter((input) => !input.isVolatile());
+    }
+
+    #checkParamIsInput(name, param) {
+        if(! (param instanceof Input))
+            throw new Error(`Parameter ${name} is not an instance the class Input`);
+    }
+
+    addInstantaneousInputHandler(input, handler) {
+        this.#checkParamIsInput("input", input);
+
+        if(typeof handler !== "function")
+            throw new Error("handler must be a function");
+
+        this.#instantaneousInputHandlers[input.getHash()] = handler;
+    }
+
+    handleInstaneousInput(input, handlerParams) {
+        this.#checkParamIsInput("input", input);
+
+        if(input.isInstantaneous() === false)
+            throw new Error("Only instaneous inputs may be passed to this function");
+
+        if(input.evaluateCondition()) {
+            const inputHash = input.getHash();
+        
+            if(this.#instantaneousInputHandlers.hasOwnProperty(inputHash))
+                this.#instantaneousInputHandlers[inputHash](handlerParams);
+            else
+                console.log(`A handler does not exist for the input ${input.getValue()} with hash ${inputHash}`);            
+        }
+    }
+
+    removeInstantaneousInputHandler(input) {
+        this.#checkParamIsInput("input", input);
+
+        delete this.#instantaneousInputHandlers[input.getHash()];
+    }
+
+    enqueue(input) {
+        this.#checkParamIsInput("input", input);
+    
+        // TODO: Test functionality of removing volatile inputs when enquing instantaneous ones. We may want to only remove volatile for non-instantaneous inptus
+        this.#removeVolatileInputs();
+        this.#removeExistingInputInstances(input);
+        
+        if(input.isInstantaneous())
+            this.handleInstaneousInput(input);
+        else
+            this.#queue.push(input);
+
+        this.#updateHistory(input);        
+    }
+
+    dequeue(input) {
+        this.#removeExistingInputInstances(input);
+    }
+
+    size() {
+        return this.#queue.length
+    }
+
+    empty() {
+        this.#queue.length = 0;
+    }
+
+    getQueueLength() {
+        return this.#queue.length;
+    }
+
+    isEmpty() {
+        return this.getQueueLength() <= 0;
+    }
+
+    getActiveInput() {
+        return this.isEmpty() ? null : this.#queue[this.size() - 1];
+    }
+
+    // Returns a string representation of Inputs in the queue
+    viewInputQueue(miniversion) {
+        if(!(miniversion === null || miniversion === undefined) && typeof miniversion !== "boolean")
+            throw new Error("When providing the miniversion param to InputQueue.viewInputQueue, it must be a boolean");
+
+        if(typeof miniversion === "boolean" && miniversion) {
+            return this.#queue.map((input) => {
+                const inputJson = input.serialize();
+                return `${inputJson.hash},${inputJson.action},${inputJson.source}`
+        }).reduce((prev, current) => (prev === "" ? "" : "|") + current, "");
+        } else {
+            const result = this.#queue.map((input) => input.serialize()).reduce((acc, current) => {
+                acc.push(current);
+                return acc;
+            }, []);
+            return result;
+        }
+    }
+}
+
+// Queue of inputs. All entries must be an instance of the Input class
+const inputQueue = new InputQueue();
+
+// Follows the structure 
+// {
+// "KEY": [INPUT1, INPUT2 ]
+// }
+const keyInputMap = {};
+
+const addKeyInputMapentry = (key, input) => {
+    if(!keyInputMap.hasOwnProperty(key))
+        keyInputMap[key] = [];
+    keyInputMap[key].push(input);
+}
 
 (function(){
+    var addKeyDownHandler = (key, inputType, isInstantaneous, handler, conditionFunc) => {
+        if(!Object.values(Keys).includes(key))
+            throw new Error(`Unable to add Keyhandler for the Key ${key}, as it does not exist in the Keys type`);
+        if(!Object.values(Actions).includes(inputType))
+            throw new Error(`Unable to add Keyhandler for the Key ${key}, as the inputType ${inputType} it does not exist in the Inputs type`);
+        if(!(conditionFunc === null || conditionFunc === undefined) && !(typeof conditionFunc === "function"))
+            throw new Error("If a condidionFunc is provided, it must be of type 'function'");
 
-    // A Key Listener class (each key maps to an array of callbacks)
-    var KeyEventListener = function() {
-        this.listeners = {};
-    };
-    KeyEventListener.prototype = {
-        add: function(key, callback, isActive) {
-            this.listeners[key] = this.listeners[key] || [];
-            this.listeners[key].push({
-                isActive: isActive,
-                callback: callback,
-            });
-        },
-        exec: function(key, e) {
-            var keyListeners = this.listeners[key];
-            if (!keyListeners) {
-                return;
-            }
-            var i,l;
-            var numListeners = keyListeners.length;
-            for (i=0; i<numListeners; i++) {
-                l = keyListeners[i];
-                if (!l.isActive || l.isActive()) {
-                    e.preventDefault();
-                    if (l.callback()) { // do not propagate keys if returns true
-                        break;
-                    }
-                }
-            }
-        },
-    };
+        const input = new Input(inputType, InputSources.KEYBOARD, false, isInstantaneous, conditionFunc);
 
-    // declare key event listeners
-    var keyDownListeners = new KeyEventListener();
-    var keyUpListeners = new KeyEventListener();
+        if(isInstantaneous && typeof handler === "function")
+            inputQueue.addInstantaneousInputHandler(input, handler)
 
-    // helper functions for adding custom key listeners
-    var addKeyDown = function(key,callback,isActive) { keyDownListeners.add(key,callback,isActive); };
-    var addKeyUp   = function(key,callback,isActive) { keyUpListeners.add(key,callback,isActive); };
+        addKeyInputMapentry(key, input);
+    }
 
     // boolean states of each key
-    var keyStates = {};
+    // var keyStates = {}
 
     // hook my key listeners to the window's listeners
-    window.addEventListener("keydown", function(e) {
-        var key = (e||window.event).keyCode;
-
-        // only execute at first press event
-        if (!keyStates[key]) {
-            keyStates[key] = true;
-            keyDownListeners.exec(key, e);
+    window.addEventListener("keydown", function(e) {        
+        const keyCode = e.code;
+        
+        if(keyInputMap.hasOwnProperty(keyCode)) {
+            const inputs = keyInputMap[keyCode];
+            inputs.forEach((input) => inputQueue.enqueue(input));
+        } else {
+            console.log(`No input is mapped to the key ${keyCode}`);
         }
     });
+
     window.addEventListener("keyup",function(e) {
-        var key = (e||window.event).keyCode;
-
-        keyStates[key] = false;
-        keyUpListeners.exec(key, e);
+        var keyCode = e.code;
+        if(keyInputMap.hasOwnProperty(keyCode)) {
+            const inputs = keyInputMap[keyCode];
+            inputs.forEach((input) => inputQueue.dequeue(input));
+        }
     });
-
-
-    // key enumerations
-
-    var KEY_ENTER = 13;
-    var KEY_ESC = 27;
-
-    var KEY_LEFT = 37;
-    var KEY_RIGHT = 39;
-    var KEY_UP = 38;
-    var KEY_DOWN = 40;
-
-    var KEY_SHIFT = 16;
-    var KEY_CTRL = 17;
-    var KEY_ALT = 18;
-
-    var KEY_SPACE = 32;
-
-    var KEY_M = 77;
-    var KEY_N = 78;
-    var KEY_Q = 81;
-    var KEY_W = 87;
-    var KEY_E = 69;
-    var KEY_R = 82;
-    var KEY_T = 84;
-
-    var KEY_A = 65;
-    var KEY_S = 83;
-    var KEY_D = 68;
-    var KEY_F = 70;
-    var KEY_G = 71;
-
-    var KEY_I = 73;
-    var KEY_O = 79;
-    var KEY_P = 80;
-
-    var KEY_1 = 49;
-    var KEY_2 = 50;
-
-    var KEY_END = 35;
-
-    // Custom Key Listeners
 
     // Menu Navigation Keys
-    var menu;
+    var _INPUT_menu;
+    
     var isInMenu = function() {
-        menu = (state.getMenu && state.getMenu());
-        if (!menu && inGameMenu.isOpen()) {
-            menu = inGameMenu.getMenu();
+        _INPUT_menu = (state.getMenu && state.getMenu());
+        if (!_INPUT_menu && inGameMenu.isOpen()) {
+            _INPUT_menu = inGameMenu.getMenu();
         }
-        return menu;
+        return _INPUT_menu;
     };
-    addKeyDown(KEY_ESC,   function(){ menu.backButton ? menu.backButton.onclick():0; return true; }, isInMenu);
-    addKeyDown(KEY_ENTER, function(){ menu.clickCurrentOption(); }, isInMenu);
+
     var isMenuKeysAllowed = function() {
         var menu = isInMenu();
         return menu && !menu.noArrowKeys;
     };
-    addKeyDown(KEY_UP,    function(){ menu.selectPrevOption(); }, isMenuKeysAllowed);
-    addKeyDown(KEY_DOWN,  function(){ menu.selectNextOption(); }, isMenuKeysAllowed);
+
     var isInGameMenuButtonClickable = function() {
         return hud.isValidState() && !inGameMenu.isOpen();
     };
-    addKeyDown(KEY_ESC, function() { inGameMenu.getMenuButton().onclick(); return true; }, isInGameMenuButtonClickable);
 
-    // Move Pac-Man
+    //addKeyDownHandler(KEY, INPUT_TYPE, IS_INSTANTANEOUS, HANDLER, ?CONDITION_FUNC);
+
+    // Menu Navigation & Interaction Keys
+    addKeyDownHandler(Keys.ESC, Actions.EXIT, true, function(){_INPUT_menu.backButton ? _INPUT_menu.backButton.onclick():0; return true}, isInMenu);
+    addKeyDownHandler(Keys.ENTER, Actions.ENTER, true, function(){_INPUT_menu.clickCurrentOption()}, isInMenu);
+    addKeyDownHandler(Keys.NUM_ENTER, Actions.ENTER, true, function(){_INPUT_menu.clickCurrentOption()}, isInMenu);
+    addKeyDownHandler(Keys.UP, Actions.MENU_UP, true, function(){_INPUT_menu.selectPrevOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.DOWN, Actions.MENU_DOWN, true, function(){_INPUT_menu.selectNextOption()}, isMenuKeysAllowed);
+
+    // Open In-Game Menu
+    addKeyDownHandler(Keys.ESC, Actions.MENU_CLOSE, true, function(){inGameMenu.getMenuButton().onclick(); return true}, isInGameMenuButtonClickable);
+    addKeyDownHandler(Keys.SPACE, Actions.MENU_CLOSE, true, function(){inGameMenu.getMenuButton().onclick(); return true}, isInGameMenuButtonClickable);
+
+    // Move Player
     var isPlayState = function() { return state == learnState || state == newGameState || state == playState || state == readyNewState || state == readyRestartState; };
-    addKeyDown(KEY_LEFT,  function() { pacman.setInputDir(DIR_LEFT); },  isPlayState);
-    addKeyDown(KEY_RIGHT, function() { pacman.setInputDir(DIR_RIGHT); }, isPlayState);
-    addKeyDown(KEY_UP,    function() { pacman.setInputDir(DIR_UP); },    isPlayState);
-    addKeyDown(KEY_DOWN,  function() { pacman.setInputDir(DIR_DOWN); },  isPlayState);
-    addKeyUp  (KEY_LEFT,  function() { pacman.clearInputDir(DIR_LEFT); },  isPlayState);
-    addKeyUp  (KEY_RIGHT, function() { pacman.clearInputDir(DIR_RIGHT); }, isPlayState);
-    addKeyUp  (KEY_UP,    function() { pacman.clearInputDir(DIR_UP); },    isPlayState);
-    addKeyUp  (KEY_DOWN,  function() { pacman.clearInputDir(DIR_DOWN); },  isPlayState);
+   
+    // Arrow Key Movement
+    addKeyDownHandler(Keys.LEFT, Actions.LEFT, false, function(){player.setInputDir(DIR_LEFT)}, isPlayState);
+    addKeyDownHandler(Keys.RIGHT, Actions.RIGHT, false, function(){player.setInputDir(DIR_RIGHT)}, isPlayState);
+    addKeyDownHandler(Keys.UP, Actions.UP, false, function(){player.setInputDir(DIR_UP)}, isPlayState);
+    addKeyDownHandler(Keys.DOWN, Actions.DOWN, false, function(){player.setInputDir(DIR_DOWN)}, isPlayState);
 
-    // Slow-Motion
-    var isPracticeMode = function() { return isPlayState() && practiceMode; };
-    //isPracticeMode = function() { return true; };
-    addKeyDown(KEY_1, function() { executive.setUpdatesPerSecond(30); }, isPracticeMode);
-    addKeyDown(KEY_2,  function() { executive.setUpdatesPerSecond(15); }, isPracticeMode);
-    addKeyUp  (KEY_1, function() { executive.setUpdatesPerSecond(60); }, isPracticeMode);
-    addKeyUp  (KEY_2,  function() { executive.setUpdatesPerSecond(60); }, isPracticeMode);
-
-    // Toggle VCR
-    var canSeek = function() { return !isInMenu() && vcr.getMode() != VCR_NONE; };
-    addKeyDown(KEY_SHIFT, function() { vcr.startSeeking(); },   canSeek);
-    addKeyUp  (KEY_SHIFT, function() { vcr.startRecording(); }, canSeek);
-
-    // Adjust VCR seeking
-    var isSeekState = function() { return vcr.isSeeking(); };
-    addKeyDown(KEY_UP,   function() { vcr.nextSpeed(1); },  isSeekState);
-    addKeyDown(KEY_DOWN, function() { vcr.nextSpeed(-1); }, isSeekState);
-
-    // Skip Level
-    var canSkip = function() {
-        return isPracticeMode() && 
-            (state == newGameState ||
-            state == readyNewState ||
-            state == readyRestartState ||
-            state == playState ||
-            state == deadState ||
-            state == finishState ||
-            state == overState);
-    };
-    addKeyDown(KEY_N, function() { switchState(readyNewState, 60); }, canSkip);
-    addKeyDown(KEY_M, function() { switchState(finishState); }, function() { return state == playState; });
-
-    // Draw Actor Targets (fishpoles)
-    addKeyDown(KEY_Q, function() { blinky.isDrawTarget = !blinky.isDrawTarget; }, isPracticeMode);
-    addKeyDown(KEY_W, function() { pinky.isDrawTarget = !pinky.isDrawTarget; }, isPracticeMode);
-    addKeyDown(KEY_E, function() { inky.isDrawTarget = !inky.isDrawTarget; }, isPracticeMode);
-    addKeyDown(KEY_R, function() { clyde.isDrawTarget = !clyde.isDrawTarget; }, isPracticeMode);
-    addKeyDown(KEY_T, function() { pacman.isDrawTarget = !pacman.isDrawTarget; }, isPracticeMode);
-
-    // Draw Actor Paths
-    addKeyDown(KEY_A, function() { blinky.isDrawPath = !blinky.isDrawPath; }, isPracticeMode);
-    addKeyDown(KEY_S, function() { pinky.isDrawPath = !pinky.isDrawPath; }, isPracticeMode);
-    addKeyDown(KEY_D, function() { inky.isDrawPath = !inky.isDrawPath; }, isPracticeMode);
-    addKeyDown(KEY_F, function() { clyde.isDrawPath = !clyde.isDrawPath; }, isPracticeMode);
-    addKeyDown(KEY_G, function() { pacman.isDrawPath = !pacman.isDrawPath; }, isPracticeMode);
-
-    // Miscellaneous Cheats
-    addKeyDown(KEY_I, function() { pacman.invincible = !pacman.invincible; }, isPracticeMode);
-    addKeyDown(KEY_O, function() { turboMode = !turboMode; }, isPracticeMode);
-    addKeyDown(KEY_P, function() { pacman.ai = !pacman.ai; }, isPracticeMode);
-
-    addKeyDown(KEY_END, function() { executive.togglePause(); });
-
+    // WASD Movement
+    addKeyDownHandler(Keys.A, Actions.LEFT, false, function(){player.setInputDir(DIR_LEFT)}, isPlayState);
+    addKeyDownHandler(Keys.D, Actions.RIGHT, false, function(){player.setInputDir(DIR_RIGHT)}, isPlayState);
+    addKeyDownHandler(Keys.W, Actions.UP, false, function(){player.setInputDir(DIR_UP)}, isPlayState);
+    addKeyDownHandler(Keys.S, Actions.DOWN, false, function(){player.setInputDir(DIR_DOWN)}, isPlayState);
 })();
 
 var initSwipe = function() {
@@ -239,10 +499,18 @@ var initSwipe = function() {
 
                 // register direction
                 if (Math.abs(dx) >= Math.abs(dy)) {
-                    pacman.setInputDir(dx>0 ? DIR_RIGHT : DIR_LEFT);
+                    //player.setInputDir(dx>0 ? DIR_RIGHT : DIR_LEFT);
+                    const rightInput = new Input(Actions.RIGHT, InputSources.SWIPE, true, false);
+                    const leftInput = new Input(Actions.LEFT, InputSources.SWIPE, true, false);
+
+                    inputQueue.enqueue(dx > 0 ? rightInput : leftInput);
                 }
                 else {
-                    pacman.setInputDir(dy>0 ? DIR_DOWN : DIR_UP);
+                    //player.setInputDir(dy>0 ? DIR_DOWN : DIR_UP);
+                    const upInput = new Input(Actions.UP, InputSources.SWIPE, true, false);
+                    const downInput = new Input(Actions.DOWN, InputSources.SWIPE, true, false);
+
+                    inputQueue.enqueue(dx > 0 ? downInput : upInput);
                 }
             }
         }
@@ -262,7 +530,7 @@ var initSwipe = function() {
 
     var touchTap = function(event) {
         // tap to clear input directions
-        pacman.clearInputDir(undefined);
+        player.clearInputDir(undefined);
     };
     
     // register touch events
@@ -272,3 +540,31 @@ var initSwipe = function() {
     document.ontouchmove = touchMove;
     document.ontouchcancel = touchCancel;
 };
+
+const gamepads = {};
+
+const gamepadConnectionHandler = (event, connected) => {
+    // Code from MDN: https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API/Using_the_Gamepad_API
+    const gamepad = event.gamepad;
+  
+    if (connected) {
+      gamepads[gamepad.index] = gamepad;
+    } else {
+      delete gamepads[gamepad.index];
+    }
+}
+
+const initGamepad = () => {
+    window.addEventListener("gamepadconnected", (e) => gamepadHandler(e, true), false);
+    window.addEventListener("gamepaddisconnected", (e) => gamepadHandler(e, true), false); 
+}
+
+const checkGamepad = (gamepad) => {
+
+}
+
+const checkGamepads = (gamepads) => {
+    if(gamepads && Object.keys(gamepads).length > 0) {
+        gamepads.array.forEach((gamepad) => checkGamepad(gamepad));
+    }
+}

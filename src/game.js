@@ -4,141 +4,49 @@
 // game modes
 var GAME_PACMAN = 0;
 var GAME_MSPACMAN = 1;
-var GAME_COOKIE = 2;
+var GAME_TUBIE_MAN = 2;
 var GAME_OTTO = 3;
 
 var practiceMode = false;
 var turboMode = false;
 
 // current game mode
-var gameMode = GAME_PACMAN;
-var getGameName = (function(){
+var gameMode = GAME_TUBIE_MAN;
+var getGameName = function(){
+    return "TUBIE-MAN";
+};
 
-    var names = ["PAC-MAN", "MS PAC-MAN", "COOKIE-MAN","CRAZY OTTO"];
-    
-    return function(mode) {
-        if (mode == undefined) {
-            mode = gameMode;
-        }
-        return names[mode];
-    };
-})();
-
-var getGameDescription = (function(){
-
-    var desc = [
-        [
-            "ORIGINAL ARCADE:",
-            "NAMCO (C) 1980",
+var getGameDescription = function() {
+    return[
+            "A TUBIE THEMED PAC-MAN LIKE GAME",
+            "WITH RANDOM LEVELS:",
+            "TUBIE TECH (C) 2025",
             "",
-            "REVERSE-ENGINEERING:",
-            "JAMEY PITTMAN",
-            "",
-            "REMAKE:",
-            "SHAUN WILLIAMS",
-        ],
-        [
-            "ORIGINAL ARCADE ADDON:",
-            "MIDWAY/GCC (C) 1981",
-            "",
-            "REVERSE-ENGINEERING:",
-            "BART GRANTHAM",
-            "",
-            "REMAKE:",
-            "SHAUN WILLIAMS",
-        ],
-        [
-            "A NEW PAC-MAN GAME",
-            "WITH RANDOM MAZES:",
+            "FORKED FROM THE REPO",
+            "github.com/masonicGIT/pacman",
             "SHAUN WILLIAMS (C) 2012",
-            "",
-            "COOKIE MONSTER DESIGN:",
-            "JIM HENSON",
             "",
             "PAC-MAN CROSSOVER CONCEPT:",
             "TANG YONGFA",
-        ],
-        [
-            "THE UNRELEASED",
-            "MS. PAC-MAN PROTOTYPE:",
-            "GCC (C) 1981",
-            "",
-            "SPRITES REFERENCED FROM",
-            "STEVE GOLSON'S",
-            "CAX 2012 PRESENTATION",
-            "",
-            "REMAKE:",
-            "SHAUN WILLIAMS",
-        ],
-    ];
-    
-    return function(mode) {
-        if (mode == undefined) {
-            mode = gameMode;
-        }
-        return desc[mode];
-    };
-})();
-
-var getGhostNames = function(mode) {
-    if (mode == undefined) {
-        mode = gameMode;
-    }
-    if (mode == GAME_OTTO) {
-        return ["plato","darwin","freud","newton"];
-    }
-    else if (mode == GAME_MSPACMAN) {
-        return ["blinky","pinky","inky","sue"];
-    }
-    else if (mode == GAME_PACMAN) {
-        return ["blinky","pinky","inky","clyde"];
-    }
-    else if (mode == GAME_COOKIE) {
-        return ["elmo","piggy","rosita","zoe"];
-    }
+        ];
 };
 
-var getGhostDrawFunc = function(mode) {
-    if (mode == undefined) {
-        mode = gameMode;
-    }
-    if (mode == GAME_OTTO) {
-        return atlas.drawMonsterSprite;
-    }
-    else if (mode == GAME_COOKIE) {
-        return atlas.drawMuppetSprite;
-    }
-    else {
-        return atlas.drawGhostSprite;
-    }
-};
+var getGhostNames = function() {
+    ///return ["sticky","pricky","icky","asher"];
+    return ghosts.map((ghost) => ghost.name)
+}
 
-var getPlayerDrawFunc = function(mode) {
-    if (mode == undefined) {
-        mode = gameMode;
-    }
-    if (mode == GAME_OTTO) {
-        return atlas.drawOttoSprite;
-    }
-    else if (mode == GAME_PACMAN) {
-        return atlas.drawPacmanSprite;
-    }
-    else if (mode == GAME_MSPACMAN) {
-        return atlas.drawMsPacmanSprite;
-    }
-    else if (mode == GAME_COOKIE) {
-        //return atlas.drawCookiemanSprite;
-        return drawCookiemanSprite;
-    }
-};
+var getGhostDrawFunc = function() { return atlas.drawSyringeSprite; }
+
+var getPlayerDrawFunc = function() { return atlas.drawTubieManSprite; }
 
 
 // for clearing, backing up, and restoring cheat states (before and after cutscenes presently)
 var clearCheats, backupCheats, restoreCheats;
 (function(){
     clearCheats = function() {
-        pacman.invincible = false;
-        pacman.ai = false;
+        player.invincible = false;
+        player.ai = false;
         for (i=0; i<5; i++) {
             actors[i].isDrawPath = false;
             actors[i].isDrawTarget = false;
@@ -150,16 +58,16 @@ var clearCheats, backupCheats, restoreCheats;
     isDrawPath = {};
     isDrawTarget = {};
     backupCheats = function() {
-        invincible = pacman.invincible;
-        ai = pacman.ai;
+        invincible = player.invincible;
+        ai = player.ai;
         for (i=0; i<5; i++) {
             isDrawPath[i] = actors[i].isDrawPath;
             isDrawTarget[i] = actors[i].isDrawTarget;
         }
     };
     restoreCheats = function() {
-        pacman.invincible = invincible;
-        pacman.ai = ai;
+        player.invincible = invincible;
+        player.ai = ai;
         for (i=0; i<5; i++) {
             actors[i].isDrawPath = isDrawPath[i];
             actors[i].isDrawTarget = isDrawTarget[i];
@@ -199,17 +107,17 @@ var loadGame = function(t) {
 
 /// SCORING
 // (manages scores and high scores for each game type)
-
+//TODO: Remove non tubie-man scores
 var scores = [
     0,0, // pacman
     0,0, // mspac
-    0,0, // cookie
+    0,0, // tubie
     0,0, // otto
     0 ];
 var highScores = [
     10000,10000, // pacman
     10000,10000, // mspac
-    10000,10000, // cookie
+    10000,10000, // tubie
     10000,10000, // otto
     ];
 

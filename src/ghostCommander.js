@@ -47,12 +47,9 @@ var ghostCommander = (function() {
                 i = 2;
             var newCmd = times[i][frame];
 
-            if (gameMode == GAME_PACMAN) {
-                return newCmd;
-            }
-            else if (frame <= 27*60) { // only revearse twice in Ms. Pac-Man (two happen in first 27 seconds)
+            if (frame <= 27*60) { // only revearse twice in Ms. Pac-Man (two happen in first 27 seconds)
                 if (newCmd != undefined) {
-                    return GHOST_CMD_CHASE; // always chase in Ms. Pac-Man mode
+                    return GHOST_CMD_CHASE; // always chase
                 }
             }
         };

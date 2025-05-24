@@ -52,7 +52,7 @@ var inGameMenu = (function() {
     });
     menu.addTextButton("QUIT", function() {
         showConfirm("QUIT GAME?", function() {
-            switchState(homeState, 60);
+            switchState(preNewGameState, 60);
         });
     });
     menu.backButton = menu.buttons[0];
@@ -80,7 +80,7 @@ var inGameMenu = (function() {
     });
     practiceMenu.addTextButton("QUIT", function() {
         showConfirm("QUIT GAME?", function() {
-            switchState(homeState, 60);
+            switchState(preNewGameState, 60);
             clearCheats();
             vcr.reset();
         });
@@ -91,10 +91,10 @@ var inGameMenu = (function() {
     var cheatsMenu = new Menu("CHEATS",2*tileSize,5*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
     cheatsMenu.addToggleTextButton("INVINCIBLE",
         function() {
-            return pacman.invincible;
+            return player.invincible;
         },
         function(on) {
-            pacman.invincible = on;
+            player.invincible = on;
         });
     cheatsMenu.addToggleTextButton("TURBO",
         function() {
@@ -105,7 +105,7 @@ var inGameMenu = (function() {
         });
     cheatsMenu.addToggleTextButton("SHOW TARGETS",
         function() {
-            return blinky.isDrawTarget;
+            return enemy1.isDrawTarget;
         },
         function(on) {
             for (var i=0; i<4; i++) {
@@ -114,7 +114,7 @@ var inGameMenu = (function() {
         });
     cheatsMenu.addToggleTextButton("SHOW PATHS",
         function() {
-            return blinky.isDrawPath;
+            return enemy1.isDrawPath;
         },
         function(on) {
             for (var i=0; i<4; i++) {

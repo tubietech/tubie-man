@@ -348,7 +348,7 @@ var initRenderer = function(){
 
                 // predict next turn from current tile
                 openTiles = getOpenTiles(tile, dirEnum);
-                if (actor != pacman && map.constrainGhostTurns)
+                if (actor != player && map.constrainGhostTurns)
                     map.constrainGhostTurns(tile, openTiles, dirEnum);
                 dirEnum = getTurnClosestToTarget(tile, target, openTiles);
                 setDirFromEnum(dir,dirEnum);
@@ -438,13 +438,13 @@ var initRenderer = function(){
 
         // draw the points earned from the most recently eaten ghost
         drawEatenPoints: function() {
-            atlas.drawGhostPoints(ctx, pacman.pixel.x, pacman.pixel.y, energizer.getPoints());
+            atlas.drawGhostPoints(ctx, player.pixel.x, player.pixel.y, energizer.getPoints());
         },
 
-        // draw each actor (ghosts and pacman)
+        // draw each actor (ghosts and player)
         drawActors: function() {
             var i;
-            // draw such that pacman appears on top
+            // draw such that player appears on top
             if (energizer.isActive()) {
                 for (i=0; i<4; i++) {
                     this.drawGhost(ghosts[i]);
@@ -454,7 +454,7 @@ var initRenderer = function(){
                 else
                     this.drawEatenPoints();
             }
-            // draw such that pacman appears on bottom
+            // draw such that player appears on bottom
             else {
                 this.drawPlayer();
                 for (i=3; i>=0; i--) {
@@ -462,8 +462,8 @@ var initRenderer = function(){
                         this.drawGhost(ghosts[i]);
                     }
                 }
-                if (inky.isVisible && !blinky.isVisible) {
-                    this.drawGhost(blinky,0.5);
+                if (enemy3.isVisible && !enemy1.isVisible) {
+                    this.drawGhost(enemy1,0.5);
                 }
             }
         },
@@ -582,15 +582,15 @@ var initRenderer = function(){
             }
         },
 
-        // draw pacman
+        // draw player
         drawPlayer: function(scale, opacity) {
             if (scale == undefined) scale = 1;
             if (opacity == undefined) opacity = 1;
             ctx.fillStyle = "rgba(255,255,0,"+opacity+")";
-            this.drawCenterPixelSq(ctx, pacman.pixel.x, pacman.pixel.y, this.actorSize*scale);
+            this.drawCenterPixelSq(ctx, player.pixel.x, player.pixel.y, this.actorSize*scale);
         },
 
-        // draw dying pacman animation (with 0<=t<=1)
+        // draw dying player animation (with 0<=t<=1)
         drawDyingPlayer: function(t) {
             var f = t*85;
             if (f <= 60) {
@@ -741,35 +741,15 @@ var initRenderer = function(){
                 if (!isCutscene) {
                     // draw extra lives
                     var i;
-                    bgCtx.fillStyle = pacman.color;
+                    bgCtx.fillStyle = player.color;
 
                     bgCtx.save();
                     bgCtx.translate(3*tileSize, (numRows-1)*tileSize);
                     bgCtx.scale(0.85, 0.85);
                     var lives = extraLives == Infinity ? 1 : extraLives;
-                    if (gameMode == GAME_PACMAN) {
-                        for (i=0; i<lives; i++) {
-                            drawPacmanSprite(bgCtx, 0,0, DIR_LEFT, Math.PI/6);
-                            bgCtx.translate(2*tileSize,0);
-                        }
-                    }
-                    else if (gameMode == GAME_MSPACMAN) {
-                        for (i=0; i<lives; i++) {
-                            drawMsPacmanSprite(bgCtx, 0,0, DIR_RIGHT, 1);
-                            bgCtx.translate(2*tileSize,0);
-                        }
-                    }
-                    else if (gameMode == GAME_COOKIE) {
-                        for (i=0; i<lives; i++) {
-                            drawCookiemanSprite(bgCtx, 0,0, DIR_RIGHT, 1, false);
-                            bgCtx.translate(2*tileSize,0);
-                        }
-                    }
-                    else if (gameMode == GAME_OTTO) {
-                        for (i=0; i<lives; i++) {
-                            drawOttoSprite(bgCtx, 0,0,DIR_RIGHT, 0);
-                            bgCtx.translate(2*tileSize,0);
-                        }
+                    for (i=0; i<lives; i++) {
+                        drawTubieManSprite(bgCtx, 0,0, DIR_RIGHT, 1, false);
+                        bgCtx.translate(2*tileSize,0);
                     }
                     if (extraLives == Infinity) {
                         bgCtx.translate(-4*tileSize,0);
@@ -811,12 +791,7 @@ var initRenderer = function(){
                 var i,j;
                 var f,drawFunc;
                 var numFruit = 7;
-                var startLevel = Math.max(numFruit,level);
-                if (gameMode != GAME_PACMAN) {
-                    // for the Pac-Man game, display the last 7 fruit
-                    // for the Ms Pac-Man game, display stop after the 7th fruit
-                    startLevel = Math.min(numFruit,startLevel);
-                }
+                var startLevel = Math.min(numFruit,startLevel);
                 var scale = 0.85;
                 for (i=0, j=startLevel-numFruit+1; i<numFruit && j<=level; j++, i++) {
                     f = fruits[j];
@@ -929,7 +904,7 @@ var initRenderer = function(){
                 var eyes = (mode == GHOST_GOING_HOME || mode == GHOST_ENTERING_HOME);
                 var func = getGhostDrawFunc();
                 var y = g.getBounceY(pixel.x, pixel.y, dirEnum);
-                var x = (g == blinky && scared) ? pixel.x+1 : pixel.x; // blinky's sprite is shifted right when scared
+                var x = (g == enemy1 && scared) ? pixel.x+1 : pixel.x; // blinky's sprite is shifted right when scared
 
                 func(ctx,x,y,frame,faceDirEnum,scared,isFlash,eyes,color);
             };
@@ -950,91 +925,72 @@ var initRenderer = function(){
             }
         },
 
-        // draw pacman
+        // draw player
         drawPlayer: function() {
-            var frame = pacman.getAnimFrame();
-            if (pacman.invincible) {
+            // Query the InptuQueue for the most recent input direction of the player
+            //TODO: Remove Debug Statement
+            const input = inputQueue.getActiveInput();
+            if(input instanceof Input) {
+                const action = input.getAction();
+
+                //TODO: Simplify switch statement w/ map
+                switch(action) {
+                    case Actions.UP:
+                        player.setInputDir(Directions.UP);
+                        break;
+                    case Actions.DOWN:
+                        player.setInputDir(Directions.DOWN);
+                        break;
+                    case Actions.LEFT:
+                        player.setInputDir(Directions.LEFT);
+                        break;
+                    case Actions.RIGHT:
+                        player.setInputDir(Directions.RIGHT);
+                        break;
+                    default:
+                        player.setInputDir(Directions.LEFT);
+                        break;
+                }
+            }
+
+            var frame = player.getAnimFrame();
+            if (player.invincible) {
                 ctx.globalAlpha = 0.6;
             }
 
             var draw = function(pixel, dirEnum, steps) {
-                var frame = pacman.getAnimFrame(pacman.getStepFrame(steps));
+                var frame = player.getAnimFrame(player.getStepFrame(steps));
                 var func = getPlayerDrawFunc();
                 func(ctx, pixel.x, pixel.y, dirEnum, frame, true);
             };
 
             vcr.drawHistory(ctx, function(t) {
                 draw(
-                    pacman.savedPixel[t],
-                    pacman.savedDirEnum[t],
-                    pacman.savedSteps[t]);
+                    player.savedPixel[t],
+                    player.savedDirEnum[t],
+                    player.savedSteps[t]);
             });
-            draw(pacman.pixel, pacman.dirEnum, pacman.steps);
-            if (pacman.invincible) {
+            draw(player.pixel, player.dirEnum, player.steps);
+            if (player.invincible) {
                 ctx.globalAlpha = 1;
             }
         },
 
-        // draw dying pacman animation (with 0<=t<=1)
+        // draw dying player animation (with 0<=t<=1)
         drawDyingPlayer: function(t) {
-            var frame = pacman.getAnimFrame();
+            var frame = player.getAnimFrame();
 
-            if (gameMode == GAME_PACMAN) {
-                // 60 frames dying
-                // 15 frames exploding
-                var f = t*75;
-                if (f <= 60) {
-                    // open mouth all the way while shifting corner of mouth forward
-                    t = f/60;
-                    var a = frame*Math.PI/6;
-                    drawPacmanSprite(ctx, pacman.pixel.x, pacman.pixel.y, pacman.dirEnum, a + t*(Math.PI-a),4*t);
-                }
-                else {
-                    // explode
-                    f -= 60;
-                    this.drawExplodingPlayer(f/15);
-                }
-            }
-            else if (gameMode == GAME_OTTO) {
-                // TODO: spin around
-                if (t < 0.8) {
-                    var dirEnum = Math.floor((pacman.dirEnum - t*16))%4;
-                    if (dirEnum < 0) {
-                        dirEnum += 4;
-                    }
-                    drawOttoSprite(ctx, pacman.pixel.x, pacman.pixel.y, dirEnum, 0);
-                }
-                else if (t < 0.95) {
-                    var dirEnum = Math.floor((pacman.dirEnum - 0.8*16))%4;
-                    if (dirEnum < 0) {
-                        dirEnum += 4;
-                    }
-                    drawOttoSprite(ctx, pacman.pixel.x, pacman.pixel.y, dirEnum, 0);
-                }
-                else {
-                    drawDeadOttoSprite(ctx,pacman.pixel.x, pacman.pixel.y);
-                }
-            }
-            else if (gameMode == GAME_MSPACMAN) {
-                // spin 540 degrees
-                var maxAngle = Math.PI*5;
-                var step = (Math.PI/4) / maxAngle; // 45 degree steps
-                var angle = Math.floor(t/step)*step*maxAngle;
-                drawMsPacmanSprite(ctx, pacman.pixel.x, pacman.pixel.y, pacman.dirEnum, frame, angle);
-            }
-            else if (gameMode == GAME_COOKIE) {
-                // spin 540 degrees
-                var maxAngle = Math.PI*5;
-                var step = (Math.PI/4) / maxAngle; // 45 degree steps
-                var angle = Math.floor(t/step)*step*maxAngle;
-                drawCookiemanSprite(ctx, pacman.pixel.x, pacman.pixel.y, pacman.dirEnum, frame, false, angle);
-            }
+            // spin 540 degrees
+            var maxAngle = Math.PI*5;
+            var step = (Math.PI/4) / maxAngle; // 45 degree steps
+            var angle = Math.floor(t/step)*step*maxAngle;
+            drawTubieManSprite(ctx, player.pixel.x, player.pixel.y, player.dirEnum, frame, false, angle);
         },
 
-        // draw exploding pacman animation (with 0<=t<=1)
+        // draw exploding player animation (with 0<=t<=1)
         drawExplodingPlayer: function(t) {
-            var frame = pacman.getAnimFrame();
-            drawPacmanSprite(ctx, pacman.pixel.x, pacman.pixel.y, pacman.dirEnum, 0, 0, t,-3,1-t);
+            var frame = player.getAnimFrame();
+            drawPacmanSprite(ctx, player.pixel.x, player.pixel.y, player.dirEnum, 0, 0, t,-3,1-t);
         },
 
         // draw fruit
@@ -1057,12 +1013,7 @@ var initRenderer = function(){
                     atlas.drawFruitSprite(ctx, fruit.pixel.x, fruit.pixel.y, name);
                 }
                 else if (fruit.isScorePresent()) {
-                    if (gameMode == GAME_PACMAN) {
-                        atlas.drawPacFruitPoints(ctx, fruit.pixel.x, fruit.pixel.y, fruit.getPoints());
-                    }
-                    else {
-                        atlas.drawMsPacFruitPoints(ctx, fruit.pixel.x, fruit.pixel.y, fruit.getPoints());
-                    }
+                    atlas.drawMsPacFruitPoints(ctx, fruit.pixel.x, fruit.pixel.y, fruit.getPoints());
                 }
             }
         },
@@ -1073,7 +1024,7 @@ var initRenderer = function(){
     // Create list of available renderers
     //
     renderer_list = [
-        new SimpleRenderer(),
+        new SimpleRenderer(), // Currently Broken
         new ArcadeRenderer(),
     ];
     renderer = renderer_list[1];

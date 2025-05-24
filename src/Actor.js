@@ -1,5 +1,5 @@
 //////////////////////////////////////////////////////////////////////////////////////
-// The actor class defines common data functions for the ghosts and pacman
+// The actor class defines common data functions for the ghosts and player
 // It provides everything for updating position and direction.
 
 // "Ghost" and "Player" inherit from this "Actor"

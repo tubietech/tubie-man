@@ -164,141 +164,49 @@ var getRandomInt = function(min,max) {
 // game modes
 var GAME_PACMAN = 0;
 var GAME_MSPACMAN = 1;
-var GAME_COOKIE = 2;
+var GAME_TUBIE_MAN = 2;
 var GAME_OTTO = 3;
 
 var practiceMode = false;
 var turboMode = false;
 
 // current game mode
-var gameMode = GAME_PACMAN;
-var getGameName = (function(){
+var gameMode = GAME_TUBIE_MAN;
+var getGameName = function(){
+    return "TUBIE-MAN";
+};
 
-    var names = ["PAC-MAN", "MS PAC-MAN", "COOKIE-MAN","CRAZY OTTO"];
-    
-    return function(mode) {
-        if (mode == undefined) {
-            mode = gameMode;
-        }
-        return names[mode];
-    };
-})();
-
-var getGameDescription = (function(){
-
-    var desc = [
-        [
-            "ORIGINAL ARCADE:",
-            "NAMCO (C) 1980",
+var getGameDescription = function() {
+    return[
+            "A TUBIE THEMED PAC-MAN LIKE GAME",
+            "WITH RANDOM LEVELS:",
+            "TUBIE TECH (C) 2025",
             "",
-            "REVERSE-ENGINEERING:",
-            "JAMEY PITTMAN",
-            "",
-            "REMAKE:",
-            "SHAUN WILLIAMS",
-        ],
-        [
-            "ORIGINAL ARCADE ADDON:",
-            "MIDWAY/GCC (C) 1981",
-            "",
-            "REVERSE-ENGINEERING:",
-            "BART GRANTHAM",
-            "",
-            "REMAKE:",
-            "SHAUN WILLIAMS",
-        ],
-        [
-            "A NEW PAC-MAN GAME",
-            "WITH RANDOM MAZES:",
+            "FORKED FROM THE REPO",
+            "github.com/masonicGIT/pacman",
             "SHAUN WILLIAMS (C) 2012",
-            "",
-            "COOKIE MONSTER DESIGN:",
-            "JIM HENSON",
             "",
             "PAC-MAN CROSSOVER CONCEPT:",
             "TANG YONGFA",
-        ],
-        [
-            "THE UNRELEASED",
-            "MS. PAC-MAN PROTOTYPE:",
-            "GCC (C) 1981",
-            "",
-            "SPRITES REFERENCED FROM",
-            "STEVE GOLSON'S",
-            "CAX 2012 PRESENTATION",
-            "",
-            "REMAKE:",
-            "SHAUN WILLIAMS",
-        ],
-    ];
-    
-    return function(mode) {
-        if (mode == undefined) {
-            mode = gameMode;
-        }
-        return desc[mode];
-    };
-})();
-
-var getGhostNames = function(mode) {
-    if (mode == undefined) {
-        mode = gameMode;
-    }
-    if (mode == GAME_OTTO) {
-        return ["plato","darwin","freud","newton"];
-    }
-    else if (mode == GAME_MSPACMAN) {
-        return ["blinky","pinky","inky","sue"];
-    }
-    else if (mode == GAME_PACMAN) {
-        return ["blinky","pinky","inky","clyde"];
-    }
-    else if (mode == GAME_COOKIE) {
-        return ["elmo","piggy","rosita","zoe"];
-    }
+        ];
 };
 
-var getGhostDrawFunc = function(mode) {
-    if (mode == undefined) {
-        mode = gameMode;
-    }
-    if (mode == GAME_OTTO) {
-        return atlas.drawMonsterSprite;
-    }
-    else if (mode == GAME_COOKIE) {
-        return atlas.drawMuppetSprite;
-    }
-    else {
-        return atlas.drawGhostSprite;
-    }
-};
+var getGhostNames = function() {
+    ///return ["sticky","pricky","icky","asher"];
+    return ghosts.map((ghost) => ghost.name)
+}
 
-var getPlayerDrawFunc = function(mode) {
-    if (mode == undefined) {
-        mode = gameMode;
-    }
-    if (mode == GAME_OTTO) {
-        return atlas.drawOttoSprite;
-    }
-    else if (mode == GAME_PACMAN) {
-        return atlas.drawPacmanSprite;
-    }
-    else if (mode == GAME_MSPACMAN) {
-        return atlas.drawMsPacmanSprite;
-    }
-    else if (mode == GAME_COOKIE) {
-        //return atlas.drawCookiemanSprite;
-        return drawCookiemanSprite;
-    }
-};
+var getGhostDrawFunc = function() { return atlas.drawSyringeSprite; }
+
+var getPlayerDrawFunc = function() { return atlas.drawTubieManSprite; }
 
 
 // for clearing, backing up, and restoring cheat states (before and after cutscenes presently)
 var clearCheats, backupCheats, restoreCheats;
 (function(){
     clearCheats = function() {
-        pacman.invincible = false;
-        pacman.ai = false;
+        player.invincible = false;
+        player.ai = false;
         for (i=0; i<5; i++) {
             actors[i].isDrawPath = false;
             actors[i].isDrawTarget = false;
@@ -310,16 +218,16 @@ var clearCheats, backupCheats, restoreCheats;
     isDrawPath = {};
     isDrawTarget = {};
     backupCheats = function() {
-        invincible = pacman.invincible;
-        ai = pacman.ai;
+        invincible = player.invincible;
+        ai = player.ai;
         for (i=0; i<5; i++) {
             isDrawPath[i] = actors[i].isDrawPath;
             isDrawTarget[i] = actors[i].isDrawTarget;
         }
     };
     restoreCheats = function() {
-        pacman.invincible = invincible;
-        pacman.ai = ai;
+        player.invincible = invincible;
+        player.ai = ai;
         for (i=0; i<5; i++) {
             actors[i].isDrawPath = isDrawPath[i];
             actors[i].isDrawTarget = isDrawTarget[i];
@@ -359,17 +267,17 @@ var loadGame = function(t) {
 
 /// SCORING
 // (manages scores and high scores for each game type)
-
+//TODO: Remove non tubie-man scores
 var scores = [
     0,0, // pacman
     0,0, // mspac
-    0,0, // cookie
+    0,0, // tubie
     0,0, // otto
     0 ];
 var highScores = [
     10000,10000, // pacman
     10000,10000, // mspac
-    10000,10000, // cookie
+    10000,10000, // tubie
     10000,10000, // otto
     ];
 
@@ -449,6 +357,13 @@ var DIR_UP = 0;
 var DIR_LEFT = 1;
 var DIR_DOWN = 2;
 var DIR_RIGHT = 3;
+
+const Directions = Object.freeze({
+    UP: 0,
+    LEFT: 1,
+    DOWN: 2,
+    RIGHT: 3
+});
 
 var getClockwiseAngleFromTop = function(dirEnum) {
     return -dirEnum*Math.PI/2;
@@ -2598,17 +2513,17 @@ var atlas = (function(){
         };
 
         var row = 0;
-        drawAtCell(function(x,y) { drawCherry(ctx,x,y); },      row,0);
-        drawAtCell(function(x,y) { drawStrawberry(ctx,x,y); },  row,1);
-        drawAtCell(function(x,y) { drawOrange(ctx,x,y); },      row,2);
-        drawAtCell(function(x,y) { drawApple(ctx,x,y); },       row,3);
-        drawAtCell(function(x,y) { drawMelon(ctx,x,y); },       row,4);
-        drawAtCell(function(x,y) { drawGalaxian(ctx,x,y); },    row,5);
-        drawAtCell(function(x,y) { drawBell(ctx,x,y); },        row,6);
-        drawAtCell(function(x,y) { drawKey(ctx,x,y); },         row,7);
-        drawAtCell(function(x,y) { drawPretzel(ctx,x,y); },     row,8);
-        drawAtCell(function(x,y) { drawPear(ctx,x,y); },        row,9);
-        drawAtCell(function(x,y) { drawBanana(ctx,x,y); },      row,10);
+        drawAtCell(function(x,y) { drawGTube(ctx,x,y); },      row,0);
+        drawAtCell(function(x,y) { drawInfinityPump(ctx,x,y); },  row,1);
+        drawAtCell(function(x,y) { drawOmniPump(ctx,x,y); },      row,2);
+        drawAtCell(function(x,y) { drawJoeyPump(ctx,x,y); },       row,3);
+        drawAtCell(function(x,y) { drawInfinityCharger(ctx,x,y); },       row,4);
+        drawAtCell(function(x,y) { drawInfinityBag(ctx,x,y); },    row,5);
+        drawAtCell(function(x,y) { drawFormulaBottle(ctx,x,y); },        row,6);
+        drawAtCell(function(x,y) { drawExtension(ctx,x,y); },         row,7);
+        drawAtCell(function(x,y) { drawEnFitWrench(ctx,x,y); },     row,8);
+        drawAtCell(function(x,y) { drawFlyingSquirrel(ctx,x,y); },        row,9);
+        drawAtCell(function(x,y) { drawCurlinPump(ctx,x,y); },      row,10);
         drawAtCell(function(x,y) { drawCookie(ctx,x,y); },      row,11);
         drawAtCell(function(x,y) { drawCookieFlash(ctx,x,y); },      row,12);
 
@@ -2624,11 +2539,11 @@ var atlas = (function(){
         };
 
         row++;
-        drawGhostCells(row, "#FF0000");
+        drawGhostCells(row, "#DE373A");
         row++;
-        drawGhostCells(row, "#FFB8FF");
+        drawGhostCells(row, "#55D400");
         row++;
-        drawGhostCells(row, "#00FFFF");
+        drawGhostCells(row, "#099EDE");
         row++;
         drawGhostCells(row, "#FFB851");
 
@@ -2638,16 +2553,16 @@ var atlas = (function(){
             var i;
             var col = 0;
             for (i=0; i<4; i++) { // dirEnum
-                drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 0, i, false, false, true, "#fff"); },     row,col);
+                drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 0, i, false, false, true, "#3F3F3F"); },     row,col);
                 col++;
             }
         })();
 
         // draw ghosts scared
-        drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 0, DIR_UP, true, false, false, "#fff"); }, row,4);
-        drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 1, DIR_UP, true, false, false, "#fff"); }, row,5);
-        drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 0, DIR_UP, true, true, false, "#fff"); },  row,6);
-        drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 1, DIR_UP, true, true, false, "#fff"); },  row,7);
+        drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 0, DIR_UP, true, false, false, "#3F3F3F"); }, row,4);
+        drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 1, DIR_UP, true, false, false, "#3F3F3F"); }, row,5);
+        drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 0, DIR_UP, true, true, false, "#3F3F3F"); },  row,6);
+        drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 1, DIR_UP, true, true, false, "#3F3F3F"); },  row,7);
 
         var drawPacCells = function(row,col,dir) {
             drawAtCell(function(x,y) { drawPacmanSprite(ctx, x,y, dir, Math.PI/6); }, row, col);
@@ -2655,10 +2570,10 @@ var atlas = (function(){
         };
         row++;
 
-        // draw pacman mouth closed
+        // draw player mouth closed
         drawAtCell(function(x,y) { drawPacmanSprite(ctx, x,y, DIR_RIGHT, 0); }, row, 0);
 
-        // draw pacman directions
+        // draw player directions
         (function(){
             var i;
             var col=1;
@@ -2684,9 +2599,9 @@ var atlas = (function(){
         })();
 
         var drawCookieCells = function(row,col,dir) {
-            drawAtCell(function(x,y) { drawCookiemanSprite(ctx, x,y, dir, 0, true); }, row, col);
-            drawAtCell(function(x,y) { drawCookiemanSprite(ctx, x,y, dir, 1, true); }, row, col+1);
-            drawAtCell(function(x,y) { drawCookiemanSprite(ctx, x,y, dir, 2, true); }, row, col+2);
+            drawAtCell(function(x,y) { drawTubieManSprite(ctx, x,y, dir, 0, true); }, row, col);
+            drawAtCell(function(x,y) { drawTubieManSprite(ctx, x,y, dir, 1, true); }, row, col+1);
+            drawAtCell(function(x,y) { drawTubieManSprite(ctx, x,y, dir, 2, true); }, row, col+2);
         };
         row++;
         (function(){
@@ -2710,11 +2625,12 @@ var atlas = (function(){
         };
 
         row++;
-        drawMonsterCells(row, "#FF0000");
+        drawMonsterCells(row, "#DE373A");
         row++;
-        drawMonsterCells(row, "#FFB8FF");
+        // drawMonsterCells(row, "#FFB8FF");
+        drawMonsterCells(row, "#55D400");
         row++;
-        drawMonsterCells(row, "#00FFFF");
+        drawMonsterCells(row, "#099EDE");
         row++;
         drawMonsterCells(row, "#FFB851");
 
@@ -2869,16 +2785,16 @@ var atlas = (function(){
         }
         else {
             col = dirEnum*2 + frame;
-            if (color == blinky.color) {
+            if (color == enemy1.color) {
                 row = 1;
             }
-            else if (color == pinky.color) {
+            else if (color == enemy2.color) {
                 row = 2;
             }
-            else if (color == inky.color) {
+            else if (color == enemy3.color) {
                 row = 3;
             }
-            else if (color == clyde.color) {
+            else if (color == enemy4.color) {
                 row = 4;
             }
             else {
@@ -2889,7 +2805,7 @@ var atlas = (function(){
         copyCellTo(row, col, destCtx, x, y);
     };
 
-    var copyMuppetSprite = function(destCtx,x,y,frame,dirEnum,scared,flash,eyes_only,color) {
+    var copySyringeSprite = function(destCtx,x,y,frame,dirEnum,scared,flash,eyes_only,color) {
         if (scared) {
             if (flash) {
                 copyFruitSprite(destCtx,x,y,"cookieface");
@@ -2916,16 +2832,16 @@ var atlas = (function(){
         }
         else {
             col = dirEnum*2 + frame;
-            if (color == blinky.color) {
+            if (color == enemy1.color) {
                 row = 9;
             }
-            else if (color == pinky.color) {
+            else if (color == enemy2.color) {
                 row = 10;
             }
-            else if (color == inky.color) {
+            else if (color == enemy3.color) {
                 row = 11;
             }
-            else if (color == clyde.color) {
+            else if (color == enemy4.color) {
                 row = 12;
             }
             else {
@@ -2936,75 +2852,7 @@ var atlas = (function(){
         copyCellTo(row, col, destCtx, x, y);
     };
 
-    var copyOttoSprite = function(destCtx,x,y,dirEnum,frame) {
-        var col,row;
-        if (dirEnum == DIR_UP) {
-            col = frame;
-            row = 14;
-        }
-        else if (dirEnum == DIR_RIGHT) {
-            col = frame+4;
-            row = 14;
-        }
-        else if (dirEnum == DIR_DOWN) {
-            col = frame;
-            row = 15;
-        }
-        else if (dirEnum == DIR_LEFT) {
-            col = frame+4;
-            row = 15;
-        }
-        copyCellTo(row,col,destCtx,x,y);
-    };
-
-    var copyMsOttoSprite = function(destCtx,x,y,dirEnum,frame) {
-        var col,row;
-        if (dirEnum == DIR_UP) {
-            col = frame;
-            row = 19;
-        }
-        else if (dirEnum == DIR_RIGHT) {
-            col = frame+4;
-            row = 19;
-        }
-        else if (dirEnum == DIR_DOWN) {
-            col = frame;
-            row = 20;
-        }
-        else if (dirEnum == DIR_LEFT) {
-            col = frame+4;
-            row = 20;
-        }
-        copyCellTo(row,col,destCtx,x,y);
-    };
-
-    var copySnail = function(destCtx,x,y,frame) {
-        var row = 18;
-        var col = frame;
-        copyCellTo(row,col,destCtx,x,y);
-    };
-
-    var copyPacmanSprite = function(destCtx,x,y,dirEnum,frame) {
-        var row = 6;
-        var col;
-        if (frame == 0) {
-            col = 0;
-        }
-        else {
-           col = dirEnum*2+1+(frame-1);
-        }
-        copyCellTo(row,col,destCtx,x,y);
-    };
-
-    var copyMsPacmanSprite = function(destCtx,x,y,dirEnum,frame) {
-        // TODO: determine row, col
-        //copyCellTo(row,col,destCtx,x,y);
-        var row = 7;
-        var col = dirEnum*3+frame;
-        copyCellTo(row,col,destCtx,x,y);
-    };
-
-    var copyCookiemanSprite = function(destCtx,x,y,dirEnum,frame) {
+    var copyTubieManSprite = function(destCtx,x,y,dirEnum,frame) {
         var row = 8;
         var col = dirEnum*3+frame;
         copyCellTo(row,col,destCtx,x,y);
@@ -3034,19 +2882,13 @@ var atlas = (function(){
     return {
         create: create,
         getCanvas: function() { return canvas; },
-        drawGhostSprite: copyGhostSprite,
         drawMonsterSprite: copyMonsterSprite,
-        drawMuppetSprite: copyMuppetSprite,
-        drawOttoSprite: copyOttoSprite,
-        drawMsOttoSprite: copyMsOttoSprite,
-        drawPacmanSprite: copyPacmanSprite,
-        drawMsPacmanSprite: copyMsPacmanSprite,
-        drawCookiemanSprite: copyCookiemanSprite,
+        drawSyringeSprite: copySyringeSprite,
+        drawTubieManSprite: copyTubieManSprite,
         drawFruitSprite: copyFruitSprite,
         drawGhostPoints: copyGhostPoints,
         drawPacFruitPoints: copyPacFruitPoints,
-        drawMsPacFruitPoints: copyMsPacFruitPoints,
-        drawSnail: copySnail,
+        drawMsPacFruitPoints: copyMsPacFruitPoints
     };
 })();
 //@line 1 "src/renderers.js"
@@ -3400,7 +3242,7 @@ var initRenderer = function(){
 
                 // predict next turn from current tile
                 openTiles = getOpenTiles(tile, dirEnum);
-                if (actor != pacman && map.constrainGhostTurns)
+                if (actor != player && map.constrainGhostTurns)
                     map.constrainGhostTurns(tile, openTiles, dirEnum);
                 dirEnum = getTurnClosestToTarget(tile, target, openTiles);
                 setDirFromEnum(dir,dirEnum);
@@ -3490,13 +3332,13 @@ var initRenderer = function(){
 
         // draw the points earned from the most recently eaten ghost
         drawEatenPoints: function() {
-            atlas.drawGhostPoints(ctx, pacman.pixel.x, pacman.pixel.y, energizer.getPoints());
+            atlas.drawGhostPoints(ctx, player.pixel.x, player.pixel.y, energizer.getPoints());
         },
 
-        // draw each actor (ghosts and pacman)
+        // draw each actor (ghosts and player)
         drawActors: function() {
             var i;
-            // draw such that pacman appears on top
+            // draw such that player appears on top
             if (energizer.isActive()) {
                 for (i=0; i<4; i++) {
                     this.drawGhost(ghosts[i]);
@@ -3506,7 +3348,7 @@ var initRenderer = function(){
                 else
                     this.drawEatenPoints();
             }
-            // draw such that pacman appears on bottom
+            // draw such that player appears on bottom
             else {
                 this.drawPlayer();
                 for (i=3; i>=0; i--) {
@@ -3514,8 +3356,8 @@ var initRenderer = function(){
                         this.drawGhost(ghosts[i]);
                     }
                 }
-                if (inky.isVisible && !blinky.isVisible) {
-                    this.drawGhost(blinky,0.5);
+                if (enemy3.isVisible && !enemy1.isVisible) {
+                    this.drawGhost(enemy1,0.5);
                 }
             }
         },
@@ -3634,15 +3476,15 @@ var initRenderer = function(){
             }
         },
 
-        // draw pacman
+        // draw player
         drawPlayer: function(scale, opacity) {
             if (scale == undefined) scale = 1;
             if (opacity == undefined) opacity = 1;
             ctx.fillStyle = "rgba(255,255,0,"+opacity+")";
-            this.drawCenterPixelSq(ctx, pacman.pixel.x, pacman.pixel.y, this.actorSize*scale);
+            this.drawCenterPixelSq(ctx, player.pixel.x, player.pixel.y, this.actorSize*scale);
         },
 
-        // draw dying pacman animation (with 0<=t<=1)
+        // draw dying player animation (with 0<=t<=1)
         drawDyingPlayer: function(t) {
             var f = t*85;
             if (f <= 60) {
@@ -3793,35 +3635,15 @@ var initRenderer = function(){
                 if (!isCutscene) {
                     // draw extra lives
                     var i;
-                    bgCtx.fillStyle = pacman.color;
+                    bgCtx.fillStyle = player.color;
 
                     bgCtx.save();
                     bgCtx.translate(3*tileSize, (numRows-1)*tileSize);
                     bgCtx.scale(0.85, 0.85);
                     var lives = extraLives == Infinity ? 1 : extraLives;
-                    if (gameMode == GAME_PACMAN) {
-                        for (i=0; i<lives; i++) {
-                            drawPacmanSprite(bgCtx, 0,0, DIR_LEFT, Math.PI/6);
-                            bgCtx.translate(2*tileSize,0);
-                        }
-                    }
-                    else if (gameMode == GAME_MSPACMAN) {
-                        for (i=0; i<lives; i++) {
-                            drawMsPacmanSprite(bgCtx, 0,0, DIR_RIGHT, 1);
-                            bgCtx.translate(2*tileSize,0);
-                        }
-                    }
-                    else if (gameMode == GAME_COOKIE) {
-                        for (i=0; i<lives; i++) {
-                            drawCookiemanSprite(bgCtx, 0,0, DIR_RIGHT, 1, false);
-                            bgCtx.translate(2*tileSize,0);
-                        }
-                    }
-                    else if (gameMode == GAME_OTTO) {
-                        for (i=0; i<lives; i++) {
-                            drawOttoSprite(bgCtx, 0,0,DIR_RIGHT, 0);
-                            bgCtx.translate(2*tileSize,0);
-                        }
+                    for (i=0; i<lives; i++) {
+                        drawTubieManSprite(bgCtx, 0,0, DIR_RIGHT, 1, false);
+                        bgCtx.translate(2*tileSize,0);
                     }
                     if (extraLives == Infinity) {
                         bgCtx.translate(-4*tileSize,0);
@@ -3863,12 +3685,7 @@ var initRenderer = function(){
                 var i,j;
                 var f,drawFunc;
                 var numFruit = 7;
-                var startLevel = Math.max(numFruit,level);
-                if (gameMode != GAME_PACMAN) {
-                    // for the Pac-Man game, display the last 7 fruit
-                    // for the Ms Pac-Man game, display stop after the 7th fruit
-                    startLevel = Math.min(numFruit,startLevel);
-                }
+                var startLevel = Math.min(numFruit,startLevel);
                 var scale = 0.85;
                 for (i=0, j=startLevel-numFruit+1; i<numFruit && j<=level; j++, i++) {
                     f = fruits[j];
@@ -3981,7 +3798,7 @@ var initRenderer = function(){
                 var eyes = (mode == GHOST_GOING_HOME || mode == GHOST_ENTERING_HOME);
                 var func = getGhostDrawFunc();
                 var y = g.getBounceY(pixel.x, pixel.y, dirEnum);
-                var x = (g == blinky && scared) ? pixel.x+1 : pixel.x; // blinky's sprite is shifted right when scared
+                var x = (g == enemy1 && scared) ? pixel.x+1 : pixel.x; // blinky's sprite is shifted right when scared
 
                 func(ctx,x,y,frame,faceDirEnum,scared,isFlash,eyes,color);
             };
@@ -4002,91 +3819,72 @@ var initRenderer = function(){
             }
         },
 
-        // draw pacman
+        // draw player
         drawPlayer: function() {
-            var frame = pacman.getAnimFrame();
-            if (pacman.invincible) {
+            // Query the InptuQueue for the most recent input direction of the player
+            //TODO: Remove Debug Statement
+            const input = inputQueue.getActiveInput();
+            if(input instanceof Input) {
+                const action = input.getAction();
+
+                //TODO: Simplify switch statement w/ map
+                switch(action) {
+                    case Actions.UP:
+                        player.setInputDir(Directions.UP);
+                        break;
+                    case Actions.DOWN:
+                        player.setInputDir(Directions.DOWN);
+                        break;
+                    case Actions.LEFT:
+                        player.setInputDir(Directions.LEFT);
+                        break;
+                    case Actions.RIGHT:
+                        player.setInputDir(Directions.RIGHT);
+                        break;
+                    default:
+                        player.setInputDir(Directions.LEFT);
+                        break;
+                }
+            }
+
+            var frame = player.getAnimFrame();
+            if (player.invincible) {
                 ctx.globalAlpha = 0.6;
             }
 
             var draw = function(pixel, dirEnum, steps) {
-                var frame = pacman.getAnimFrame(pacman.getStepFrame(steps));
+                var frame = player.getAnimFrame(player.getStepFrame(steps));
                 var func = getPlayerDrawFunc();
                 func(ctx, pixel.x, pixel.y, dirEnum, frame, true);
             };
 
             vcr.drawHistory(ctx, function(t) {
                 draw(
-                    pacman.savedPixel[t],
-                    pacman.savedDirEnum[t],
-                    pacman.savedSteps[t]);
+                    player.savedPixel[t],
+                    player.savedDirEnum[t],
+                    player.savedSteps[t]);
             });
-            draw(pacman.pixel, pacman.dirEnum, pacman.steps);
-            if (pacman.invincible) {
+            draw(player.pixel, player.dirEnum, player.steps);
+            if (player.invincible) {
                 ctx.globalAlpha = 1;
             }
         },
 
-        // draw dying pacman animation (with 0<=t<=1)
+        // draw dying player animation (with 0<=t<=1)
         drawDyingPlayer: function(t) {
-            var frame = pacman.getAnimFrame();
+            var frame = player.getAnimFrame();
 
-            if (gameMode == GAME_PACMAN) {
-                // 60 frames dying
-                // 15 frames exploding
-                var f = t*75;
-                if (f <= 60) {
-                    // open mouth all the way while shifting corner of mouth forward
-                    t = f/60;
-                    var a = frame*Math.PI/6;
-                    drawPacmanSprite(ctx, pacman.pixel.x, pacman.pixel.y, pacman.dirEnum, a + t*(Math.PI-a),4*t);
-                }
-                else {
-                    // explode
-                    f -= 60;
-                    this.drawExplodingPlayer(f/15);
-                }
-            }
-            else if (gameMode == GAME_OTTO) {
-                // TODO: spin around
-                if (t < 0.8) {
-                    var dirEnum = Math.floor((pacman.dirEnum - t*16))%4;
-                    if (dirEnum < 0) {
-                        dirEnum += 4;
-                    }
-                    drawOttoSprite(ctx, pacman.pixel.x, pacman.pixel.y, dirEnum, 0);
-                }
-                else if (t < 0.95) {
-                    var dirEnum = Math.floor((pacman.dirEnum - 0.8*16))%4;
-                    if (dirEnum < 0) {
-                        dirEnum += 4;
-                    }
-                    drawOttoSprite(ctx, pacman.pixel.x, pacman.pixel.y, dirEnum, 0);
-                }
-                else {
-                    drawDeadOttoSprite(ctx,pacman.pixel.x, pacman.pixel.y);
-                }
-            }
-            else if (gameMode == GAME_MSPACMAN) {
-                // spin 540 degrees
-                var maxAngle = Math.PI*5;
-                var step = (Math.PI/4) / maxAngle; // 45 degree steps
-                var angle = Math.floor(t/step)*step*maxAngle;
-                drawMsPacmanSprite(ctx, pacman.pixel.x, pacman.pixel.y, pacman.dirEnum, frame, angle);
-            }
-            else if (gameMode == GAME_COOKIE) {
-                // spin 540 degrees
-                var maxAngle = Math.PI*5;
-                var step = (Math.PI/4) / maxAngle; // 45 degree steps
-                var angle = Math.floor(t/step)*step*maxAngle;
-                drawCookiemanSprite(ctx, pacman.pixel.x, pacman.pixel.y, pacman.dirEnum, frame, false, angle);
-            }
+            // spin 540 degrees
+            var maxAngle = Math.PI*5;
+            var step = (Math.PI/4) / maxAngle; // 45 degree steps
+            var angle = Math.floor(t/step)*step*maxAngle;
+            drawTubieManSprite(ctx, player.pixel.x, player.pixel.y, player.dirEnum, frame, false, angle);
         },
 
-        // draw exploding pacman animation (with 0<=t<=1)
+        // draw exploding player animation (with 0<=t<=1)
         drawExplodingPlayer: function(t) {
-            var frame = pacman.getAnimFrame();
-            drawPacmanSprite(ctx, pacman.pixel.x, pacman.pixel.y, pacman.dirEnum, 0, 0, t,-3,1-t);
+            var frame = player.getAnimFrame();
+            drawPacmanSprite(ctx, player.pixel.x, player.pixel.y, player.dirEnum, 0, 0, t,-3,1-t);
         },
 
         // draw fruit
@@ -4109,12 +3907,7 @@ var initRenderer = function(){
                     atlas.drawFruitSprite(ctx, fruit.pixel.x, fruit.pixel.y, name);
                 }
                 else if (fruit.isScorePresent()) {
-                    if (gameMode == GAME_PACMAN) {
-                        atlas.drawPacFruitPoints(ctx, fruit.pixel.x, fruit.pixel.y, fruit.getPoints());
-                    }
-                    else {
-                        atlas.drawMsPacFruitPoints(ctx, fruit.pixel.x, fruit.pixel.y, fruit.getPoints());
-                    }
+                    atlas.drawMsPacFruitPoints(ctx, fruit.pixel.x, fruit.pixel.y, fruit.getPoints());
                 }
             }
         },
@@ -4125,7 +3918,7 @@ var initRenderer = function(){
     // Create list of available renderers
     //
     renderer_list = [
-        new SimpleRenderer(),
+        new SimpleRenderer(), // Currently Broken
         new ArcadeRenderer(),
     ];
     renderer = renderer_list[1];
@@ -4710,7 +4503,7 @@ var inGameMenu = (function() {
     });
     menu.addTextButton("QUIT", function() {
         showConfirm("QUIT GAME?", function() {
-            switchState(homeState, 60);
+            switchState(preNewGameState, 60);
         });
     });
     menu.backButton = menu.buttons[0];
@@ -4738,7 +4531,7 @@ var inGameMenu = (function() {
     });
     practiceMenu.addTextButton("QUIT", function() {
         showConfirm("QUIT GAME?", function() {
-            switchState(homeState, 60);
+            switchState(preNewGameState, 60);
             clearCheats();
             vcr.reset();
         });
@@ -4749,10 +4542,10 @@ var inGameMenu = (function() {
     var cheatsMenu = new Menu("CHEATS",2*tileSize,5*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
     cheatsMenu.addToggleTextButton("INVINCIBLE",
         function() {
-            return pacman.invincible;
+            return player.invincible;
         },
         function(on) {
-            pacman.invincible = on;
+            player.invincible = on;
         });
     cheatsMenu.addToggleTextButton("TURBO",
         function() {
@@ -4763,7 +4556,7 @@ var inGameMenu = (function() {
         });
     cheatsMenu.addToggleTextButton("SHOW TARGETS",
         function() {
-            return blinky.isDrawTarget;
+            return enemy1.isDrawTarget;
         },
         function(on) {
             for (var i=0; i<4; i++) {
@@ -4772,7 +4565,7 @@ var inGameMenu = (function() {
         });
     cheatsMenu.addToggleTextButton("SHOW PATHS",
         function() {
-            return blinky.isDrawPath;
+            return enemy1.isDrawPath;
         },
         function(on) {
             for (var i=0; i<4; i++) {
@@ -4839,260 +4632,287 @@ var inGameMenu = (function() {
 // Sprites
 // (sprites are created using canvas paths)
 
+var scl = function(scale, value) { return scale * value }
+var setColor = function(ctx, color) { ctx.strokeStyle = color; ctx.fillStyle = color; }
+var drawLine = function(ctx, x, y, dx, dy, lineWidth, color) {
+    if(color !== null) setColor(ctx, color);
+
+    var cx = dx == 0 ? x + lineWidth / 2 : x; // X value corrected for line width
+    var cy = dy == 0 ? y + lineWidth / 2 : y; // Y value corrected for line width
+
+    ctx.lineWidth = lineWidth;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + dx, cy + dy);
+    ctx.stroke();
+}
+var drawPixel = function(ctx, x, y, scale, color) { drawLine(ctx, x, y, scl(scale, 1), 0, scl(scale, 1), color) };
+
 var drawGhostSprite = (function(){
+    var drawSyringe = function(ctx, dirEnum, flash, color, eyesOnly) {
+        var s = 0.6; // scale factor
 
-    // add top of the ghost head to the current canvas path
-    var addHead = (function() {
+        var EMPTY_COLOR = "#3F3F3F";
+        var OUTLINE_COLOR = "#FFF";
+        var PLUNGER_COLOR = "#E2E2E2"
+        var FACE_COLOR = "#FFF";
+        var PUPIL_COLOR = "#000";
+        var ARM_COLOR = "#3F3F3F";
 
-        // pixel coordinates for the top of the head
-        // on the original arcade ghost sprite
-        var coords = [
-            0,6,
-            1,3,
-            2,2,
-            3,1,
-            4,1,
-            5,0,
-            8,0,
-            9,1,
-            10,1,
-            11,2,
-            12,3,
-            13,6,
-        ];
+        var FLASH_FILL_COLOR = "#0000C9";
+        var FLASH_PUPIL_COLOR = "#0000C9";
+        var FLASH_FACE_COLOR = "#DE373A";
+        var FLASH_OUTLINE_COLOR = "3F3F3F";
+        var FLASH_ARM_COLOR = "#3F3F3F";
+        var FLASH_PLUNGER_COLOR = "#0000C9";
 
-        return function(ctx) {
-            var i;
-            ctx.save();
+        var addEyes = function(ctx, dirEnum , flash, eyesOnly) {
+            var pupilColor = flash ? FLASH_PUPIL_COLOR : PUPIL_COLOR;
+            var faceColor = flash ? FLASH_FACE_COLOR : FACE_COLOR;
+            
+            var drawEye = function(x, y) {
+                var drawPupil = function(x, y) {
+                    var pdx = 0; // Offset of Pupil in X axis
+                    var pdy = 0; // Offset of Pupil in Y axis
 
-            // translate by half a pixel to the right
-            // to try to force centering
-            ctx.translate(0.5,0);
+                    switch(dirEnum) {
+                        case DIR_LEFT:
+                            pdx = x;
+                            pdy = y + 1;
+                            break;
+                        case DIR_RIGHT:
+                            pdx = x + 2;
+                            pdy = y + 1;
+                            break;
+                        case DIR_UP:
+                            pdx = x + 1;
+                            pdy = y + 1;
+                            break; 
+                        case DIR_DOWN:
+                            pdx = x + 1;
+                            pdy = y + 2;
+                            break;
+                    }
+                    
+                    drawLine(ctx, scl(s, pdx), scl(s, pdy), scl(s, 2), scl(s, 0), scl(s, 1), pupilColor);
+                }
+                
+                setColor(ctx, faceColor);
+                ctx.fillRect(scl(s, x), scl(s, y + 1), scl(s, 4), scl(s, 2));
+                drawLine(ctx, scl(s, x + 1), scl(s, y), scl(s, 2), scl(s, 0), scl(s, 1));
+                drawPupil(x, y);
+            }
 
-            ctx.moveTo(0,6);
-            ctx.quadraticCurveTo(1.5,0,6.5,0);
-            ctx.quadraticCurveTo(11.5,0,13,6);
-
-            // draw lines between pixel coordinates
-            /*
-            ctx.moveTo(coords[0],coords[1]);
-            for (i=2; i<coords.length; i+=2)
-                ctx.lineTo(coords[i],coords[i+1]);
-            */
-
-            ctx.restore();
-        };
-    })();
-
-    // add first ghost animation frame feet to the current canvas path
-    var addFeet1 = (function(){
-
-        // pixel coordinates for the first feet animation
-        // on the original arcade ghost sprite
-        var coords = [
-            13,13,
-            11,11,
-            9,13,
-            8,13,
-            8,11,
-            5,11,
-            5,13,
-            4,13,
-            2,11,
-            0,13,
-        ];
-
-        return function(ctx) {
-            var i;
-            ctx.save();
-
-            // translate half a pixel right and down
-            // to try to force centering and proper height
-            ctx.translate(0.5,0.5);
-
-            // continue previous path (assuming ghost head)
-            // by drawing lines to each of the pixel coordinates
-            for (i=0; i<coords.length; i+=2)
-                ctx.lineTo(coords[i],coords[i+1]);
-
-            ctx.restore();
-        };
-
-    })();
-
-    // add second ghost animation frame feet to the current canvas path
-    var addFeet2 = (function(){
-
-        // pixel coordinates for the second feet animation
-        // on the original arcade ghost sprite
-        var coords = [
-            13,12,
-            12,13,
-            11,13,
-            9,11,
-            7,13,
-            6,13,
-            4,11,
-            2,13,
-            1,13,
-            0,12,
-        ];
-
-        return function(ctx) {
-            var i;
-            ctx.save();
-
-            // translate half a pixel right and down
-            // to try to force centering and proper height
-            ctx.translate(0.5,0.5);
-
-            // continue previous path (assuming ghost head)
-            // by drawing lines to each of the pixel coordinates
-            for (i=0; i<coords.length; i+=2)
-                ctx.lineTo(coords[i],coords[i+1]);
-
-            ctx.restore();
-        };
-
-    })();
-
-    // draw regular ghost eyes
-    var addEyes = function(ctx,dirEnum){
-        var i;
-
-        ctx.save();
-        ctx.translate(2,3);
-
-        var coords = [
-            0,1,
-            1,0,
-            2,0,
-            3,1,
-            3,3,
-            2,4,
-            1,4,
-            0,3
-        ];
-
-        var drawEyeball = function() {
-            ctx.translate(0.5,0.5);
-            ctx.beginPath();
-            ctx.moveTo(coords[0],coords[1]);
-            for (i=2; i<coords.length; i+=2)
-                ctx.lineTo(coords[i],coords[i+1]);
-            ctx.closePath();
-            ctx.fill();
+            ctx.lineWidth = 0.0;
             ctx.lineJoin = 'round';
-            ctx.stroke();
-            ctx.translate(-0.5,-0.5);
-            //ctx.fillRect(1,0,2,5); // left
-            //ctx.fillRect(0,1,4,3);
-        };
 
-        // translate eye balls to correct position
-        if (dirEnum == DIR_LEFT) ctx.translate(-1,0);
-        else if (dirEnum == DIR_RIGHT) ctx.translate(1,0);
-        else if (dirEnum == DIR_UP) ctx.translate(0,-1);
-        else if (dirEnum == DIR_DOWN) ctx.translate(0,1);
+            var ex = 21;
+            var ey = 20;
 
-        // draw eye balls
-        ctx.fillStyle = "#FFF";
-        ctx.strokeStyle = "#FFF";
-        ctx.lineWidth = 1.0;
-        ctx.lineJoin = 'round';
-        drawEyeball();
-        ctx.translate(6,0);
-        drawEyeball();
+            var edx = eyesOnly ? ex - 8 : ex;
+            var edy = eyesOnly ? ey - 1 : ey;
 
-        // translate pupils to correct position
-        if (dirEnum == DIR_LEFT) ctx.translate(0,2);
-        else if (dirEnum == DIR_RIGHT) ctx.translate(2,2);
-        else if (dirEnum == DIR_UP) ctx.translate(1,0);
-        else if (dirEnum == DIR_DOWN) ctx.translate(1,3);
+            drawEye(edx, ey);
+            drawEye(edx + 5, ey);
 
-        // draw pupils
-        ctx.fillStyle = "#00F";
-        ctx.fillRect(0,0,2,2); // right
-        ctx.translate(-6,0);
-        ctx.fillRect(0,0,2,2); // left
+            // Draw Left Eyebrow
+            drawPixel(ctx, scl(s, edx), scl(s, edy - 4), scl(s, 1), faceColor);
+            drawPixel(ctx, scl(s, edx + 1), scl(s, edy - 3), scl(s, 1), faceColor);
+            drawLine(ctx, scl(s, edx + 2), scl(s, edy - 2), scl(s, 2), scl(s, 0), scl(s, 1), faceColor);
 
-        ctx.restore();
-    };
-
-    // draw scared ghost face
-    var addScaredFace = function(ctx,flash){
-        ctx.strokeStyle = ctx.fillStyle = flash ? "#F00" : "#FF0";
-
-        // eyes
-        ctx.fillRect(4,5,2,2);
-        ctx.fillRect(8,5,2,2);
-
-        // mouth
-        var coords = [
-            1,10,
-            2,9,
-            3,9,
-            4,10,
-            5,10,
-            6,9,
-            7,9,
-            8,10,
-            9,10,
-            10,9,
-            11,9,
-            12,10,
-        ];
-        ctx.translate(0.5,0.5);
-        ctx.beginPath();
-        ctx.moveTo(coords[0],coords[1]);
-        for (i=2; i<coords.length; i+=2)
-            ctx.lineTo(coords[i],coords[i+1]);
-        ctx.lineWidth = 1.0;
-        ctx.stroke();
-        ctx.translate(-0.5,-0.5);
-        /*
-        ctx.fillRect(1,10,1,1);
-        ctx.fillRect(12,10,1,1);
-        ctx.fillRect(2,9,2,1);
-        ctx.fillRect(6,9,2,1);
-        ctx.fillRect(10,9,2,1);
-        ctx.fillRect(4,10,2,1);
-        ctx.fillRect(8,10,2,1);
-        */
-    };
-
-
-    return function(ctx,x,y,frame,dirEnum,scared,flash,eyes_only,color) {
-        ctx.save();
-        ctx.translate(x-7,y-7);
-
-        if (scared)
-            color = flash ? "#FFF" : "#2121ff";
-
-        if (!eyes_only) {
-            // draw body
-            ctx.beginPath();
-            addHead(ctx);
-            if (frame == 0)
-                addFeet1(ctx);
-            else
-                addFeet2(ctx);
-            ctx.closePath();
-            ctx.lineJoin = 'round';
-            ctx.lineCap = 'round';
-            ctx.lineWidth = 0.5;
-            ctx.strokeStyle = color;
-            ctx.stroke();
-            ctx.lineWidth = 1;
-            ctx.fillStyle = color;
-            ctx.fill();
+            // Draw Right Eyebrow
+            drawPixel(ctx, scl(s, edx + 8), scl(s, edy - 4), scl(s, 1), faceColor);
+            drawPixel(ctx, scl(s, edx + 7), scl(s, edy - 3), scl(s, 1), faceColor);
+            drawLine(ctx, scl(s, edx + 5), scl(s, edy - 2), scl(s, 2), scl(s, 0), scl(s, 1), faceColor);
         }
 
-        // draw face
-        if (scared)
-            addScaredFace(ctx, flash);
-        else
-            addEyes(ctx,dirEnum);
+        var addMouth = function(ctx, flash) {
+            ctx.lineWidth = 0.0;
+            ctx.lineJoin = 'round';
+
+            var mouthColor = flash ? FLASH_FACE_COLOR : FACE_COLOR;
+
+            setColor(ctx, mouthColor);
+            ctx.fillRect(scl(s, 22), scl(s, 24), scl(s, 6), scl(s, 2));
+            drawLine(ctx, scl(s, 21), scl(s, 25), scl(s, 0), scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 22), scl(s, 26), scl(s, 0), scl(s, 1), scl(s, 1));
+            drawLine(ctx, scl(s, 28), scl(s, 25), scl(s, 0), scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 27), scl(s, 26), scl(s, 0), scl(s, 1), scl(s, 1));
+            
+        }
+
+        var addOutline = function(ctx, flash) {
+            ctx.lineWidth = 0.0;
+            ctx.lineJoin = 'round';
+
+            setColor(ctx, flash ? FLASH_OUTLINE_COLOR : OUTLINE_COLOR);
+
+            // Plunger Outline
+            drawLine(ctx, scl(s, 19), scl(s, 1), scl(s, 10), 0, scl(s, 1));
+            drawLine(ctx, scl(s, 18), scl(s, 2), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 29), scl(s, 2), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 19), scl(s, 5), scl(s, 3), 0, scl(s, 1));
+            drawLine(ctx, scl(s, 26), scl(s, 5), scl(s, 3), 0, scl(s, 1));
+            drawLine(ctx, scl(s, 21), scl(s, 6), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 26), scl(s, 6), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 27), scl(s, 8), scl(s, 6), 0, scl(s, 1));
+            drawLine(ctx, scl(s, 21), scl(s, 8), scl(s, -6), 0, scl(s, 1));
+            drawLine(ctx, scl(s, 14), scl(s, 9), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 33), scl(s, 9), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 14), scl(s, 12), scl(s, 19), 0, scl(s, 1));
+
+            // Body Outline
+            drawLine(ctx, scl(s, 17), scl(s, 13), 0, scl(s, 22), scl(s, 1));
+            drawPixel(ctx, scl(s, 18), scl(s, 34), s);
+            drawLine(ctx, scl(s, 18), scl(s, 35), scl(s, 12), 0, scl(s, 1));
+            drawPixel(ctx, scl(s, 29), scl(s, 34), s);
+            drawLine(ctx, scl(s, 30), scl(s, 13), 0, scl(s, 22), scl(s, 1));
+            
+            // Lower Body Outline
+            drawLine(ctx, scl(s, 21), scl(s, 36), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 26), scl(s, 36), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 22), scl(s, 39), scl(s, 4), 0, scl(s, 1));
+
+            // Tip
+            ctx.fillRect(scl(s, 23), scl(s, 40), scl(s, 2), scl(s, 7));
+            drawPixel(ctx, scl(s, 23), scl(s, 47), s);
+
+        }
+
+        var addFill = function(ctx,flash,fillColor) {
+            // Colored Fill
+            setColor(ctx, flash ? FLASH_FILL_COLOR : fillColor);
+            
+            ctx.lineWidth = 0.0;
+            ctx.lineJoin = 'round';
+            ctx.fillRect(scl(s, 18), scl(s, 24), scl(s, 12), scl(s, 11));
+            ctx.fillRect(scl(s, 22), scl(s, 36), scl(s, 4), scl(s, 3));
+
+            // 'Empty' Fill
+            setColor(ctx, EMPTY_COLOR);
+            ctx.fillRect(scl(s, 18), scl(s, 13), scl(s, 12), scl(s, 11));
+        }
+
+        var addArms = function(ctx, flash) {
+            ctx.lineWidth = 0.0;
+            ctx.lineJoin = 'round';
+
+            var outlineColor = flash ? FLASH_OUTLINE_COLOR : OUTLINE_COLOR;
+            var armColor = flash ?  FLASH_ARM_COLOR : ARM_COLOR;
+
+            // Left Arm outline
+            setColor(ctx, outlineColor);
+            ctx.fillRect(scl(s, 17), scl(s, 23), scl(s, -2), scl(s, 5));
+            ctx.fillRect(scl(s, 15), scl(s, 24), scl(s, -1), scl(s, 5));
+            ctx.fillRect(scl(s, 14), scl(s, 24), scl(s, -3), scl(s, 6));
+            ctx.fillRect(scl(s, 11), scl(s, 25), scl(s, -1), scl(s, 5));
+            ctx.fillRect(scl(s, 10), scl(s, 25), scl(s, -1), scl(s, 4));
+            ctx.fillRect(scl(s, 9), scl(s, 25), scl(s, -1), scl(s, 3));
+            ctx.fillRect(scl(s, 8), scl(s, 25), scl(s, -1), scl(s, 3));
+            ctx.fillRect(scl(s, 5), scl(s, 23), scl(s, 2), scl(s, 4));
+            drawLine(ctx, scl(s, 4), scl(s, 22), 0, scl(s, 4), scl(s, 1));
+            drawLine(ctx, scl(s, 3), scl(s, 17), 0, scl(s, 8), scl(s, 1));
+            drawLine(ctx, scl(s, 2), scl(s, 18), 0, scl(s, 5), scl(s, 1));
+            drawLine(ctx, scl(s, 1), scl(s, 19), 0, scl(s, 3), scl(s, 1));
+            drawLine(ctx, scl(s, 4), scl(s, 16), 0, scl(s, 5), scl(s, 1));
+            ctx.fillRect(scl(s, 5), scl(s, 15), scl(s, 3), scl(s, 8));
+            drawPixel(ctx, scl(s, 7), scl(s, 23), s);
+            ctx.fillRect(scl(s, 8), scl(s, 16), scl(s, 2), scl(s, 9));
+            drawLine(ctx, scl(s, 10), scl(s, 17), 0, scl(s, 8), scl(s, 1));
+            drawLine(ctx, scl(s, 11), scl(s, 19), 0, scl(s, 5), scl(s, 1));
+            drawLine(ctx, scl(s, 12), scl(s, 20), 0, scl(s, 2), scl(s, 1));
+            drawPixel(ctx, scl(s, 12), scl(s, 23), s);
+
+            // Right Arm Outline
+            setColor(ctx, outlineColor);
+            ctx.fillRect(scl(s, 31), scl(s, 24), scl(s, 1), scl(s, 5));
+            ctx.fillRect(scl(s, 32), scl(s, 25), scl(s, 3), scl(s, 5));
+            ctx.fillRect(scl(s, 35), scl(s, 24), scl(s, 3), scl(s, 5));
+            ctx.fillRect(scl(s, 38), scl(s, 25), scl(s, 2), scl(s, 3));
+            drawPixel(ctx, scl(s, 40), scl(s, 26), s, outlineColor);
+            drawLine(ctx, scl(s, 40), scl(s, 25), scl(s, 2), 0, scl(s, 1), outlineColor);
+            ctx.fillRect(scl(s, 37), scl(s, 18), scl(s, 7), scl(s, 7));
+            drawLine(ctx, scl(s, 36), scl(s, 19), 0, scl(s, 5), scl(s, 1), outlineColor);
+            drawLine(ctx, scl(s, 35), scl(s, 20), 0, scl(s, 2), scl(s, 1), outlineColor);
+            ctx.fillRect(scl(s, 38), scl(s, 16), scl(s, 6), scl(s, 2));
+            drawLine(ctx, scl(s, 39), scl(s, 15), scl(s, 3), 0, scl(s, 1), outlineColor);
+            drawLine(ctx, scl(s, 44), scl(s, 17), 0, scl(s, 7), scl(s, 1), outlineColor);
+            drawLine(ctx, scl(s, 45), scl(s, 19), 0, scl(s, 3), scl(s, 1), outlineColor);
+
+            // Left Arm
+            setColor(ctx, armColor);
+            ctx.fillRect(scl(s, 17), scl(s, 24), scl(s, -2), scl(s, 3));
+            ctx.fillRect(scl(s, 15), scl(s, 25), scl(s, -1), scl(s, 3));
+            ctx.fillRect(scl(s, 14), scl(s, 25), scl(s, -3), scl(s, 4));
+            ctx.fillRect(scl(s, 11), scl(s, 26), scl(s, -1), scl(s, 3));
+            ctx.fillRect(scl(s, 10), scl(s, 26), scl(s, -1), scl(s, 2));
+            drawPixel(ctx, scl(s, 8), scl(s, 26), s, armColor);
+            drawPixel(ctx, scl(s, 4), scl(s, 21), s, armColor);
+            drawPixel(ctx, scl(s, 5), scl(s, 17), s, armColor);
+            drawPixel(ctx, scl(s, 6), scl(s, 18), s, armColor);
+            drawLine(ctx, scl(s, 5), scl(s, 22), scl(s, 2), 0, scl(s, 1), armColor);
+            drawLine(ctx, scl(s, 7), scl(s, 19), 0, scl(s, 3), scl(s, 1), armColor);
+            drawPixel(ctx, scl(s, 7), scl(s, 24), s, armColor);
+            drawPixel(ctx, scl(s, 8), scl(s, 20), s, armColor);
+            drawPixel(ctx, scl(s, 8), scl(s, 22), s, armColor);
+            drawPixel(ctx, scl(s, 9), scl(s, 22), s, armColor);
+            drawLine(ctx, scl(s, 9), scl(s, 19), scl(s, 2), 0, scl(s, 1), armColor);
+            drawLine(ctx, scl(s, 9), scl(s, 24), scl(s, 2), 0, scl(s, 1), armColor);
+            drawPixel(ctx, scl(s, 11), scl(s, 23), s, armColor);
+
+            //Right Arm
+            setColor(ctx, armColor);
+            ctx.fillRect(scl(s, 31), scl(s, 25), scl(s, 1), scl(s, 3));
+            ctx.fillRect(scl(s, 32), scl(s, 26), scl(s, 3), scl(s, 3));
+            ctx.fillRect(scl(s, 35), scl(s, 25), scl(s, 2), scl(s, 3));
+            drawPixel(ctx, scl(s, 36), scl(s, 24), s, armColor);
+            drawPixel(ctx, scl(s, 37), scl(s, 27), s, armColor);
+            drawLine(ctx, scl(s, 37), scl(s, 26), scl(s, 3), 0, scl(s, 1), armColor);
+            drawPixel(ctx, scl(s, 38), scl(s, 23), s, armColor);
+            drawPixel(ctx, scl(s, 39), scl(s, 24), s, armColor);
+            drawPixel(ctx, scl(s, 38), scl(s, 20), s, armColor);
+            drawLine(ctx, scl(s, 38), scl(s, 18), scl(s, 2), 0, scl(s, 1), armColor);
+            drawLine(ctx, scl(s, 40), scl(s, 19), 0, scl(s, 4), scl(s, 1), armColor);
+            drawPixel(ctx, scl(s, 39), scl(s, 21), s, armColor);
+            drawLine(ctx, scl(s, 41), scl(s, 17), 0, scl(s, 2), scl(s, 1), armColor);
+            drawLine(ctx, scl(s, 41), scl(s, 22), scl(s, 2), 0, scl(s, 1), armColor);
+            drawPixel(ctx, scl(s, 43), scl(s, 21), s, armColor);
+        }
+
+        var addPlunger = function(ctx, flash) {
+            ctx.lineWidth = 0.0;
+            ctx.lineJoin = 'round';
+
+            setColor(ctx, flash ? FLASH_PLUNGER_COLOR : PLUNGER_COLOR);
+            ctx.fillRect(scl(s, 19), scl(s, 2), scl(s, 10), scl(s, 3));
+            ctx.fillRect(scl(s, 22), scl(s, 5), scl(s, 4), scl(s, 4));
+            ctx.fillRect(scl(s, 15), scl(s, 9), scl(s, 18), scl(s, 3));
+        }
+
+
+        ctx.save();
+        ctx.translate(-3, -3);
+
+        if(!eyesOnly) {
+            s = s * 2/3;
+            addFill(ctx,flash,color);
+            addPlunger(ctx, flash);
+            addMouth(ctx, flash);
+            addOutline(ctx, flash);
+            addArms(ctx, flash);
+        }
+    
+        addEyes(ctx, dirEnum, flash, eyesOnly);
+
+        ctx.restore();
+    }
+
+
+    return function(ctx, x, y, frame, dirEnum, scared, flash, eyesOnly, color) {
+        ctx.save();
+        ctx.translate(x-7, y-7);
+
+        drawSyringe(ctx, dirEnum, flash, color, eyesOnly)
 
         ctx.restore();
     };
@@ -6276,7 +6096,7 @@ var drawDeadOttoSprite = function(ctx,x,y) {
     drawOttoSprite(ctx,x,y,DIR_LEFT,2,Math.PI/2);
 };
 
-// draw pacman body
+// draw player body
 var drawPacmanSprite = function(ctx,x,y,dirEnum,angle,mouthShift,scale,centerShift,alpha,color,rot_angle) {
 
     if (mouthShift == undefined) mouthShift = 0;
@@ -6318,7 +6138,7 @@ var drawPacmanSprite = function(ctx,x,y,dirEnum,angle,mouthShift,scale,centerShi
     ctx.restore();
 };
 
-// draw giant pacman body
+// draw giant player body
 var drawGiantPacmanSprite = function(ctx,x,y,dirEnum,frame) {
 
     var color = "#FF0";
@@ -6455,10 +6275,10 @@ var drawMsPacmanSprite = function(ctx,x,y,dirEnum,frame,rot_angle) {
     ctx.restore();
 };
 
-var drawCookiemanSprite = (function(){
+var drawTubieManSprite = (function(){
 
     // TODO: draw pupils separately in atlas
-    //      composite the body frame and a random pupil frame when drawing cookie-man
+    //      composite the body frame and a random pupil frame when drawing tubie-man
 
     var prevFrame = undefined;
     var sx1 = 0; // shift x for first pupil
@@ -6468,6 +6288,7 @@ var drawCookiemanSprite = (function(){
 
     var er = 2.1; // eye radius
     var pr = 1; // pupil radius
+    var tr = 0.7 // tube circle radius
 
     var movePupils = function() {
         var a1 = Math.random()*Math.PI*2;
@@ -6487,7 +6308,7 @@ var drawCookiemanSprite = (function(){
         // draw body
         var draw = function(angle) {
             //angle = Math.PI/6*frame;
-            drawPacmanSprite(ctx,x,y,dirEnum,angle,undefined,undefined,undefined,undefined,"#47b8ff",rot_angle);
+            drawPacmanSprite(ctx,x,y,dirEnum,angle,undefined,undefined,undefined,undefined,"#FF6E31",rot_angle);
         };
         if (frame == 0) {
             // closed
@@ -6523,8 +6344,11 @@ var drawCookiemanSprite = (function(){
 
         var x = -4; // pivot point
         var y = -3.5;
-        var r1 = 3;   // distance from pivot of first eye
-        var r2 = 6; // distance from pivot of second eye
+        var tx = -4;
+        var ty = 2;
+        var r1 = 3; // distance from pivot of first eye
+        var r2 = 6.5; // distance from pivot of second eye
+        var r3 = 0; // distance from pivot of tube
         angle /= 3; // angle from pivot point
         angle += Math.PI/8;
         var c = Math.cos(angle);
@@ -6550,13 +6374,38 @@ var drawCookiemanSprite = (function(){
 
         // first eyeball
         ctx.beginPath();
-        ctx.arc(x+r1*c, y-r1*s, er, 0, Math.PI*2);
+        ctx.arc(x+r1*c, y-r1*1.8*s, er, 0, Math.PI*2);
         ctx.fillStyle = "#FFF";
         ctx.fill();
         // first pupil
         ctx.beginPath();
-        ctx.arc(x+r1*c+sx1, y-r1*s+sy1, pr, 0, Math.PI*2);
+        ctx.arc(x+r1*c+sx1, y-r1*1.8*s+sy1, pr, 0, Math.PI*2);
         ctx.fillStyle = "#000";
+        ctx.fill();
+
+        var tubeColor = "#FFF";
+        var tubeAccentColor = "#808080";
+        var tubeLength = 2.2;
+        var tubeThickness = 0.65
+
+        //tube
+        //tube-line
+        ctx.beginPath();
+        ctx.moveTo(tx+r3*c+tubeLength/3, ty-r3*s);
+        ctx.lineTo(tx+r3*c-tubeLength/2,ty-r3*s);
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = tubeColor;
+        ctx.lineWidth = tubeThickness;
+        ctx.stroke();
+        //tube-center
+        ctx.beginPath();
+        ctx.arc(tx+r3*c, ty-r3*s, tr, 0, Math.PI*2);
+        ctx.fillStyle = tubeColor;
+        ctx.fill();
+        //tube-center
+        ctx.beginPath();
+        ctx.arc(tx+r3*c, ty-r3*s, tr/2.5, 0, Math.PI*2);
+        ctx.fillStyle = tubeAccentColor;
         ctx.fill();
 
         ctx.restore();
@@ -6567,7 +6416,8 @@ var drawCookiemanSprite = (function(){
 ////////////////////////////////////////////////////////////////////
 // FRUIT SPRITES
 
-var drawCherry = function(ctx,x,y) {
+// G-Tube
+var drawGTube = function(ctx,x,y) {
 
     // cherry
     var cherry = function(x,y) {
@@ -6614,7 +6464,8 @@ var drawCherry = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawStrawberry = function(ctx,x,y) {
+// Infinity Pump
+var drawInfinityPump = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -6682,7 +6533,8 @@ var drawStrawberry = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawOrange = function(ctx,x,y) {
+// Omni Pump
+var drawOmniPump = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -6727,7 +6579,8 @@ var drawOrange = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawApple = function(ctx,x,y) {
+// Joey Pump
+var drawJoeyPump = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -6765,7 +6618,8 @@ var drawApple = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawMelon = function(ctx,x,y) {
+// Infinity Charger
+var drawInfinityCharger = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -6866,7 +6720,8 @@ var drawMelon = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawGalaxian = function(ctx,x,y) {
+// Infinity Bag
+var drawInfinityBag = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -6922,7 +6777,8 @@ var drawGalaxian = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawBell = function(ctx,x,y) {
+// Formula Bottle
+var drawFormulaBottle = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -6962,7 +6818,8 @@ var drawBell = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawKey = function(ctx,x,y) {
+// Y-Port Extension
+var drawExtension = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -7004,7 +6861,8 @@ var drawKey = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawPretzel = function(ctx,x,y) {
+// EnFIT Wrench
+var drawEnFitWrench = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -7050,7 +6908,8 @@ var drawPretzel = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawPear = function(ctx,x,y) {
+// Flying Squirrel
+var drawFlyingSquirrel = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -7086,7 +6945,8 @@ var drawPear = function(ctx,x,y) {
     ctx.restore();
 };
 
-var drawBanana = function(ctx,x,y) {
+// Curlin Pump
+var drawCurlinPump = function(ctx,x,y) {
     ctx.save();
     ctx.translate(x,y);
 
@@ -7200,17 +7060,17 @@ var drawCookieFlash = function(ctx,x,y) {
 
 var getSpriteFuncFromFruitName = function(name) {
     var funcs = {
-        'cherry': drawCherry,
-        'strawberry': drawStrawberry,
-        'orange': drawOrange,
-        'apple': drawApple,
-        'melon': drawMelon,
-        'galaxian': drawGalaxian,
-        'bell': drawBell,
-        'key': drawKey,
-        'pretzel': drawPretzel,
-        'pear': drawPear,
-        'banana': drawBanana,
+        'cherry': drawGTube,
+        'strawberry': drawInfinityPump,
+        'orange': drawOmniPump,
+        'apple': drawJoeyPump,
+        'melon': drawInfinityCharger,
+        'galaxian': drawInfinityBag,
+        'bell': drawFormulaBottle,
+        'key': drawExtension,
+        'pretzel': drawEnFitWrench,
+        'pear': drawFlyingSquirrel,
+        'banana': drawCurlinPump,
         'cookie': drawCookie,
     };
 
@@ -7380,7 +7240,7 @@ var drawExclamationPoint = function(ctx,x,y) {
 };
 //@line 1 "src/Actor.js"
 //////////////////////////////////////////////////////////////////////////////////////
-// The actor class defines common data functions for the ghosts and pacman
+// The actor class defines common data functions for the ghosts and player
 // It provides everything for updating position and direction.
 
 // "Ghost" and "Player" inherit from this "Actor"
@@ -7622,7 +7482,7 @@ Ghost.prototype.getBounceY = (function(){
             dirEnum = this.dirEnum;
         }
 
-        if (this.mode != GHOST_OUTSIDE || !this.scared || gameMode != GAME_COOKIE) {
+        if (this.mode != GHOST_OUTSIDE || !this.scared) {
             return py;
         }
 
@@ -7681,7 +7541,7 @@ Ghost.prototype.save = function(t) {
     this.savedSigLeaveHome[t] = this.sigLeaveHome;
     this.savedMode[t] = this.mode;
     this.savedScared[t] = this.scared;
-    if (this == blinky) {
+    if (this == enemy1) {
         this.savedElroy[t] = this.elroy;
     }
     this.savedFaceDirEnum[t] = this.faceDirEnum;
@@ -7693,20 +7553,16 @@ Ghost.prototype.load = function(t) {
     this.sigLeaveHome = this.savedSigLeaveHome[t];
     this.mode = this.savedMode[t];
     this.scared = this.savedScared[t];
-    if (this == blinky) {
+    if (this == enemy1) {
         this.elroy = this.savedElroy[t];
     }
     this.faceDirEnum = this.savedFaceDirEnum[t];
     Actor.prototype.load.call(this,t);
 };
 
-// indicates if we slow down in the tunnel
+// Slow down in the tunnel for first 3 levels
 Ghost.prototype.isSlowInTunnel = function() {
-    // special case for Ms. Pac-Man (slow down only for the first three levels)
-    if (gameMode == GAME_MSPACMAN || gameMode == GAME_OTTO || gameMode == GAME_COOKIE)
-        return level <= 3;
-    else
-        return true;
+    return level <= 3;
 };
 
 // gets the number of steps to move in this frame
@@ -7780,7 +7636,7 @@ Ghost.prototype.playSounds = function() {
     }
 }
 
-// function called when pacman eats an energizer
+// function called when player eats an energizer
 Ghost.prototype.onEnergized = function() {
 
     this.reverse();
@@ -7892,12 +7748,7 @@ Ghost.prototype.homeSteer = (function(){
 Ghost.prototype.isScatterBrain = function() {
     var scatter = false;
     if (ghostCommander.getCommand() == GHOST_CMD_SCATTER) {
-        if (gameMode == GAME_MSPACMAN || gameMode == GAME_COOKIE) {
-            scatter = (this == blinky || this == pinky);
-        }
-        else if (gameMode == GAME_OTTO) {
-            scatter = true;
-        }
+        scatter = (this == enemy1 || this == enemy2);
     }
     return scatter;
 };
@@ -8017,7 +7868,7 @@ Ghost.prototype.steer = function() {
 Ghost.prototype.getPathDistLeft = function(fromPixel, dirEnum) {
     var distLeft = tileSize;
     var pixel = this.getTargetPixel();
-    if (this.targetting == 'pacman') {
+    if (this.targetting == 'player') {
         if (dirEnum == DIR_UP || dirEnum == DIR_DOWN)
             distLeft = Math.abs(fromPixel.y - pixel.y);
         else {
@@ -8030,13 +7881,13 @@ Ghost.prototype.getPathDistLeft = function(fromPixel, dirEnum) {
 Ghost.prototype.setTarget = function() {
     // This sets the target tile when in chase mode.
     // The "target" is always Pac-Man when in this mode,
-    // except for Clyde.  He runs away back home sometimes,
+    // except for enemy4.  He runs away back home sometimes,
     // so the "targetting" parameter is set in getTargetTile
     // for Clyde only.
 
     this.targetTile = this.getTargetTile();
 
-    if (this != clyde) {
+    if (this != enemy4) {
         this.targetting = 'pacman';
     }
 };
@@ -8049,7 +7900,7 @@ var Player = function() {
 
     // inherit data from Actor
     Actor.apply(this);
-    if (gameMode == GAME_MSPACMAN || gameMode == GAME_COOKIE) {
+    if (gameMode == GAME_MSPACMAN || gameMode == GAME_TUBIE_MAN) {
         this.frames = 1; // start with mouth open
     }
 
@@ -8124,15 +7975,14 @@ Player.prototype.getAnimFrame = function(frame) {
     if (frame == undefined) {
         frame = this.getStepFrame();
     }
-    if (gameMode == GAME_MSPACMAN || gameMode == GAME_COOKIE) { // ms. pacman starts with mouth open
-        frame = (frame+1)%4;
-        if (state == deadState)
-            frame = 1; // hack to force this frame when dead
-    }
-    if (gameMode != GAME_OTTO) {
-        if (frame == 3) 
-            frame = 1;
-    }
+    
+    frame = (frame+1)%4;
+    if (state == deadState)
+        frame = 1; // hack to force this frame when dead
+
+    if (frame == 3) 
+        frame = 1;
+
     return frame;
 };
 
@@ -8177,7 +8027,6 @@ Player.prototype.step = (function(){
             // Drift toward the center of the track (a.k.a. cornering)
             this.pixel[b] += sign(this.distToMid[b]);
         }
-
 
         this.commitPos();
         return this.stopped ? 0 : 1;
@@ -8274,39 +8123,44 @@ Player.prototype.update = function(j) {
 //////////////////////////////////////////////////////////////////////////////////////
 // create all the actors
 
-var blinky = new Ghost();
-blinky.name = "blinky";
-blinky.color = "#FF0000";
-blinky.pathColor = "rgba(255,0,0,0.8)";
-blinky.isVisible = true;
+// Previously Named blinky
+var enemy1 = new Ghost();
+enemy1.name = "sticky";
+enemy1.color = "#DE373A";
+enemy1.pathColor = "#DE373A";
+enemy1.isVisible = true;
 
-var pinky = new Ghost();
-pinky.name = "pinky";
-pinky.color = "#FFB8FF";
-pinky.pathColor = "rgba(255,184,255,0.8)";
-pinky.isVisible = true;
+// Previously Named pinky
+var enemy2 = new Ghost();
+enemy2.name = "pricky";
+enemy2.color = "#55D400";
+enemy2.pathColor = "#55D400";
+enemy2.isVisible = true;
 
-var inky = new Ghost();
-inky.name = "inky";
-inky.color = "#00FFFF";
-inky.pathColor = "rgba(0,255,255,0.8)";
-inky.isVisible = true;
+// Previously Named inky
+var enemy3 = new Ghost();
+enemy3.name = "icky";
+enemy3.color = "#099EDE";
+enemy3.pathColor = "#099EDE";
+enemy3.isVisible = true;
 
-var clyde = new Ghost();
-clyde.name = "clyde";
-clyde.color = "#FFB851";
-clyde.pathColor = "rgba(255,184,81,0.8)";
-clyde.isVisible = true;
+// Previously Named clyde
+var enemy4 = new Ghost();
+enemy4.name = "asher";
+enemy4.color = "#FFB851";
+enemy4.pathColor = "#FFB851";
+enemy4.isVisible = true;
 
-var pacman = new Player();
-pacman.name = "pacman";
-pacman.color = "#FFFF00";
-pacman.pathColor = "rgba(255,255,0,0.8)";
+// Previously Named player
+var player = new Player();
+player.name = "tubie-man";
+player.color = "#FF6E31";
+player.pathColor = "@FF6E31";
 
 // order at which they appear in original arcade memory
 // (suggests drawing/update order)
-var actors = [blinky, pinky, inky, clyde, pacman];
-var ghosts = [blinky, pinky, inky, clyde];
+var actors = [enemy1, enemy2, enemy3, enemy4, player];
+var ghosts = [enemy1, enemy2, enemy3, enemy4];
 //@line 1 "src/targets.js"
 /////////////////////////////////////////////////////////////////
 // Targetting
@@ -8322,59 +8176,59 @@ var actorPathLength = 16;
 var targetSize = midTile.y;
 
 // when drawing paths, use these offsets so they don't completely overlap each other
-pacman.pathCenter = { x:0, y:0};
-blinky.pathCenter = { x:-2, y:-2 };
-pinky.pathCenter = { x:-1, y:-1 };
-inky.pathCenter = { x:1, y:1 };
-clyde.pathCenter = { x:2, y:2 };
+player.pathCenter = { x:0, y:0};
+enemy1.pathCenter = { x:-2, y:-2 };
+enemy2.pathCenter = { x:-1, y:-1 };
+enemy3.pathCenter = { x:1, y:1 };
+enemy4.pathCenter = { x:2, y:2 };
 
 /////////////////////////////////////////////////////////////////
-// blinky directly targets pacman
+// blinky directly targets player
 
-blinky.getTargetTile = function() {
-    return { x: pacman.tile.x, y: pacman.tile.y };
+enemy1.getTargetTile = function() {
+    return { x: player.tile.x, y: player.tile.y };
 };
-blinky.getTargetPixel = function() {
-    return { x: pacman.pixel.x, y: pacman.pixel.y };
+enemy1.getTargetPixel = function() {
+    return { x: player.pixel.x, y: player.pixel.y };
 };
-blinky.drawTarget = function(ctx) {
+enemy1.drawTarget = function(ctx) {
     if (!this.targetting) return;
     ctx.fillStyle = this.color;
-    if (this.targetting == 'pacman')
-        renderer.drawCenterPixelSq(ctx, pacman.pixel.x, pacman.pixel.y, targetSize);
+    if (this.targetting == 'player')
+        renderer.drawCenterPixelSq(ctx, player.pixel.x, player.pixel.y, targetSize);
     else
         renderer.drawCenterTileSq(ctx, this.targetTile.x, this.targetTile.y, targetSize);
 };
 
 /////////////////////////////////////////////////////////////////
-// pinky targets four tiles ahead of pacman
-pinky.getTargetTile = function() {
-    var px = pacman.tile.x + 4*pacman.dir.x;
-    var py = pacman.tile.y + 4*pacman.dir.y;
-    if (pacman.dirEnum == DIR_UP) {
+// enemy2 targets four tiles ahead of player
+enemy2.getTargetTile = function() {
+    var px = player.tile.x + 4*player.dir.x;
+    var py = player.tile.y + 4*player.dir.y;
+    if (player.dirEnum == DIR_UP) {
         px -= 4;
     }
     return { x : px, y : py };
 };
-pinky.getTargetPixel = function() {
-    var px = pacman.pixel.x + 4*pacman.dir.x*tileSize;
-    var py = pacman.pixel.y + 4*pacman.dir.y*tileSize;
-    if (pacman.dirEnum == DIR_UP) {
+enemy2.getTargetPixel = function() {
+    var px = player.pixel.x + 4*player.dir.x*tileSize;
+    var py = player.pixel.y + 4*player.dir.y*tileSize;
+    if (player.dirEnum == DIR_UP) {
         px -= 4*tileSize;
     }
     return { x : px, y : py };
 };
-pinky.drawTarget = function(ctx) {
+enemy2.drawTarget = function(ctx) {
     if (!this.targetting) return;
     ctx.fillStyle = this.color;
 
     var pixel = this.getTargetPixel();
 
-    if (this.targetting == 'pacman') {
+    if (this.targetting == 'player') {
         ctx.beginPath();
-        ctx.moveTo(pacman.pixel.x, pacman.pixel.y);
-        if (pacman.dirEnum == DIR_UP) {
-            ctx.lineTo(pacman.pixel.x, pixel.y);
+        ctx.moveTo(player.pixel.x, player.pixel.y);
+        if (player.dirEnum == DIR_UP) {
+            ctx.lineTo(player.pixel.x, pixel.y);
         }
         ctx.lineTo(pixel.x, pixel.y);
         ctx.stroke();
@@ -8385,52 +8239,52 @@ pinky.drawTarget = function(ctx) {
 };
 
 /////////////////////////////////////////////////////////////////
-// inky targets twice the distance from blinky to two tiles ahead of pacman
-inky.getTargetTile = function() {
-    var px = pacman.tile.x + 2*pacman.dir.x;
-    var py = pacman.tile.y + 2*pacman.dir.y;
-    if (pacman.dirEnum == DIR_UP) {
+// inky targets twice the distance from blinky to two tiles ahead of player
+enemy3.getTargetTile = function() {
+    var px = player.tile.x + 2*player.dir.x;
+    var py = player.tile.y + 2*player.dir.y;
+    if (player.dirEnum == DIR_UP) {
         px -= 2;
     }
     return {
-        x : blinky.tile.x + 2*(px - blinky.tile.x),
-        y : blinky.tile.y + 2*(py - blinky.tile.y),
+        x : enemy1.tile.x + 2*(px - enemy1.tile.x),
+        y : enemy1.tile.y + 2*(py - enemy1.tile.y),
     };
 };
-inky.getJointPixel = function() {
-    var px = pacman.pixel.x + 2*pacman.dir.x*tileSize;
-    var py = pacman.pixel.y + 2*pacman.dir.y*tileSize;
-    if (pacman.dirEnum == DIR_UP) {
+enemy3.getJointPixel = function() {
+    var px = player.pixel.x + 2*player.dir.x*tileSize;
+    var py = player.pixel.y + 2*player.dir.y*tileSize;
+    if (player.dirEnum == DIR_UP) {
         px -= 2*tileSize;
     }
     return { x: px, y: py };
 };
-inky.getTargetPixel = function() {
-    var px = pacman.pixel.x + 2*pacman.dir.x*tileSize;
-    var py = pacman.pixel.y + 2*pacman.dir.y*tileSize;
-    if (pacman.dirEnum == DIR_UP) {
+enemy3.getTargetPixel = function() {
+    var px = player.pixel.x + 2*player.dir.x*tileSize;
+    var py = player.pixel.y + 2*player.dir.y*tileSize;
+    if (player.dirEnum == DIR_UP) {
         px -= 2*tileSize;
     }
     return {
-        x : blinky.pixel.x + 2*(px-blinky.pixel.x),
-        y : blinky.pixel.y + 2*(py-blinky.pixel.y),
+        x : enemy1.pixel.x + 2*(px-enemy1.pixel.x),
+        y : enemy1.pixel.y + 2*(py-enemy1.pixel.y),
     };
 };
-inky.drawTarget = function(ctx) {
+enemy3.drawTarget = function(ctx) {
     if (!this.targetting) return;
     var pixel;
 
     var joint = this.getJointPixel();
 
-    if (this.targetting == 'pacman') {
+    if (this.targetting == 'player') {
         pixel = this.getTargetPixel();
         ctx.beginPath();
-        ctx.moveTo(pacman.pixel.x, pacman.pixel.y);
-        if (pacman.dirEnum == DIR_UP) {
-            ctx.lineTo(pacman.pixel.x, joint.y);
+        ctx.moveTo(player.pixel.x, player.pixel.y);
+        if (player.dirEnum == DIR_UP) {
+            ctx.lineTo(player.pixel.x, joint.y);
         }
         ctx.lineTo(joint.x, joint.y);
-        ctx.moveTo(blinky.pixel.x, blinky.pixel.y);
+        ctx.moveTo(enemy1.pixel.x, enemy1.pixel.y);
         ctx.lineTo(pixel.x, pixel.y);
         ctx.closePath();
         ctx.stroke();
@@ -8451,54 +8305,54 @@ inky.drawTarget = function(ctx) {
 };
 
 /////////////////////////////////////////////////////////////////
-// clyde targets pacman if >=8 tiles away, otherwise targets home
+// clyde targets player if >=8 tiles away, otherwise targets home
 
-clyde.getTargetTile = function() {
-    var dx = pacman.tile.x - (this.tile.x + this.dir.x);
-    var dy = pacman.tile.y - (this.tile.y + this.dir.y);
+enemy4.getTargetTile = function() {
+    var dx = player.tile.x - (this.tile.x + this.dir.x);
+    var dy = player.tile.y - (this.tile.y + this.dir.y);
     var dist = dx*dx+dy*dy;
     if (dist >= 64) {
-        this.targetting = 'pacman';
-        return { x: pacman.tile.x, y: pacman.tile.y };
+        this.targetting = 'player';
+        return { x: player.tile.x, y: player.tile.y };
     }
     else {
         this.targetting = 'corner';
         return { x: this.cornerTile.x, y: this.cornerTile.y };
     }
 };
-clyde.getTargetPixel = function() {
+enemy4.getTargetPixel = function() {
     // NOTE: won't ever need this function for corner tile because it is always outside
-    return { x: pacman.pixel.x, y: pacman.pixel.y };
+    return { x: player.pixel.x, y: player.pixel.y };
 };
-clyde.drawTarget = function(ctx) {
+enemy4.drawTarget = function(ctx) {
     if (!this.targetting) return;
     ctx.fillStyle = this.color;
 
-    if (this.targetting == 'pacman') {
+    if (this.targetting == 'player') {
         ctx.beginPath();
         if (true) {
             // draw a radius
-            ctx.arc(pacman.pixel.x, pacman.pixel.y, tileSize*8,0, 2*Math.PI);
+            ctx.arc(player.pixel.x, player.pixel.y, tileSize*8,0, 2*Math.PI);
             ctx.closePath();
         }
         else {
             // draw a distance stick
-            ctx.moveTo(pacman.pixel.x, pacman.pixel.y);
-            var dx = clyde.pixel.x - pacman.pixel.x;
-            var dy = clyde.pixel.y - pacman.pixel.y;
+            ctx.moveTo(player.pixel.x, player.pixel.y);
+            var dx = enemy4.pixel.x - player.pixel.x;
+            var dy = enemy4.pixel.y - player.pixel.y;
             var dist = Math.sqrt(dx*dx+dy*dy);
             dx = dx/dist*tileSize*8;
             dy = dy/dist*tileSize*8;
-            ctx.lineTo(pacman.pixel.x + dx, pacman.pixel.y + dy);
+            ctx.lineTo(player.pixel.x + dx, player.pixel.y + dy);
         }
         ctx.stroke();
-        renderer.drawCenterPixelSq(ctx, pacman.pixel.x, pacman.pixel.y, targetSize);
+        renderer.drawCenterPixelSq(ctx, player.pixel.x, player.pixel.y, targetSize);
     }
     else {
         // draw a radius
         if (ghostCommander.getCommand() == GHOST_CMD_CHASE) {
             ctx.beginPath();
-            ctx.arc(pacman.pixel.x, pacman.pixel.y, tileSize*8,0, 2*Math.PI);
+            ctx.arc(player.pixel.x, player.pixel.y, tileSize*8,0, 2*Math.PI);
             ctx.strokeStyle = "rgba(255,255,255,0.25)";
             ctx.stroke();
         }
@@ -8508,56 +8362,56 @@ clyde.drawTarget = function(ctx) {
 
 
 /////////////////////////////////////////////////////////////////
-// pacman targets twice the distance from pinky to pacman or target pinky
+// player targets twice the distance from enemy2 to player or target enemy2
 
-pacman.setTarget = function() {
-    if (blinky.mode == GHOST_GOING_HOME || blinky.scared) {
-        this.targetTile.x = pinky.tile.x;
-        this.targetTile.y = pinky.tile.y;
-        this.targetting = 'pinky';
+player.setTarget = function() {
+    if (enemy1.mode == GHOST_GOING_HOME || enemy1.scared) {
+        this.targetTile.x = enemy2.tile.x;
+        this.targetTile.y = enemy2.tile.y;
+        this.targetting = 'enemy2';
     }
     else {
-        this.targetTile.x = pinky.tile.x + 2*(pacman.tile.x-pinky.tile.x);
-        this.targetTile.y = pinky.tile.y + 2*(pacman.tile.y-pinky.tile.y);
+        this.targetTile.x = enemy2.tile.x + 2*(player.tile.x-enemy2.tile.x);
+        this.targetTile.y = enemy2.tile.y + 2*(player.tile.y-enemy2.tile.y);
         this.targetting = 'flee';
     }
 };
-pacman.drawTarget = function(ctx) {
+player.drawTarget = function(ctx) {
     if (!this.ai) return;
     ctx.fillStyle = this.color;
     var px,py;
 
     if (this.targetting == 'flee') {
-        px = pacman.pixel.x - pinky.pixel.x;
-        py = pacman.pixel.y - pinky.pixel.y;
-        px = pinky.pixel.x + 2*px;
-        py = pinky.pixel.y + 2*py;
+        px = player.pixel.x - enemy2.pixel.x;
+        py = player.pixel.y - enemy2.pixel.y;
+        px = enemy2.pixel.x + 2*px;
+        py = enemy2.pixel.y + 2*py;
         ctx.beginPath();
-        ctx.moveTo(pinky.pixel.x, pinky.pixel.y);
+        ctx.moveTo(enemy2.pixel.x, enemy2.pixel.y);
         ctx.lineTo(px,py);
         ctx.closePath();
         ctx.stroke();
         renderer.drawCenterPixelSq(ctx, px, py, targetSize);
     }
     else {
-        renderer.drawCenterPixelSq(ctx, pinky.pixel.x, pinky.pixel.y, targetSize);
+        renderer.drawCenterPixelSq(ctx, enemy2.pixel.x, enemy2.pixel.y, targetSize);
     };
 
 };
-pacman.getPathDistLeft = function(fromPixel, dirEnum) {
+player.getPathDistLeft = function(fromPixel, dirEnum) {
     var distLeft = tileSize;
     var px,py;
-    if (this.targetting == 'pinky') {
+    if (this.targetting == 'enemy2') {
         if (dirEnum == DIR_UP || dirEnum == DIR_DOWN)
-            distLeft = Math.abs(fromPixel.y - pinky.pixel.y);
+            distLeft = Math.abs(fromPixel.y - enemy2.pixel.y);
         else
-            distLeft = Math.abs(fromPixel.x - pinky.pixel.x);
+            distLeft = Math.abs(fromPixel.x - enemy2.pixel.x);
     }
     else { // 'flee'
-        px = pacman.pixel.x - pinky.pixel.x;
-        py = pacman.pixel.y - pinky.pixel.y;
-        px = pinky.pixel.x + 2*px;
-        py = pinky.pixel.y + 2*py;
+        px = player.pixel.x - enemy2.pixel.x;
+        py = player.pixel.y - enemy2.pixel.y;
+        px = enemy2.pixel.x + 2*px;
+        py = enemy2.pixel.y + 2*py;
         if (dirEnum == DIR_UP || dirEnum == DIR_DOWN)
             distLeft = Math.abs(py - fromPixel.y);
         else
@@ -8617,12 +8471,9 @@ var ghostCommander = (function() {
                 i = 2;
             var newCmd = times[i][frame];
 
-            if (gameMode == GAME_PACMAN) {
-                return newCmd;
-            }
-            else if (frame <= 27*60) { // only revearse twice in Ms. Pac-Man (two happen in first 27 seconds)
+            if (frame <= 27*60) { // only revearse twice in Ms. Pac-Man (two happen in first 27 seconds)
                 if (newCmd != undefined) {
-                    return GHOST_CMD_CHASE; // always chase in Ms. Pac-Man mode
+                    return GHOST_CMD_CHASE; // always chase
                 }
             }
         };
@@ -8684,19 +8535,19 @@ var ghostReleaser = (function(){
     var MODE_PERSONAL = 0;
     var MODE_GLOBAL = 1;
 
-    // ghost enumerations
-    var PINKY = 1;
-    var INKY = 2;
-    var CLYDE = 3;
+    // enemy enumerations
+    var ENEMY_2 = 1;
+    var ENEMY_3 = 2;
+    var ENEMY_4 = 3;
 
-    // this is how many frames it will take to release a ghost after pacman stops eating
+    // this is how many frames it will take to release a ghost after player stops eating
     var getTimeoutLimit = function() { return (level < 5) ? 4*60 : 3*60; };
 
     // dot limits used in personal mode to release ghost after # of dots have been eaten
     var personalDotLimit = {};
-    personalDotLimit[PINKY] = function() { return 0; };
-    personalDotLimit[INKY] = function() { return (level==1) ? 30 : 0; };
-    personalDotLimit[CLYDE] = function() {
+    personalDotLimit[ENEMY_2] = function() { return 0; };
+    personalDotLimit[ENEMY_3] = function() { return (level==1) ? 30 : 0; };
+    personalDotLimit[ENEMY_4] = function() {
         if (level == 1) return 60;
         if (level == 2) return 50;
         return 0;
@@ -8704,9 +8555,9 @@ var ghostReleaser = (function(){
 
     // dot limits used in global mode to release ghost after # of dots have been eaten
     var globalDotLimit = {};
-    globalDotLimit[PINKY] = 7;
-    globalDotLimit[INKY] = 17;
-    globalDotLimit[CLYDE] = 32;
+    globalDotLimit[ENEMY_2] = 7;
+    globalDotLimit[ENEMY_3] = 17;
+    globalDotLimit[ENEMY_4] = 32;
 
     var framesSinceLastDot; // frames elapsed since last dot was eaten
     var mode;               // personal or global dot counter mode
@@ -8725,9 +8576,9 @@ var ghostReleaser = (function(){
         }
         else if (mode == MODE_PERSONAL) {
             savedGhostCounts[t] = {};
-            savedGhostCounts[t][PINKY] = ghostCounts[PINKY];
-            savedGhostCounts[t][INKY] = ghostCounts[INKY];
-            savedGhostCounts[t][CLYDE] = ghostCounts[CLYDE];
+            savedGhostCounts[t][ENEMY_2] = ghostCounts[ENEMY_2];
+            savedGhostCounts[t][ENEMY_3] = ghostCounts[ENEMY_3];
+            savedGhostCounts[t][ENEMY_4] = ghostCounts[ENEMY_4];
         }
     };
 
@@ -8738,9 +8589,9 @@ var ghostReleaser = (function(){
             globalCount = savedGlobalCount[t];
         }
         else if (mode == MODE_PERSONAL) {
-            ghostCounts[PINKY] = savedGhostCounts[t][PINKY];
-            ghostCounts[INKY] = savedGhostCounts[t][INKY];
-            ghostCounts[CLYDE] = savedGhostCounts[t][CLYDE];
+            ghostCounts[ENEMY_2] = savedGhostCounts[t][ENEMY_2];
+            ghostCounts[ENEMY_3] = savedGhostCounts[t][ENEMY_3];
+            ghostCounts[ENEMY_4] = savedGhostCounts[t][ENEMY_4];
         }
     };
 
@@ -8750,9 +8601,9 @@ var ghostReleaser = (function(){
         onNewLevel: function() {
             mode = MODE_PERSONAL;
             framesSinceLastDot = 0;
-            ghostCounts[PINKY] = 0;
-            ghostCounts[INKY] = 0;
-            ghostCounts[CLYDE] = 0;
+            ghostCounts[ENEMY_2] = 0;
+            ghostCounts[ENEMY_3] = 0;
+            ghostCounts[ENEMY_4] = 0;
         },
         onRestartLevel: function() {
             mode = MODE_GLOBAL;
@@ -8795,18 +8646,18 @@ var ghostReleaser = (function(){
             }
             // use global dot counter
             else if (mode == MODE_GLOBAL) {
-                if (globalCount == globalDotLimit[PINKY] && pinky.mode == GHOST_PACING_HOME) {
-                    pinky.leaveHome();
+                if (globalCount == globalDotLimit[ENEMY_2] && enemy2.mode == GHOST_PACING_HOME) {
+                    enemy2.leaveHome();
                     return;
                 }
-                else if (globalCount == globalDotLimit[INKY] && inky.mode == GHOST_PACING_HOME) {
-                    inky.leaveHome();
+                else if (globalCount == globalDotLimit[ENEMY_3] && enemy3.mode == GHOST_PACING_HOME) {
+                    enemy3.leaveHome();
                     return;
                 }
-                else if (globalCount == globalDotLimit[CLYDE] && clyde.mode == GHOST_PACING_HOME) {
+                else if (globalCount == globalDotLimit[ENEMY_4] && enemy4.mode == GHOST_PACING_HOME) {
                     globalCount = 0;
                     mode = MODE_PERSONAL;
-                    clyde.leaveHome();
+                    enemy4.leaveHome();
                     return;
                 }
             }
@@ -8843,8 +8694,8 @@ var elroyTimer = (function(){
         return function(stage) {
             var i = level;
             if (i>21) i = 21;
-            var pacman_max_pellets = 244;
-            return pacman_max_pellets - dotsLeft[stage-1][i-1];
+            var player_max_pellets = 244;
+            return player_max_pellets - dotsLeft[stage-1][i-1];
         };
     })();
 
@@ -8873,21 +8724,21 @@ var elroyTimer = (function(){
         update: function() {
 
             // stop waiting for clyde when clyde leaves home
-            if (waitForClyde && clyde.mode != GHOST_PACING_HOME)
+            if (waitForClyde && enemy4.mode != GHOST_PACING_HOME)
                 waitForClyde = false;
 
             if (waitForClyde) {
-                blinky.elroy = 0;
+                enemy1.elroy = 0;
             }
             else {
                 if (map.dotsEaten >= getDotsEatenLimit(2)) {
-                    blinky.elroy = 2;
+                    enemy1.elroy = 2;
                 }
                 else if (map.dotsEaten >= getDotsEatenLimit(1)) {
-                    blinky.elroy = 1;
+                    enemy1.elroy = 1;
                 }
                 else {
-                    blinky.elroy = 0;
+                    enemy1.elroy = 0;
                 }
             }
         },
@@ -9055,7 +8906,7 @@ BaseFruit.prototype = {
             this.scoreFramesLeft--;
     },
     isCollide: function() {
-        return Math.abs(pacman.pixel.y - this.pixel.y) <= midTile.y && Math.abs(pacman.pixel.x - this.pixel.x) <= midTile.x;
+        return Math.abs(player.pixel.y - this.pixel.y) <= midTile.y && Math.abs(player.pixel.x - this.pixel.x) <= midTile.x;
     },
     testCollide: function() {
         if (this.isPresent() && this.isCollide()) {
@@ -9342,20 +9193,7 @@ MsPacFruit.prototype = newChildObject(BaseFruit.prototype, {
     },
 });
 
-var fruit;
-var setFruitFromGameMode = (function() {
-    var pacfruit = new PacFruit();
-    var mspacfruit = new MsPacFruit();
-    fruit = pacfruit;
-    return function() {
-        if (gameMode == GAME_PACMAN) {
-            fruit = pacfruit;
-        }
-        else {
-            fruit = mspacfruit;
-        }
-    };
-})();
+var fruit = new MsPacFruit();
 //@line 1 "src/executive.js"
 var executive = (function(){
 
@@ -9583,81 +9421,76 @@ var fadeNextState = function (prevState, nextState, frameDuration, continueUpdat
 // Home State
 // (the home title screen state)
 
-var homeState = (function(){
+// var homeState = (function(){
 
-    var exitTo = function(s) {
-        switchState(s);
-        menu.disable();
-    };
+//     var exitTo = function(s) {
+//         switchState(s);
+//         menu.disable();
+//     };
 
-    var menu = new Menu("CHOOSE A GAME",2*tileSize,0*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
-    var getIconAnimFrame = function(frame) {
-        frame = Math.floor(frame/3)+1;
-        frame %= 4;
-        if (frame == 3) {
-            frame = 1;
-        }
-        return frame;
-    };
-    var getOttoAnimFrame = function(frame) {
-        frame = Math.floor(frame/3);
-        frame %= 4;
-        return frame;
-    };
-    menu.addTextIconButton(getGameName(GAME_PACMAN),
-        function() {
-            gameMode = GAME_PACMAN;
-            exitTo(preNewGameState);
-        },
-        function(ctx,x,y,frame) {
-            atlas.drawPacmanSprite(ctx,x,y,DIR_RIGHT,getIconAnimFrame(frame));
-        });
-    menu.addTextIconButton(getGameName(GAME_MSPACMAN),
-        function() {
-            gameMode = GAME_MSPACMAN;
-            exitTo(preNewGameState);
-        },
-        function(ctx,x,y,frame) {
-            atlas.drawMsPacmanSprite(ctx,x,y,DIR_RIGHT,getIconAnimFrame(frame));
-        });
-    menu.addTextIconButton(getGameName(GAME_COOKIE),
-        function() {
-            gameMode = GAME_COOKIE;
-            exitTo(preNewGameState);
-        },
-        function(ctx,x,y,frame) {
-            drawCookiemanSprite(ctx,x,y,DIR_RIGHT,getIconAnimFrame(frame), true);
-        });
+//     var menu = new Menu("CHOOSE A GAME",2*tileSize,0*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
+//     var getIconAnimFrame = function(frame) {
+//         frame = Math.floor(frame/3)+1;
+//         frame %= 4;
+//         if (frame == 3) {
+//             frame = 1;
+//         }
+//         return frame;
+//     };
+//     menu.addTextIconButton(getGameName(GAME_PACMAN),
+//         function() {
+//             gameMode = GAME_PACMAN;
+//             exitTo(preNewGameState);
+//         },
+//         function(ctx,x,y,frame) {
+//             atlas.drawPacmanSprite(ctx,x,y,DIR_RIGHT,getIconAnimFrame(frame));
+//         });
+//     menu.addTextIconButton(getGameName(GAME_MSPACMAN),
+//         function() {
+//             gameMode = GAME_MSPACMAN;
+//             exitTo(preNewGameState);
+//         },
+//         function(ctx,x,y,frame) {
+//             atlas.drawMsPacmanSprite(ctx,x,y,DIR_RIGHT,getIconAnimFrame(frame));
+//         });
+//     menu.addTextIconButton(getGameName(GAME_TUBIE_MAN),
+//         function() {
+//             gameMode = GAME_TUBIE_MAN;
+//             exitTo(preNewGameState);
+//         },
+//         function(ctx,x,y,frame) {
+//             drawTubieManSprite(ctx,x,y,DIR_RIGHT,getIconAnimFrame(frame), true);
+//         });
 
-    menu.addSpacer(0.5);
-    menu.addTextIconButton("LEARN",
-        function() {
-            exitTo(learnState);
-        },
-        function(ctx,x,y,frame) {
-            atlas.drawGhostSprite(ctx,x,y,Math.floor(frame/8)%2,DIR_RIGHT,false,false,false,blinky.color);
-        });
+//     menu.addSpacer(0.5);
+//     menu.addTextIconButton("LEARN",
+//         function() {
+//             exitTo(learnState);
+//         },
+//         function(ctx,x,y,frame) {
+//             atlas.drawGhostSprite(ctx,x,y,Math.floor(frame/8)%2,DIR_RIGHT,false,false,false,enemy1.color);
+//         });
 
-    return {
-        init: function() {
-            menu.enable();
-            audio.coffeeBreakMusic.startLoop();
-        },
-        draw: function() {
-            renderer.clearMapFrame();
-            renderer.beginMapClip();
-            renderer.renderFunc(menu.draw,menu);
-            renderer.endMapClip();
-        },
-        update: function() {
-            menu.update();
-        },
-        getMenu: function() {
-            return menu;
-        },
-    };
+//     return {
+//         init: function() {
+//             menu.enable();
+//             audio.coffeeBreakMusic.startLoop();
+//         },
+//         draw: function() {
+//             renderer.clearMapFrame();
+//             renderer.beginMapClip();
+//             renderer.renderFunc(menu.draw,menu);
+//             renderer.endMapClip();
+//         },
+//         update: function() {
+//             menu.update();
+//         },
+//         getMenu: function() {
+//             return menu;
+//         },
+//     };
 
-})();
+// })();
 
 //////////////////////////////////////////////////////////////////////////////////////
 // Learn State
@@ -9678,7 +9511,7 @@ var learnState = (function(){
     menu.addSpacer(7);
     menu.addTextButton("BACK",
         function() {
-            exitTo(homeState);
+            exitTo(preNewGameState);
         });
     menu.backButton = menu.buttons[menu.buttonCount-1];
     menu.noArrowKeys = true;
@@ -9690,35 +9523,35 @@ var learnState = (function(){
     var y = 4*tileSize;
     var redBtn = new Button(x,y,w,h,function(){
         setAllVisibility(false);
-        blinky.isVisible = true;
-        setVisibility(blinky,true);
+        enemy1.isVisible = true;
+        setVisibility(enemy1,true);
     });
     redBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,blinky.color);
+        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,enemy1.color);
     });
     x += w+pad;
     var pinkBtn = new Button(x,y,w,h,function(){
         setAllVisibility(false);
-        setVisibility(pinky,true);
+        setVisibility(enemy2,true);
     });
     pinkBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,pinky.color);
+        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,enemy2.color);
     });
     x += w+pad;
     var cyanBtn = new Button(x,y,w,h,function(){
         setAllVisibility(false);
-        setVisibility(inky,true);
+        setVisibility(enemy3,true);
     });
     cyanBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,inky.color);
+        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,enemy3.color);
     });
     x += w+pad;
     var orangeBtn = new Button(x,y,w,h,function(){
         setAllVisibility(false);
-        setVisibility(clyde,true);
+        setVisibility(enemy4,true);
     });
     orangeBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,clyde.color);
+        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,enemy4.color);
     });
     var forEachCharBtn = function(callback) {
         callback(redBtn);
@@ -9732,10 +9565,10 @@ var learnState = (function(){
     };
 
     var setAllVisibility = function(visible) {
-        setVisibility(blinky,visible);
-        setVisibility(pinky,visible);
-        setVisibility(inky,visible);
-        setVisibility(clyde,visible);
+        setVisibility(enemy1,visible);
+        setVisibility(enemy2,visible);
+        setVisibility(enemy3,visible);
+        setVisibility(enemy4,visible);
     };
 
     return {
@@ -9754,7 +9587,7 @@ var learnState = (function(){
             level = 1;
             practiceMode = false;
             turboMode = false;
-            gameMode = GAME_PACMAN;
+            gameMode = GAME_TUBIE_MAN;
 
             // reset relevant game state
             ghostCommander.reset();
@@ -9769,14 +9602,14 @@ var learnState = (function(){
                 a.reset();
                 a.mode = GHOST_OUTSIDE;
             }
-            blinky.setPos(14*tileSize-1, 13*tileSize+midTile.y);
-            pinky.setPos(15*tileSize+midTile.x, 13*tileSize+midTile.y);
-            inky.setPos(9*tileSize+midTile.x, 16*tileSize+midTile.y);
-            clyde.setPos(18*tileSize+midTile.x, 16*tileSize+midTile.y);
+            enemy1.setPos(14*tileSize-1, 13*tileSize+midTile.y);
+            enemy2.setPos(15*tileSize+midTile.x, 13*tileSize+midTile.y);
+            enemy3.setPos(9*tileSize+midTile.x, 16*tileSize+midTile.y);
+            enemy4.setPos(18*tileSize+midTile.x, 16*tileSize+midTile.y);
 
-            // set pacman state
-            pacman.reset();
-            pacman.setPos(14*tileSize-1,22*tileSize+midTile.y);
+            // set player state
+            player.reset();
+            player.setPos(14*tileSize-1,22*tileSize+midTile.y);
 
             // start with red ghost
             redBtn.onclick();
@@ -9801,7 +9634,7 @@ var learnState = (function(){
             });
             var i,j;
             for (j=0; j<2; j++) {
-                pacman.update(j);
+                player.update(j);
                 for (i=0;i<4;i++) {
                     actors[i].update(j);
                 }
@@ -9827,23 +9660,23 @@ var gameTitleState = (function() {
     var resetTitle = function() {
         if (yellowBtn.isSelected) {
             name = getGameName();
-            nameColor = gameMode == GAME_COOKIE ? "#47b8ff" : pacman.color;
+            nameColor = "#47b8ff";
         }
-        else if (redBtn.isSelected) {
+       else if (redBtn.isSelected) {
             name = getGhostNames()[0];
-            nameColor = blinky.color;
+            nameColor = enemy1.color;
         }
         else if (pinkBtn.isSelected) {
             name = getGhostNames()[1];
-            nameColor = pinky.color;
+            nameColor = enemy2.color;
         }
         else if (cyanBtn.isSelected) {
             name = getGhostNames()[2];
-            nameColor = inky.color;
+            nameColor = enemy3.color;
         }
         else if (orangeBtn.isSelected) {
             name = getGhostNames()[3];
-            nameColor = clyde.color;
+            nameColor = enemy4.color;
         }
         else {
             name = getGameName();
@@ -9864,31 +9697,31 @@ var gameTitleState = (function() {
         }
     });
     yellowBtn.setIcon(function (ctx,x,y,frame) {
-        getPlayerDrawFunc()(ctx,x,y,DIR_RIGHT,pacman.getAnimFrame(pacman.getStepFrame(Math.floor((gameMode==GAME_PACMAN?frame+4:frame)/1.5))),true);
+        getPlayerDrawFunc()(ctx,x,y,DIR_RIGHT,player.getAnimFrame(player.getStepFrame(Math.floor((gameMode==GAME_PACMAN?frame+4:frame)/1.5))),true);
     });
 
     x += 2*w;
     var redBtn = new Button(x,y,w,h);
     redBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,blinky.color);
+        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,enemy1.color);
     });
 
     x += w;
     var pinkBtn = new Button(x,y,w,h);
     pinkBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,pinky.color);
+        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,enemy2.color);
     });
 
     x += w;
     var cyanBtn = new Button(x,y,w,h)
     cyanBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,inky.color);
+        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,enemy3.color);
     });
 
     x += w;
     var orangeBtn = new Button(x,y,w,h);
     orangeBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,clyde.color);
+        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,enemy4.color);
     });
     
     var forEachCharBtn = function(callback) {
@@ -9962,19 +9795,19 @@ var preNewGameState = (function() {
             newGameState.setStartLevel(1);
             exitTo(newGameState, 60);
         });
-    menu.addTextButton("PLAY TURBO",
-        function() { 
-            practiceMode = false;
-            turboMode = true;
-            newGameState.setStartLevel(1);
-            exitTo(newGameState, 60);
-        });
-    menu.addTextButton("PRACTICE",
-        function() { 
-            practiceMode = true;
-            turboMode = false;
-            exitTo(selectActState);
-        });
+    // menu.addTextButton("PLAY TURBO",
+    //     function() { 
+    //         practiceMode = false;
+    //         turboMode = true;
+    //         newGameState.setStartLevel(1);
+    //         exitTo(newGameState, 60);
+    //     });
+    // menu.addTextButton("PRACTICE",
+    //     function() { 
+    //         practiceMode = true;
+    //         turboMode = false;
+    //         exitTo(selectActState);
+    //     });
     menu.addSpacer(0.5);
     menu.addTextButton("CUTSCENES",
         function() { 
@@ -9984,12 +9817,12 @@ var preNewGameState = (function() {
         function() { 
             exitTo(aboutGameState);
         });
-    menu.addSpacer(0.5);
-    menu.addTextButton("BACK",
-        function() {
-            exitTo(homeState);
-        });
-    menu.backButton = menu.buttons[menu.buttonCount-1];
+    // menu.addSpacer(0.5);
+    // menu.addTextButton("BACK",
+    //     function() {
+    //         exitTo(homeState);
+    //     });
+    // menu.backButton = menu.buttons[menu.buttonCount-1];
 
     return {
         init: function() {
@@ -10011,6 +9844,8 @@ var preNewGameState = (function() {
         },
     };
 })();
+
+var homeState = preNewGameState;
 
 //////////////////////////////////////////////////////////////////////////////////////
 // Select Act State
@@ -10196,7 +10031,7 @@ var selectLevelState = (function() {
 
     return {
         init: function() {
-            setFruitFromGameMode();
+            // setFruitFromGameMode();
             buildMenu(act);
             gameTitleState.init();
         },
@@ -10300,16 +10135,16 @@ var cutSceneMenuState = (function() {
     menu.addSpacer(2);
     menu.addTextButton("CUTSCENE 1",
         function() { 
-            exitToCutscene(cutscenes[gameMode][0]);
+            exitToCutscene(cutscenes[0]);
         });
     menu.addTextButton("CUTSCENE 2",
         function() { 
-            exitToCutscene(cutscenes[gameMode][1]);
+            exitToCutscene(cutscenes[1]);
         });
-    menu.addTextButton("CUTSCENE 3",
-        function() { 
-            exitToCutscene(cutscenes[gameMode][2]);
-        });
+    // menu.addTextButton("CUTSCENE 3",
+    //     function() { 
+    //         exitToCutscene(cutscenes[2]);
+    //     });
     menu.addSpacer();
     menu.addTextButton("BACK",
         function() {
@@ -10351,7 +10186,7 @@ var scoreState = (function(){
     var menu = new Menu("", 2*tileSize,mapHeight-6*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
     menu.addTextButton("BACK",
         function() {
-            exitTo(homeState);
+            exitTo(preNewGameState);
         });
     menu.backButton = menu.buttons[menu.buttonCount-1];
 
@@ -10449,11 +10284,11 @@ var scoreState = (function(){
 
         y += tileSize*3;
         ctx.fillStyle = scoreColor; ctx.fillText(highScores[4], x,y);
-        atlas.drawCookiemanSprite(ctx,x+2*tileSize,y+tileSize/2,DIR_LEFT,1);
+        atlas.drawTubieManSprite(ctx,x+2*tileSize,y+tileSize/2,DIR_LEFT,1);
         y += tileSize*2;
         ctx.fillStyle = scoreColor; ctx.fillText(highScores[5], x,y);
         drawContrails(x+2*tileSize,y+tileSize/2);
-        atlas.drawCookiemanSprite(ctx,x+2*tileSize,y+tileSize/2,DIR_LEFT,1);
+        atlas.drawTubieManSprite(ctx,x+2*tileSize,y+tileSize/2,DIR_LEFT,1);
     };
 
     var drawFood = function(ctx) {
@@ -10581,13 +10416,13 @@ var aboutState = (function(){
     };
 
     var menu = new Menu("", 2*tileSize,mapHeight-11*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
-    menu.addTextButton("GO TO PROJECT PAGE",
+    menu.addTextButton("VIEW ON GITHUB",
         function() {
-            window.open("https://github.com/shaunew/Pac-Man");
+            window.open("https://github.com/tubietech/tubie-man");
         });
     menu.addTextButton("BACK",
         function() {
-            exitTo(homeState);
+            exitTo(preNewGameState);
         });
     menu.backButton = menu.buttons[menu.buttonCount-1];
 
@@ -10603,7 +10438,14 @@ var aboutState = (function(){
         ctx.fillText("DEVELOPER", x,y);
         y += tileSize*2;
         ctx.fillStyle = "#777";
-        ctx.fillText("SHAUN WILLIAMS", x,y);
+        ctx.fillText("ERIC WEBER", x,y);
+
+        y += tileSize*4;
+        ctx.fillStyle = "#0FF";
+        ctx.fillText("BASED ON WORK BY",x,y);
+        y += tileSize*2;
+        ctx.fillStyle = "#777";
+        ctx.fillText("SHAUN WILLIAMS",x,y);
 
         y += tileSize*4;
         ctx.fillStyle = "#0FF";
@@ -10613,20 +10455,6 @@ var aboutState = (function(){
         ctx.fillText("JAMEY PITTMAN",x,y);
         y += tileSize*2;
         ctx.fillText("BART GRANTHAM",x,y);
-
-        y += tileSize*4;
-        ctx.fillStyle = "#FF0";
-        ctx.fillText("PAC-MAN",x,y);
-        y += tileSize*2;
-        ctx.fillStyle = "#777";
-        ctx.fillText("NAMCO",x,y);
-
-        y += tileSize*4;
-        ctx.fillStyle = "#FF0";
-        ctx.fillText("MS. PAC-MAN / CRAZY OTTO",x,y);
-        y += tileSize*2;
-        ctx.fillStyle = "#777";
-        ctx.fillText("GENERAL COMPUTING",x,y);
     };
 
     return {
@@ -10669,7 +10497,7 @@ var newGameState = (function() {
             level = startLevel-1;
             extraLives = practiceMode ? Infinity : 3;
             setScore(0);
-            setFruitFromGameMode();
+            // setFruitFromGameMode();
             readyNewState.init();
         },
         setStartLevel: function(i) {
@@ -10743,15 +10571,7 @@ var readyNewState = newChildObject(readyState, {
 
         // increment level and ready the next map
         level++;
-        if (gameMode == GAME_PACMAN) {
-            map = mapPacman;
-        }
-        else if (gameMode == GAME_MSPACMAN || gameMode == GAME_OTTO) {
-            setNextMsPacMap();
-        }
-        else if (gameMode == GAME_COOKIE) {
-            setNextCookieMap();
-        }
+        setNextTubieManMap();
         map.resetCurrent();
         fruit.onNewLevel();
         renderer.drawMap();
@@ -10810,12 +10630,12 @@ var playState = {
         var i,g;
         for (i = 0; i<4; i++) {
             g = ghosts[i];
-            if (g.tile.x == pacman.tile.x && g.tile.y == pacman.tile.y && g.mode == GHOST_OUTSIDE) {
+            if (g.tile.x == player.tile.x && g.tile.y == player.tile.y && g.mode == GHOST_OUTSIDE) {
                 if (g.scared) { // eat ghost
                     energizer.addPoints();
                     g.onEaten();
                 }
-                else if (pacman.invincible) // pass through ghost
+                else if (player.invincible) // pass through ghost
                     continue;
                 else // killed by ghost
                     switchState(deadState);
@@ -10870,8 +10690,8 @@ var playState = {
                 // update actors one step at a time
                 for (j=0; j<maxSteps; j++) {
 
-                    // advance pacman
-                    pacman.update(j);
+                    // advance player
+                    player.update(j);
 
                     // test collision with fruit
                     fruit.testCollide();
@@ -10884,7 +10704,7 @@ var playState = {
                         break;
                     }
 
-                    // test pacman collision before and after updating ghosts
+                    // test player collision before and after updating ghosts
                     // (redundant to prevent pass-throughs)
                     // (if collision happens, stop immediately.)
                     if (this.isPacmanCollide()) break;
@@ -11021,7 +10841,7 @@ var deadState = (function() {
                 }
             },
             60: {
-                draw: function() { // isolate pacman
+                draw: function() { // isolate player
                     commonDraw();
                     renderer.beginMapClip();
                     renderer.drawPlayer();
@@ -11131,7 +10951,7 @@ var overState = (function() {
         },
         update: function() {
             if (frames == 120) {
-                switchState(homeState,60);
+                switchState(preNewGameState,60);
             }
             else
                 frames++;
@@ -11140,199 +10960,457 @@ var overState = (function() {
 })();
 
 //@line 1 "src/input.js"
-//////////////////////////////////////////////////////////////////////////////////////
-// Input
-// (Handles all key presses and touches)
+// Accept input from Keyboard, Touch and Game Controller and combine into a unified list of inputs
+
+// The input handling seems over-complicated (and probably is a bit), but the goal of this implementation
+// was to de-couple the way that an 'Action' is generated from the underlying representation of the
+// Action and it's execution.
+
+// Each entry in the map 'Actions' represents a single 'Action' that can be taken. Actions are
+// usually context specific (e.g. the UP action is used for player movement, whereas the MENU_UP action
+// is used for menu navigation)
+// An action should be named based on what happens, not what the input method was.
+
+// Values in InputSources describe/are linked to the physical method that was used to generate the input.
+// The same Action may be tied to different 'Input Sources', and may be handled the same or different.
+
+// An Input is the combination of an 'Action', InputSource and other attributes that provide context
+// To the input. (See the class for an in-depth description of each attribute).
+
+// The InputQueue class should have 1 global instance typically. This class serves 2 purposes.
+// 1. To 'queue' up non-instantaneous inputs. This is usefull as it allows for multiple
+// Inputs occur at the same time, and then when one falls off the other takes the formers place
+// as the active inpupt. This queue was implemented because of an issue using 8-way controllers
+// with just the 'keydown' action.
+
+// An 8-way joystick allows for 2 directions to be active by the same time (e.g. if you picture the 
+// joystick as a compass with UP being North and LEFT being West, the direction NW is a combination of
+// bot the UP and LEFT keys/inputs being triggered at the same time)
+
+// The issues was when moving the joystick from the N to NW directions, the 'UP' action would be lost
+// when the 'LEFT' action was issued. If the player then moved the stick from NW to N without re-centering,
+// no additonal keydown event would be triggered as N/UP was down the entire time. This would cause the
+// Player sprite to continue to move to the LEFT/W until the joystick was re-centered.
+// 
+// Another benefit of the input-queue system is that it allows for 'sticky' inputs, which is an input
+// that occurs 1 time and stops, but the action associated with the input continues to occurr until a
+// clear command is issued, or another input is created.
+
+const InputSources = Object.freeze({
+    _typeName: "InputSources", // Used to identify the object 'type' at runtime. Used for typechecking params
+    KEYBOARD: "keyboard",
+    SWIPE: "swipe",
+    CONTROLLER: "controller"
+});
+
+const Actions = Object.freeze({
+    _typeName: "Actions", // Used to identify the object 'type' at runtime. Used for typechecking params
+    UP: "up",
+    DOWN: "down",
+    LEFT: "left",
+    RIGHT: "right",
+    ENTER : "enter",
+    EXIT: "exit",
+    MENU_UP: "menuUp",
+    MENU_DOWN: "menuDown",
+    MENU_CLOSE: "menuClose",
+    PAUSE: "pause",
+    CHEAT: "cheat",
+    UNUSED: "unused"
+});
+
+const Keys = Object.freeze({
+    _typeName: "Keys", // Used to identify the object 'type' at runtime. Used for typechecking params
+    ENTER: "Enter",
+    ESC: "Escape",
+    END: "End",
+
+    LEFT: "ArrowLeft",
+    RIGHT: "ArrowRight",
+    UP: "ArrowUp",
+    DOWN: "ArrowDown",
+
+    SHIFT: "ShiftLeft",
+    CTRL: "ControlLeft",
+    ALT: "AltLeft",
+    SPACE: "Space",
+
+    W:  "KeyW",
+    A:  "KeyA",
+    S:  "KeyS",
+    D:  "KeyD",
+
+    // A: "KeyA",
+    B: "KeyB",
+    C: "KeyC",
+    // D: "KeyD",
+    E: "KeyE",
+    F: "KeyF",
+    G: "KeyG",
+    H: "KeyH",
+    I: "KeyI",
+    J: "KeyJ",
+    K: "KeyK",
+    L: "KeyL",
+    M: "KeyM",
+    N: "KeyN",
+    O: "KeyO",
+    P: "KeyP",
+    Q: "KeyQ",
+    R: "KeyR",
+    //S: "KeyS",
+    T: "KeyT",
+    U: "KeyU",
+    V: "KeyV",
+    //W: "KeyW",
+    X: "KeyX",
+    Y: "KeyY",
+    Z: "KeyZ",
+
+    0: "Digit0",
+    1: "Digit1",
+    2: "Digit2",
+    3: "Digit3",
+    4: "Digit4",
+    5: "Digit5",
+    6: "Digit6",
+    7: "Digit7",
+    8: "Digit8",
+    9: "Digit9",
+
+    NUM_0: "Numpad0",
+    NUM_1: "Numpad1",
+    NUM_2: "Numpad2",
+    NUM_3: "Numpad3", 
+    NUM_4: "Numpad4",
+    NUM_5: "Numpad5",
+    NUM_6: "Numpad6",
+    NUM_7: "Numpad7",
+    NUM_8: "Numpad8",
+    NUM_9: "Numpad9"
+});
+
+// Maps Keys to Input Types
+const KeyInputMap = {};
+
+// Immutable representation of an input
+class Input {
+    #source;  // Source of the input. Must be one of InputSources
+    #action; // Action to be taken
+    #isVolatile; // Volatility means that an Input will be removed from the queue whenever a new Input is added. The input will continue to move up the queue if previous inputs are dequeued. Volatility can be used to handle InputSources that do not have an exit or cancel event (like swipes, as opposed to 'keyreleased' or 'buttonUp' events for keyboards and controllers respectivley)
+    #isInstantaneous; // If an Input is instantaneous, then it will not be added to the input queue, and only used to process the instant it occurrs. Instantaneous events will still be saved to the recent history of the queue.
+    #conditionFunc; // This is a function that when called evaluates to a boolean, which determines if the input handler should be run.
+
+    constructor(action, source, isVolatile, isInstantaneous, conditionFunc) {
+        // validate params
+        !Input.#isValidInstanceOfType(Actions, action)
+        !Input.#isValidInstanceOfType(InputSources, source)
+        if(typeof isVolatile !== "boolean")
+            throw new Error(`Value ${isVolatile} of parameter 'isVolatile must be a boolean`);
+        if(typeof isInstantaneous !== "boolean")
+            throw new Error(`Value ${isInstantaneous} of parameter 'isInstantaneous must be a boolean`);
+        if(!(conditionFunc === null || conditionFunc === undefined) && typeof conditionFunc !== "function")
+            throw new Error("If a value is provided for conditionFunc, it myst be of type 'function'");
+
+        this.#action = action;
+        this.#source = source;
+        this.#isVolatile = isVolatile;
+        this.#isInstantaneous = isInstantaneous;
+        this.#conditionFunc = conditionFunc;
+    }
+
+    static #isValidInstanceOfType (type, instance) {
+        if (!Object.values(type).includes(instance))
+            throw new Error(`Value ${instance} does not exist in type ${type._typeName}`);
+    }
+
+    getSoruce() {
+        return this.#source;
+    }
+
+    getAction() {
+        return this.#action;
+    }
+
+    evaluateCondition() {
+        // Always execute if no condition was provied
+        return typeof this.#conditionFunc === "function" ? this.#conditionFunc() : true;
+    }
+
+    isVolatile() {
+        return this.#isVolatile;
+    }
+
+    isInstantaneous() {
+        return this.#isInstantaneous;
+    }
+
+    getHash() {
+        const input = `${this.#source}|${this.#isVolatile}|${this.#action}|${this.#isInstantaneous}`;
+
+        // Simple, non-cryptographic
+        let hash = 0;
+        for (let i = 0; i < input.length; i++) {
+          hash = (hash << 5) - hash + input.charCodeAt(i);
+          hash |= 0; // Convert to 32bit integer
+        }
+
+        return hash;
+    }
+
+    isEqual(input) {
+        return this.getHash() === input.getHash();
+    }
+
+    serialize(toString) {
+        if(!(toString === null || toString === undefined) && typeof toString !== "boolean")
+            throw new Error("toString must be a boolean when provided to the method Input.serialize");
+
+        const json = {
+            "hash": this.getHash(),
+            "action": this.#action,
+            "source": this.#source,
+            "isVolatile": this.#isVolatile,
+            "isInstantaneous": this.#isInstantaneous,
+            "hasConditionFunc": typeof this.#conditionFunc === "function",
+        };
+
+        return toString ? JSON.stringify(json, null, 2) : json;
+    }
+}
+
+class InputQueue {
+    #queue = [];
+    #recentHistory = [];
+    #instantaneousInputHandlers = {};
+
+    historyRetentionSize = 10;
+
+    constructor(){}
+
+    set historyRetentionSize(size) {
+        if(typeof size != "number" || size < 0)
+            throw new Error("A number must be used when setting the historyRetentionSize of an InputQueue");
+
+        this.historyRetentionSize = size;
+
+        if(this.#recentHistory.length > this.historyRetentionSize)
+            this.#trimHistory();
+    }
+
+    #trimHistory() {
+        this.#recentHistory = this.#recentHistory.slice(this.#recentHistory.length - this.historyRetentionSize)
+    }
+
+    #updateHistory(input) {
+        this.#recentHistory.push(input);
+        this.#trimHistory();
+    }
+
+    #removeExistingInputInstances(input) {
+        this.#queue = this.#queue.filter((element) => !input.isEqual(element))
+    }
+
+    #removeVolatileInputs() {
+        this.#queue = this.#queue.filter((input) => !input.isVolatile());
+    }
+
+    #checkParamIsInput(name, param) {
+        if(! (param instanceof Input))
+            throw new Error(`Parameter ${name} is not an instance the class Input`);
+    }
+
+    addInstantaneousInputHandler(input, handler) {
+        this.#checkParamIsInput("input", input);
+
+        if(typeof handler !== "function")
+            throw new Error("handler must be a function");
+
+        this.#instantaneousInputHandlers[input.getHash()] = handler;
+    }
+
+    handleInstaneousInput(input, handlerParams) {
+        this.#checkParamIsInput("input", input);
+
+        if(input.isInstantaneous() === false)
+            throw new Error("Only instaneous inputs may be passed to this function");
+
+        if(input.evaluateCondition()) {
+            const inputHash = input.getHash();
+        
+            if(this.#instantaneousInputHandlers.hasOwnProperty(inputHash))
+                this.#instantaneousInputHandlers[inputHash](handlerParams);
+            else
+                console.log(`A handler does not exist for the input ${input.getValue()} with hash ${inputHash}`);            
+        }
+    }
+
+    removeInstantaneousInputHandler(input) {
+        this.#checkParamIsInput("input", input);
+
+        delete this.#instantaneousInputHandlers[input.getHash()];
+    }
+
+    enqueue(input) {
+        this.#checkParamIsInput("input", input);
+    
+        // TODO: Test functionality of removing volatile inputs when enquing instantaneous ones. We may want to only remove volatile for non-instantaneous inptus
+        this.#removeVolatileInputs();
+        this.#removeExistingInputInstances(input);
+        
+        if(input.isInstantaneous())
+            this.handleInstaneousInput(input);
+        else
+            this.#queue.push(input);
+
+        this.#updateHistory(input);        
+    }
+
+    dequeue(input) {
+        this.#removeExistingInputInstances(input);
+    }
+
+    size() {
+        return this.#queue.length
+    }
+
+    empty() {
+        this.#queue.length = 0;
+    }
+
+    getQueueLength() {
+        return this.#queue.length;
+    }
+
+    isEmpty() {
+        return this.getQueueLength() <= 0;
+    }
+
+    getActiveInput() {
+        return this.isEmpty() ? null : this.#queue[this.size() - 1];
+    }
+
+    // Returns a string representation of Inputs in the queue
+    viewInputQueue(miniversion) {
+        if(!(miniversion === null || miniversion === undefined) && typeof miniversion !== "boolean")
+            throw new Error("When providing the miniversion param to InputQueue.viewInputQueue, it must be a boolean");
+
+        if(typeof miniversion === "boolean" && miniversion) {
+            return this.#queue.map((input) => {
+                const inputJson = input.serialize();
+                return `${inputJson.hash},${inputJson.action},${inputJson.source}`
+        }).reduce((prev, current) => (prev === "" ? "" : "|") + current, "");
+        } else {
+            const result = this.#queue.map((input) => input.serialize()).reduce((acc, current) => {
+                acc.push(current);
+                return acc;
+            }, []);
+            return result;
+        }
+    }
+}
+
+// Queue of inputs. All entries must be an instance of the Input class
+const inputQueue = new InputQueue();
+
+// Follows the structure 
+// {
+// "KEY": [INPUT1, INPUT2 ]
+// }
+const keyInputMap = {};
+
+const addKeyInputMapentry = (key, input) => {
+    if(!keyInputMap.hasOwnProperty(key))
+        keyInputMap[key] = [];
+    keyInputMap[key].push(input);
+}
 
 (function(){
+    var addKeyDownHandler = (key, inputType, isInstantaneous, handler, conditionFunc) => {
+        if(!Object.values(Keys).includes(key))
+            throw new Error(`Unable to add Keyhandler for the Key ${key}, as it does not exist in the Keys type`);
+        if(!Object.values(Actions).includes(inputType))
+            throw new Error(`Unable to add Keyhandler for the Key ${key}, as the inputType ${inputType} it does not exist in the Inputs type`);
+        if(!(conditionFunc === null || conditionFunc === undefined) && !(typeof conditionFunc === "function"))
+            throw new Error("If a condidionFunc is provided, it must be of type 'function'");
 
-    // A Key Listener class (each key maps to an array of callbacks)
-    var KeyEventListener = function() {
-        this.listeners = {};
-    };
-    KeyEventListener.prototype = {
-        add: function(key, callback, isActive) {
-            this.listeners[key] = this.listeners[key] || [];
-            this.listeners[key].push({
-                isActive: isActive,
-                callback: callback,
-            });
-        },
-        exec: function(key, e) {
-            var keyListeners = this.listeners[key];
-            if (!keyListeners) {
-                return;
-            }
-            var i,l;
-            var numListeners = keyListeners.length;
-            for (i=0; i<numListeners; i++) {
-                l = keyListeners[i];
-                if (!l.isActive || l.isActive()) {
-                    e.preventDefault();
-                    if (l.callback()) { // do not propagate keys if returns true
-                        break;
-                    }
-                }
-            }
-        },
-    };
+        const input = new Input(inputType, InputSources.KEYBOARD, false, isInstantaneous, conditionFunc);
 
-    // declare key event listeners
-    var keyDownListeners = new KeyEventListener();
-    var keyUpListeners = new KeyEventListener();
+        if(isInstantaneous && typeof handler === "function")
+            inputQueue.addInstantaneousInputHandler(input, handler)
 
-    // helper functions for adding custom key listeners
-    var addKeyDown = function(key,callback,isActive) { keyDownListeners.add(key,callback,isActive); };
-    var addKeyUp   = function(key,callback,isActive) { keyUpListeners.add(key,callback,isActive); };
+        addKeyInputMapentry(key, input);
+    }
 
     // boolean states of each key
-    var keyStates = {};
+    // var keyStates = {}
 
     // hook my key listeners to the window's listeners
-    window.addEventListener("keydown", function(e) {
-        var key = (e||window.event).keyCode;
-
-        // only execute at first press event
-        if (!keyStates[key]) {
-            keyStates[key] = true;
-            keyDownListeners.exec(key, e);
+    window.addEventListener("keydown", function(e) {        
+        const keyCode = e.code;
+        
+        if(keyInputMap.hasOwnProperty(keyCode)) {
+            const inputs = keyInputMap[keyCode];
+            inputs.forEach((input) => inputQueue.enqueue(input));
+        } else {
+            console.log(`No input is mapped to the key ${keyCode}`);
         }
     });
+
     window.addEventListener("keyup",function(e) {
-        var key = (e||window.event).keyCode;
-
-        keyStates[key] = false;
-        keyUpListeners.exec(key, e);
+        var keyCode = e.code;
+        if(keyInputMap.hasOwnProperty(keyCode)) {
+            const inputs = keyInputMap[keyCode];
+            inputs.forEach((input) => inputQueue.dequeue(input));
+        }
     });
-
-
-    // key enumerations
-
-    var KEY_ENTER = 13;
-    var KEY_ESC = 27;
-
-    var KEY_LEFT = 37;
-    var KEY_RIGHT = 39;
-    var KEY_UP = 38;
-    var KEY_DOWN = 40;
-
-    var KEY_SHIFT = 16;
-    var KEY_CTRL = 17;
-    var KEY_ALT = 18;
-
-    var KEY_SPACE = 32;
-
-    var KEY_M = 77;
-    var KEY_N = 78;
-    var KEY_Q = 81;
-    var KEY_W = 87;
-    var KEY_E = 69;
-    var KEY_R = 82;
-    var KEY_T = 84;
-
-    var KEY_A = 65;
-    var KEY_S = 83;
-    var KEY_D = 68;
-    var KEY_F = 70;
-    var KEY_G = 71;
-
-    var KEY_I = 73;
-    var KEY_O = 79;
-    var KEY_P = 80;
-
-    var KEY_1 = 49;
-    var KEY_2 = 50;
-
-    var KEY_END = 35;
-
-    // Custom Key Listeners
 
     // Menu Navigation Keys
-    var menu;
+    var _INPUT_menu;
+    
     var isInMenu = function() {
-        menu = (state.getMenu && state.getMenu());
-        if (!menu && inGameMenu.isOpen()) {
-            menu = inGameMenu.getMenu();
+        _INPUT_menu = (state.getMenu && state.getMenu());
+        if (!_INPUT_menu && inGameMenu.isOpen()) {
+            _INPUT_menu = inGameMenu.getMenu();
         }
-        return menu;
+        return _INPUT_menu;
     };
-    addKeyDown(KEY_ESC,   function(){ menu.backButton ? menu.backButton.onclick():0; return true; }, isInMenu);
-    addKeyDown(KEY_ENTER, function(){ menu.clickCurrentOption(); }, isInMenu);
+
     var isMenuKeysAllowed = function() {
         var menu = isInMenu();
         return menu && !menu.noArrowKeys;
     };
-    addKeyDown(KEY_UP,    function(){ menu.selectPrevOption(); }, isMenuKeysAllowed);
-    addKeyDown(KEY_DOWN,  function(){ menu.selectNextOption(); }, isMenuKeysAllowed);
+
     var isInGameMenuButtonClickable = function() {
         return hud.isValidState() && !inGameMenu.isOpen();
     };
-    addKeyDown(KEY_ESC, function() { inGameMenu.getMenuButton().onclick(); return true; }, isInGameMenuButtonClickable);
 
-    // Move Pac-Man
+    //addKeyDownHandler(KEY, INPUT_TYPE, IS_INSTANTANEOUS, HANDLER, ?CONDITION_FUNC);
+
+    // Menu Navigation & Interaction Keys
+    addKeyDownHandler(Keys.ESC, Actions.EXIT, true, function(){_INPUT_menu.backButton ? _INPUT_menu.backButton.onclick():0; return true}, isInMenu);
+    addKeyDownHandler(Keys.ENTER, Actions.ENTER, true, function(){_INPUT_menu.clickCurrentOption()}, isInMenu);
+    addKeyDownHandler(Keys.UP, Actions.MENU_UP, true, function(){_INPUT_menu.selectPrevOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.DOWN, Actions.MENU_DOWN, true, function(){_INPUT_menu.selectNextOption()}, isMenuKeysAllowed);
+
+    // Open In-Game Menu
+    addKeyDownHandler(Keys.ESC, Actions.MENU_CLOSE, true, function(){inGameMenu.getMenuButton().onclick(); return true}, isInGameMenuButtonClickable);
+    addKeyDownHandler(Keys.SPACE, Actions.MENU_CLOSE, true, function(){inGameMenu.getMenuButton().onclick(); return true}, isInGameMenuButtonClickable);
+
+    // Move Player
     var isPlayState = function() { return state == learnState || state == newGameState || state == playState || state == readyNewState || state == readyRestartState; };
-    addKeyDown(KEY_LEFT,  function() { pacman.setInputDir(DIR_LEFT); },  isPlayState);
-    addKeyDown(KEY_RIGHT, function() { pacman.setInputDir(DIR_RIGHT); }, isPlayState);
-    addKeyDown(KEY_UP,    function() { pacman.setInputDir(DIR_UP); },    isPlayState);
-    addKeyDown(KEY_DOWN,  function() { pacman.setInputDir(DIR_DOWN); },  isPlayState);
-    addKeyUp  (KEY_LEFT,  function() { pacman.clearInputDir(DIR_LEFT); },  isPlayState);
-    addKeyUp  (KEY_RIGHT, function() { pacman.clearInputDir(DIR_RIGHT); }, isPlayState);
-    addKeyUp  (KEY_UP,    function() { pacman.clearInputDir(DIR_UP); },    isPlayState);
-    addKeyUp  (KEY_DOWN,  function() { pacman.clearInputDir(DIR_DOWN); },  isPlayState);
+   
+    // Arrow Key Movement
+    addKeyDownHandler(Keys.LEFT, Actions.LEFT, false, function(){player.setInputDir(DIR_LEFT)}, isPlayState);
+    addKeyDownHandler(Keys.RIGHT, Actions.RIGHT, false, function(){player.setInputDir(DIR_RIGHT)}, isPlayState);
+    addKeyDownHandler(Keys.UP, Actions.UP, false, function(){player.setInputDir(DIR_UP)}, isPlayState);
+    addKeyDownHandler(Keys.DOWN, Actions.DOWN, false, function(){player.setInputDir(DIR_DOWN)}, isPlayState);
 
-    // Slow-Motion
-    var isPracticeMode = function() { return isPlayState() && practiceMode; };
-    //isPracticeMode = function() { return true; };
-    addKeyDown(KEY_1, function() { executive.setUpdatesPerSecond(30); }, isPracticeMode);
-    addKeyDown(KEY_2,  function() { executive.setUpdatesPerSecond(15); }, isPracticeMode);
-    addKeyUp  (KEY_1, function() { executive.setUpdatesPerSecond(60); }, isPracticeMode);
-    addKeyUp  (KEY_2,  function() { executive.setUpdatesPerSecond(60); }, isPracticeMode);
-
-    // Toggle VCR
-    var canSeek = function() { return !isInMenu() && vcr.getMode() != VCR_NONE; };
-    addKeyDown(KEY_SHIFT, function() { vcr.startSeeking(); },   canSeek);
-    addKeyUp  (KEY_SHIFT, function() { vcr.startRecording(); }, canSeek);
-
-    // Adjust VCR seeking
-    var isSeekState = function() { return vcr.isSeeking(); };
-    addKeyDown(KEY_UP,   function() { vcr.nextSpeed(1); },  isSeekState);
-    addKeyDown(KEY_DOWN, function() { vcr.nextSpeed(-1); }, isSeekState);
-
-    // Skip Level
-    var canSkip = function() {
-        return isPracticeMode() && 
-            (state == newGameState ||
-            state == readyNewState ||
-            state == readyRestartState ||
-            state == playState ||
-            state == deadState ||
-            state == finishState ||
-            state == overState);
-    };
-    addKeyDown(KEY_N, function() { switchState(readyNewState, 60); }, canSkip);
-    addKeyDown(KEY_M, function() { switchState(finishState); }, function() { return state == playState; });
-
-    // Draw Actor Targets (fishpoles)
-    addKeyDown(KEY_Q, function() { blinky.isDrawTarget = !blinky.isDrawTarget; }, isPracticeMode);
-    addKeyDown(KEY_W, function() { pinky.isDrawTarget = !pinky.isDrawTarget; }, isPracticeMode);
-    addKeyDown(KEY_E, function() { inky.isDrawTarget = !inky.isDrawTarget; }, isPracticeMode);
-    addKeyDown(KEY_R, function() { clyde.isDrawTarget = !clyde.isDrawTarget; }, isPracticeMode);
-    addKeyDown(KEY_T, function() { pacman.isDrawTarget = !pacman.isDrawTarget; }, isPracticeMode);
-
-    // Draw Actor Paths
-    addKeyDown(KEY_A, function() { blinky.isDrawPath = !blinky.isDrawPath; }, isPracticeMode);
-    addKeyDown(KEY_S, function() { pinky.isDrawPath = !pinky.isDrawPath; }, isPracticeMode);
-    addKeyDown(KEY_D, function() { inky.isDrawPath = !inky.isDrawPath; }, isPracticeMode);
-    addKeyDown(KEY_F, function() { clyde.isDrawPath = !clyde.isDrawPath; }, isPracticeMode);
-    addKeyDown(KEY_G, function() { pacman.isDrawPath = !pacman.isDrawPath; }, isPracticeMode);
-
-    // Miscellaneous Cheats
-    addKeyDown(KEY_I, function() { pacman.invincible = !pacman.invincible; }, isPracticeMode);
-    addKeyDown(KEY_O, function() { turboMode = !turboMode; }, isPracticeMode);
-    addKeyDown(KEY_P, function() { pacman.ai = !pacman.ai; }, isPracticeMode);
-
-    addKeyDown(KEY_END, function() { executive.togglePause(); });
-
+    // WASD Movement
+    addKeyDownHandler(Keys.A, Actions.LEFT, false, function(){player.setInputDir(DIR_LEFT)}, isPlayState);
+    addKeyDownHandler(Keys.D, Actions.RIGHT, false, function(){player.setInputDir(DIR_RIGHT)}, isPlayState);
+    addKeyDownHandler(Keys.W, Actions.UP, false, function(){player.setInputDir(DIR_UP)}, isPlayState);
+    addKeyDownHandler(Keys.S, Actions.DOWN, false, function(){player.setInputDir(DIR_DOWN)}, isPlayState);
 })();
 
 var initSwipe = function() {
@@ -11381,10 +11459,18 @@ var initSwipe = function() {
 
                 // register direction
                 if (Math.abs(dx) >= Math.abs(dy)) {
-                    pacman.setInputDir(dx>0 ? DIR_RIGHT : DIR_LEFT);
+                    //player.setInputDir(dx>0 ? DIR_RIGHT : DIR_LEFT);
+                    const rightInput = new Input(Actions.RIGHT, InputSources.SWIPE, true, false);
+                    const leftInput = new Input(Actions.LEFT, InputSources.SWIPE, true, false);
+
+                    inputQueue.enqueue(dx > 0 ? rightInput : leftInput);
                 }
                 else {
-                    pacman.setInputDir(dy>0 ? DIR_DOWN : DIR_UP);
+                    //player.setInputDir(dy>0 ? DIR_DOWN : DIR_UP);
+                    const upInput = new Input(Actions.UP, InputSources.SWIPE, true, false);
+                    const downInput = new Input(Actions.DOWN, InputSources.SWIPE, true, false);
+
+                    inputQueue.enqueue(dx > 0 ? downInput : upInput);
                 }
             }
         }
@@ -11404,7 +11490,7 @@ var initSwipe = function() {
 
     var touchTap = function(event) {
         // tap to clear input directions
-        pacman.clearInputDir(undefined);
+        player.clearInputDir(undefined);
     };
     
     // register touch events
@@ -11414,6 +11500,34 @@ var initSwipe = function() {
     document.ontouchmove = touchMove;
     document.ontouchcancel = touchCancel;
 };
+
+const gamepads = {};
+
+const gamepadConnectionHandler = (event, connected) => {
+    // Code from MDN: https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API/Using_the_Gamepad_API
+    const gamepad = event.gamepad;
+  
+    if (connected) {
+      gamepads[gamepad.index] = gamepad;
+    } else {
+      delete gamepads[gamepad.index];
+    }
+}
+
+const initGamepad = () => {
+    window.addEventListener("gamepadconnected", (e) => gamepadHandler(e, true), false);
+    window.addEventListener("gamepaddisconnected", (e) => gamepadHandler(e, true), false); 
+}
+
+const checkGamepad = (gamepad) => {
+
+}
+
+const checkGamepads = (gamepads) => {
+    if(gamepads && Object.keys(gamepads).length > 0) {
+        gamepads.array.forEach((gamepad) => checkGamepad(gamepad));
+    }
+}
 //@line 1 "src/cutscenes.js"
 ////////////////////////////////////////////////
 // Cutscenes
@@ -11432,22 +11546,23 @@ var playCutScene = function(cutScene, nextState) {
 
 };
 
-var pacmanCutscene1 = newChildObject(scriptState, {
+var tubieManCutscene1 = newChildObject(scriptState, {
+
     init: function() {
         scriptState.init.call(this);
 
         // initialize actor positions
-        pacman.setPos(232, 164);
-        blinky.setPos(257, 164);
+        player.setPos(232, 164);
+        enemy1.setPos(257, 164);
 
         // initialize actor directions
-        blinky.setDir(DIR_LEFT);
-        blinky.faceDirEnum = DIR_LEFT;
-        pacman.setDir(DIR_LEFT);
+        enemy1.setDir(DIR_LEFT);
+        enemy1.faceDirEnum = DIR_LEFT;
+        player.setDir(DIR_LEFT);
 
         // initialize misc actor properties
-        blinky.scared = false;
-        blinky.mode = GHOST_OUTSIDE;
+        enemy1.scared = false;
+        enemy1.mode = GHOST_OUTSIDE;
 
         // clear other states
         backupCheats();
@@ -11455,15 +11570,15 @@ var pacmanCutscene1 = newChildObject(scriptState, {
         energizer.reset();
 
         // temporarily override actor step sizes
-        pacman.getNumSteps = function() {
+        player.getNumSteps = function() {
             return Actor.prototype.getStepSizeFromTable.call(this, 5, STEP_PACMAN);
         };
-        blinky.getNumSteps = function() {
+        enemy1.getNumSteps = function() {
             return Actor.prototype.getStepSizeFromTable.call(this, 5, STEP_ELROY2);
         };
 
         // temporarily override steering functions
-        pacman.steer = blinky.steer = function(){};
+        player.steer = enemy1.steer = function(){};
     },
     triggers: {
 
@@ -11472,11 +11587,11 @@ var pacmanCutscene1 = newChildObject(scriptState, {
             update: function() {
                 var j;
                 for (j=0; j<2; j++) {
-                    pacman.update(j);
-                    blinky.update(j);
+                    player.update(j);
+                    enemy1.update(j);
                 }
-                pacman.frames++;
-                blinky.frames++;
+                player.frames++;
+                enemy1.frames++;
             },
             draw: function() {
                 renderer.blitMap();
@@ -11490,646 +11605,41 @@ var pacmanCutscene1 = newChildObject(scriptState, {
         // Pac-Man chases Blinky
         260: {
             init: function() {
-                pacman.setPos(-193, 155);
-                blinky.setPos(-8, 164);
+                player.setPos(-193, 164);
+                enemy1.setPos(-8, 155);
 
                 // initialize actor directions
-                blinky.setDir(DIR_RIGHT);
-                blinky.faceDirEnum = DIR_RIGHT;
-                pacman.setDir(DIR_RIGHT);
+                enemy1.setDir(DIR_RIGHT);
+                enemy1.faceDirEnum = DIR_RIGHT;
+                player.setDir(DIR_RIGHT);
 
                 // initialize misc actor properties
-                blinky.scared = true;
+                enemy1.scared = true;
 
                 // temporarily override step sizes
-                pacman.getNumSteps = function() {
+                player.getNumSteps = function() {
                     return Actor.prototype.getStepSizeFromTable.call(this, 5, STEP_PACMAN_FRIGHT);
                 };
-                blinky.getNumSteps = function() {
+                enemy1.getNumSteps = function() {
                     return Actor.prototype.getStepSizeFromTable.call(this, 5, STEP_GHOST_FRIGHT);
                 };
             },
             update: function() {
                 var j;
                 for (j=0; j<2; j++) {
-                    pacman.update(j);
-                    blinky.update(j);
+                    player.update(j);
+                    enemy1.update(j);
                 }
-                pacman.frames++;
-                blinky.frames++;
-            },
-            draw: function() {
-                renderer.blitMap();
-                renderer.beginMapClip();
-                renderer.drawGhost(blinky);
-                renderer.renderFunc(function(ctx) {
-                    var frame = Math.floor(pacman.steps/4) % 4; // slower to switch animation frame when giant
-                    if (frame == 3) {
-                        frame = 1;
-                    }
-                    drawGiantPacmanSprite(ctx, pacman.pixel.x, pacman.pixel.y, pacman.dirEnum, frame);
-                });
-                renderer.endMapClip();
-            },
-        },
-
-        // end
-        640: {
-            init: function() {
-                // disable custom steps
-                delete pacman.getNumSteps;
-                delete blinky.getNumSteps;
-
-                // disable custom steering
-                delete pacman.steer;
-                delete blinky.steer;
-
-                // exit to next level
-                restoreCheats();
-                switchState(pacmanCutscene1.nextState, 60);
-            },
-        },
-    },
-});
-
-var mspacmanCutscene1 = (function() {
-
-    // create new players pac and mspac for this scene
-    var pac = new Player();
-    var mspac = new Player();
-
-    // draws pac or mspac
-    var drawPlayer = function(ctx,player) {
-        var frame = player.getAnimFrame();
-        var func;
-        if (player == pac) {
-            func = gameMode == GAME_MSPACMAN ? atlas.drawPacmanSprite : atlas.drawOttoSprite;
-        }
-        else if (player == mspac) {
-            func = gameMode == GAME_MSPACMAN ? atlas.drawMsPacmanSprite : atlas.drawMsOttoSprite;
-        }
-        func(ctx, player.pixel.x, player.pixel.y, player.dirEnum, frame);
-    };
-
-    // draws all actors
-    var draw = function() {
-        renderer.blitMap();
-        renderer.beginMapClip();
-        renderer.renderFunc(function(ctx) {
-            drawPlayer(ctx,pac);
-            drawPlayer(ctx,mspac);
-        });
-        renderer.drawGhost(inky);
-        renderer.drawGhost(pinky);
-        renderer.endMapClip();
-    };
-
-    // updates all actors
-    var update = function() {
-        var j;
-        for (j=0; j<2; j++) {
-            pac.update(j);
-            mspac.update(j);
-            inky.update(j);
-            pinky.update(j);
-        }
-        pac.frames++;
-        mspac.frames++;
-        inky.frames++;
-        pinky.frames++;
-    };
-
-    var exit = function() {
-        // disable custom steps
-        delete inky.getNumSteps;
-        delete pinky.getNumSteps;
-
-        // disable custom steering
-        delete inky.steer;
-        delete pinky.steer;
-
-        // disable custom animation steps
-        delete inky.getAnimFrame;
-        delete pinky.getAnimFrame;
-
-        // exit to next level
-        restoreCheats();
-        switchState(mspacmanCutscene1.nextState, 60);
-    };
-
-    return newChildObject(scriptState, {
-
-        init: function() {
-            scriptState.init.call(this);
-
-            // chosen by trial-and-error to match animations
-            mspac.frames = 20;
-            pac.frames = 12;
-
-            // initialize actor states
-            pac.setPos(-10, 99);
-            pac.setDir(DIR_RIGHT);
-            mspac.setPos(232, 180);
-            mspac.setDir(DIR_LEFT);
-            
-            // initial ghost states
-            inky.frames = 0;
-            inky.mode = GHOST_OUTSIDE;
-            inky.scared = false;
-            inky.setPos(pac.pixel.x-42, 99);
-            inky.setDir(DIR_RIGHT);
-            inky.faceDirEnum = DIR_RIGHT;
-            pinky.frames = 3;
-            pinky.mode = GHOST_OUTSIDE;
-            pinky.scared = false;
-            pinky.setPos(mspac.pixel.x+49, 180);
-            pinky.setDir(DIR_LEFT);
-            pinky.faceDirEnum = DIR_LEFT;
-
-            // clear other states
-            backupCheats();
-            clearCheats();
-            energizer.reset();
-
-            // step player animation every four frames
-            pac.getStepFrame = function() { return Math.floor(this.frames/4)%4; };
-            mspac.getStepFrame = function() { return Math.floor(this.frames/4)%4; };
-
-            // step ghost animation every six frames
-            inky.getAnimFrame = function() { return Math.floor(this.frames/8)%2; };
-            pinky.getAnimFrame = function() { return Math.floor(this.frames/8)%2; };
-
-            // set actor step sizes
-            pac.getNumSteps = function() { return 1; };
-            mspac.getNumSteps = function() { return 1; };
-            inky.getNumSteps = function() { return 1; };
-            pinky.getNumSteps = function() { return 1; };
-
-            // set steering functions
-            pac.steer = function(){};
-            mspac.steer = function(){};
-            inky.steer = function(){};
-            pinky.steer = function(){};
-        },
-        triggers: {
-
-            // Inky chases Pac, Pinky chases Mspac
-            0: {
-                update: function() {
-                    update();
-                    if (inky.pixel.x == 105) {
-                        // speed up the ghosts
-                        inky.getNumSteps = function() {
-                            return Actor.prototype.getStepSizeFromTable.call(this, 5, STEP_ELROY2);
-                        };
-                        pinky.getNumSteps = function() {
-                            return Actor.prototype.getStepSizeFromTable.call(this, 5, STEP_ELROY2);
-                        };
-                    }
-                },
-                draw: draw,
-            },
-
-            // MsPac and Pac converge with ghosts chasing
-            300: (function(){
-
-                // bounce animation when ghosts bump heads
-                var inkyBounceX =  [ 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0];
-                var inkyBounceY =  [-1, 0,-1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0,-1, 0,-1, 0, 0, 0, 0, 0, 1, 0, 1];
-                var pinkyBounceX = [ 0, 0, 0, 0,-1, 0,-1, 0, 0,-1, 0,-1, 0,-1, 0, 0,-1, 0,-1, 0,-1, 0, 0,-1, 0,-1, 0,-1, 0, 0];
-                var pinkyBounceY = [ 0, 0, 0,-1, 0,-1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0,-1, 0,-1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0];
-                var inkyBounceFrame = 0;
-                var pinkyBounceFrame = 0;
-                var inkyBounceFrameLen = inkyBounceX.length;
-                var pinkyBounceFrameLen = pinkyBounceX.length;
-
-                // ramp animation for players
-                var rampX = [0, 1, 1, 1, 1, 0, 0];
-                var rampY = [0, 0,-1,-1,-1, 0, 0];
-                var rampFrame = 0;
-                var rampFrameLen = rampX.length;
-
-                // climbing
-                var climbFrame = 0;
-
-                // meeting
-                var meetFrame = 0;
-
-                var ghostMode;
-                var GHOST_RUN = 0;
-                var GHOST_BUMP = 1;
-
-                var playerMode;
-                var PLAYER_RUN = 0;
-                var PLAYER_RAMP = 1;
-                var PLAYER_CLIMB = 2;
-                var PLAYER_MEET = 3;
-                     
-                return {
-                    init: function() {
-                        // reset frames
-                        inkyBounceFrame = pinkyBounceFrame = rampFrame = climbFrame = meetFrame = 0;
-
-                        // set modes
-                        ghostMode = GHOST_RUN;
-                        playerMode = PLAYER_RUN;
-
-                        // set initial positions and directions
-                        mspac.setPos(-8,143);
-                        mspac.setDir(DIR_RIGHT);
-
-                        pinky.setPos(-81,143);
-                        pinky.faceDirEnum = DIR_RIGHT;
-                        pinky.setDir(DIR_RIGHT);
-
-                        pac.setPos(223+8+3,142);
-                        pac.setDir(DIR_LEFT);
-
-                        inky.setPos(302,143);
-                        inky.faceDirEnum = DIR_LEFT;
-                        inky.setDir(DIR_LEFT);
-
-                        // set ghost speed
-                        inky.getNumSteps = pinky.getNumSteps = function() {
-                            return "11211212"[this.frames%8];
-                        };
-                    },
-                    update: function() {
-                        var j;
-
-                        // update players
-                        if (playerMode == PLAYER_RUN) {
-                            for (j=0; j<2; j++) {
-                                pac.update(j);
-                                mspac.update(j);
-                            }
-                            if (mspac.pixel.x == 102) {
-                                playerMode++;
-                            }
-                        }
-                        else if (playerMode == PLAYER_RAMP) {
-                            pac.pixel.x -= rampX[rampFrame];
-                            pac.pixel.y += rampY[rampFrame];
-                            pac.commitPos();
-                            mspac.pixel.x += rampX[rampFrame];
-                            mspac.pixel.y += rampY[rampFrame];
-                            mspac.commitPos();
-                            rampFrame++;
-                            if (rampFrame == rampFrameLen) {
-                                playerMode++;
-                            }
-                        }
-                        else if (playerMode == PLAYER_CLIMB) {
-                            if (climbFrame == 0) {
-                                // set initial climb state for mspac
-                                mspac.pixel.y -= 2;
-                                mspac.commitPos();
-                                mspac.setDir(DIR_UP);
-
-                                // set initial climb state for pac
-                                pac.pixel.x -= 1;
-                                pac.commitPos();
-                                pac.setDir(DIR_UP);
-                            }
-                            else {
-                                for (j=0; j<2; j++) {
-                                    pac.update(j);
-                                    mspac.update(j);
-                                }
-                            }
-                            climbFrame++;
-                            if (mspac.pixel.y == 91) {
-                                playerMode++;
-                            }
-                        }
-                        else if (playerMode == PLAYER_MEET) {
-                            if (meetFrame == 0) {
-                                // set initial meet state for mspac
-                                mspac.pixel.y++;
-                                mspac.setDir(DIR_RIGHT);
-                                mspac.commitPos();
-
-                                // set initial meet state for pac
-                                pac.pixel.y--;
-                                pac.pixel.x++;
-                                pac.setDir(DIR_LEFT);
-                                pac.commitPos();
-                            }
-                            if (meetFrame > 18) {
-                                // pause player frames after a certain period
-                                pac.frames--;
-                                mspac.frames--;
-                            }
-                            if (meetFrame == 78) {
-                                exit();
-                            }
-                            meetFrame++;
-                        }
-                        pac.frames++;
-                        mspac.frames++;
-
-                        // update ghosts
-                        if (ghostMode == GHOST_RUN) {
-                            for (j=0; j<2; j++) {
-                                inky.update(j);
-                                pinky.update(j);
-                            }
-
-                            // stop at middle
-                            inky.pixel.x = Math.max(120, inky.pixel.x);
-                            inky.commitPos();
-                            pinky.pixel.x = Math.min(105, pinky.pixel.x);
-                            pinky.commitPos();
-
-                            if (pinky.pixel.x == 105) {
-                                ghostMode++;
-                            }
-                        }
-                        else if (ghostMode == GHOST_BUMP) {
-                            if (inkyBounceFrame < inkyBounceFrameLen) {
-                                inky.pixel.x += inkyBounceX[inkyBounceFrame];
-                                inky.pixel.y += inkyBounceY[inkyBounceFrame];
-                            }
-                            if (pinkyBounceFrame < pinkyBounceFrameLen) {
-                                pinky.pixel.x += pinkyBounceX[pinkyBounceFrame];
-                                pinky.pixel.y += pinkyBounceY[pinkyBounceFrame];
-                            }
-                            inkyBounceFrame++;
-                            pinkyBounceFrame++;
-                        }
-                        inky.frames++;
-                        pinky.frames++;
-                    },
-                    draw: function() {
-                        renderer.blitMap();
-                        renderer.beginMapClip();
-                        renderer.renderFunc(function(ctx) {
-                            drawPlayer(ctx,pac);
-                            drawPlayer(ctx,mspac);
-                        });
-                        if (inkyBounceFrame < inkyBounceFrameLen) {
-                            renderer.drawGhost(inky);
-                        }
-                        if (pinkyBounceFrame < pinkyBounceFrameLen) {
-                            renderer.drawGhost(pinky);
-                        }
-                        if (playerMode == PLAYER_MEET) {
-                            renderer.renderFunc(function(ctx) {
-                                drawHeartSprite(ctx, 112, 73);
-                            });
-                        }
-                        renderer.endMapClip();
-                    },
-                }; // returned object
-            })(), // trigger at 300
-        }, // triggers
-    }); // returned object
-})(); // mspacCutscene1
-
-var mspacmanCutscene2 = (function() {
-
-    // create new players pac and mspac for this scene
-    var pac = new Player();
-    var mspac = new Player();
-
-    // draws pac or mspac
-    var drawPlayer = function(ctx,player) {
-        var frame = player.getAnimFrame();
-        var func;
-        if (player == pac) {
-            func = gameMode == GAME_MSPACMAN ? atlas.drawPacmanSprite : atlas.drawOttoSprite;
-        }
-        else if (player == mspac) {
-            func = gameMode == GAME_MSPACMAN ? atlas.drawMsPacmanSprite : atlas.drawMsOttoSprite;
-        }
-        func(ctx, player.pixel.x, player.pixel.y, player.dirEnum, frame);
-    };
-
-    // draws all actors
-    var draw = function() {
-        renderer.blitMap();
-        renderer.beginMapClip();
-        renderer.renderFunc(function(ctx) {
-            drawPlayer(ctx,pac);
-            drawPlayer(ctx,mspac);
-        });
-        renderer.endMapClip();
-    };
-
-    // updates all actors
-    var update = function() {
-        var j;
-        for (j=0; j<7; j++) {
-            pac.update(j);
-            mspac.update(j);
-        }
-        pac.frames++;
-        mspac.frames++;
-    };
-
-    var exit = function() {
-        // exit to next level
-        restoreCheats();
-        switchState(mspacmanCutscene2.nextState, 60);
-    };
-
-    var getChaseSteps = function() { return 3; };
-    var getFleeSteps = function() { return "32"[this.frames%2]; };
-    var getDartSteps = function() { return 7; };
-
-    return newChildObject(scriptState, {
-
-        init: function() {
-            scriptState.init.call(this);
-
-            // chosen by trial-and-error to match animations
-            mspac.frames = 20;
-            pac.frames = 12;
-
-            // step player animation every four frames
-            pac.getStepFrame = function() { return Math.floor(this.frames/4)%4; };
-            mspac.getStepFrame = function() { return Math.floor(this.frames/4)%4; };
-
-            // set steering functions
-            pac.steer = function(){};
-            mspac.steer = function(){};
-            
-            backupCheats();
-            clearCheats();
-        },
-        triggers: {
-            0: {
-                draw: function() {
-                    renderer.blitMap();
-                },
-            },
-
-            160: {
-                init: function() {
-                    pac.setPos(-8, 67);
-                    pac.setDir(DIR_RIGHT);
-
-                    mspac.setPos(-106, 68);
-                    mspac.setDir(DIR_RIGHT);
-
-                    pac.getNumSteps = getFleeSteps;
-                    mspac.getNumSteps = getChaseSteps;
-                },
-                update: update,
-                draw: draw,
-            },
-            410: {
-                init: function() {
-                    pac.setPos(329, 163);
-                    pac.setDir(DIR_LEFT);
-
-                    mspac.setPos(223+8, 164);
-                    mspac.setDir(DIR_LEFT);
-
-                    pac.getNumSteps = getChaseSteps;
-                    mspac.getNumSteps = getFleeSteps;
-                },
-                update: update,
-                draw: draw,
-            },
-            670: {
-                init: function() {
-                    pac.setPos(-8,142);
-                    pac.setDir(DIR_RIGHT);
-
-                    mspac.setPos(-106, 143);
-                    mspac.setDir(DIR_RIGHT);
-
-                    pac.getNumSteps = getFleeSteps;
-                    mspac.getNumSteps = getChaseSteps;
-                },
-                update: update,
-                draw: draw,
-            },
-            930: {
-                init: function() {
-                    pac.setPos(233+148,99);
-                    pac.setDir(DIR_LEFT);
-
-                    mspac.setPos(233,100);
-                    mspac.setDir(DIR_LEFT);
-
-                    pac.getNumSteps = getDartSteps;
-                    mspac.getNumSteps = getDartSteps;
-                },
-                update: function() {
-                    if (pac.pixel.x <= 17 && pac.dirEnum == DIR_LEFT) {
-                        pac.setPos(-2,195);
-                        pac.setDir(DIR_RIGHT);
-
-                        mspac.setPos(-2-148,196);
-                        mspac.setDir(DIR_RIGHT);
-                    }
-                    update();
-                },
-                draw: draw,
-            },
-            1140: {
-                init: exit,
-            },
-        }, // triggers
-    }); // returned object
-})(); // mspacCutscene2
-
-var cookieCutscene1 = newChildObject(scriptState, {
-
-    init: function() {
-        scriptState.init.call(this);
-
-        // initialize actor positions
-        pacman.setPos(232, 164);
-        blinky.setPos(257, 164);
-
-        // initialize actor directions
-        blinky.setDir(DIR_LEFT);
-        blinky.faceDirEnum = DIR_LEFT;
-        pacman.setDir(DIR_LEFT);
-
-        // initialize misc actor properties
-        blinky.scared = false;
-        blinky.mode = GHOST_OUTSIDE;
-
-        // clear other states
-        backupCheats();
-        clearCheats();
-        energizer.reset();
-
-        // temporarily override actor step sizes
-        pacman.getNumSteps = function() {
-            return Actor.prototype.getStepSizeFromTable.call(this, 5, STEP_PACMAN);
-        };
-        blinky.getNumSteps = function() {
-            return Actor.prototype.getStepSizeFromTable.call(this, 5, STEP_ELROY2);
-        };
-
-        // temporarily override steering functions
-        pacman.steer = blinky.steer = function(){};
-    },
-    triggers: {
-
-        // Blinky chases Pac-Man
-        0: {
-            update: function() {
-                var j;
-                for (j=0; j<2; j++) {
-                    pacman.update(j);
-                    blinky.update(j);
-                }
-                pacman.frames++;
-                blinky.frames++;
-            },
-            draw: function() {
-                renderer.blitMap();
-                renderer.beginMapClip();
-                renderer.drawPlayer();
-                renderer.drawGhost(blinky);
-                renderer.endMapClip();
-            },
-        },
-
-        // Pac-Man chases Blinky
-        260: {
-            init: function() {
-                pacman.setPos(-193, 164);
-                blinky.setPos(-8, 155);
-
-                // initialize actor directions
-                blinky.setDir(DIR_RIGHT);
-                blinky.faceDirEnum = DIR_RIGHT;
-                pacman.setDir(DIR_RIGHT);
-
-                // initialize misc actor properties
-                blinky.scared = true;
-
-                // temporarily override step sizes
-                pacman.getNumSteps = function() {
-                    return Actor.prototype.getStepSizeFromTable.call(this, 5, STEP_PACMAN_FRIGHT);
-                };
-                blinky.getNumSteps = function() {
-                    return Actor.prototype.getStepSizeFromTable.call(this, 5, STEP_GHOST_FRIGHT);
-                };
-            },
-            update: function() {
-                var j;
-                for (j=0; j<2; j++) {
-                    pacman.update(j);
-                    blinky.update(j);
-                }
-                pacman.frames++;
-                blinky.frames++;
+                player.frames++;
+                enemy1.frames++;
             },
             draw: function() {
                 renderer.blitMap();
                 renderer.beginMapClip();
                 renderer.drawPlayer();
                 renderer.renderFunc(function(ctx) {
-                    var y = blinky.getBounceY(blinky.pixel.x, blinky.pixel.y, DIR_RIGHT);
-                    var x = blinky.pixel.x;
+                    var y = enemy1.getBounceY(enemy1.pixel.x, enemy1.pixel.y, DIR_RIGHT);
+                    var x = enemy1.pixel.x;
                     ctx.save();
                     ctx.translate(x,y);
                     var s = 16/6;
@@ -12145,28 +11655,28 @@ var cookieCutscene1 = newChildObject(scriptState, {
         640: {
             init: function() {
                 // disable custom steps
-                delete pacman.getNumSteps;
-                delete blinky.getNumSteps;
+                delete player.getNumSteps;
+                delete enemy1.getNumSteps;
 
                 // disable custom steering
-                delete pacman.steer;
-                delete blinky.steer;
+                delete player.steer;
+                delete enemy1.steer;
 
                 // exit to next level
                 restoreCheats();
-                switchState(cookieCutscene1.nextState, 60);
+                switchState(tubieManCutscene1.nextState, 60);
             },
         },
     },
 });
 
-var cookieCutscene2 = (function() {
+var tubieManCutscene2 = (function() {
 
     /*
     NOTE:
     This is a copy-paste of mspacmanCutscene1.
     pac is replaced with a scared ghost (bouncing cookie)
-    mspac is replaced with Cookie-Man
+    mspac is replaced with Tubie-Man
     */
 
     // create new players pac and mspac for this scene
@@ -12184,7 +11694,7 @@ var cookieCutscene2 = (function() {
             atlas.drawMuppetSprite(ctx, player.pixel.x, y, 0, player.dirEnum, true, false);
         }
         else if (player == mspac) {
-            drawCookiemanSprite(ctx, player.pixel.x, player.pixel.y, player.dirEnum, frame, true);
+            drawTubieManSprite(ctx, player.pixel.x, player.pixel.y, player.dirEnum, frame, true);
         }
     };
 
@@ -12196,8 +11706,8 @@ var cookieCutscene2 = (function() {
             drawPlayer(ctx,pac);
             drawPlayer(ctx,mspac);
         });
-        renderer.drawGhost(inky);
-        renderer.drawGhost(pinky);
+        renderer.drawGhost(enemy3);
+        renderer.drawGhost(enemy2);
         renderer.endMapClip();
     };
 
@@ -12207,31 +11717,31 @@ var cookieCutscene2 = (function() {
         for (j=0; j<2; j++) {
             pac.update(j);
             mspac.update(j);
-            inky.update(j);
-            pinky.update(j);
+            enemy3.update(j);
+            enemy2.update(j);
         }
         pac.frames++;
         mspac.frames++;
-        inky.frames++;
-        pinky.frames++;
+        enemy3.frames++;
+        enemy2.frames++;
     };
 
     var exit = function() {
         // disable custom steps
-        delete inky.getNumSteps;
-        delete pinky.getNumSteps;
+        delete enemy3.getNumSteps;
+        delete enemy2.getNumSteps;
 
         // disable custom steering
-        delete inky.steer;
-        delete pinky.steer;
+        delete enemy3.steer;
+        delete enemy2.steer;
 
         // disable custom animation steps
-        delete inky.getAnimFrame;
-        delete pinky.getAnimFrame;
+        delete enemy3.getAnimFrame;
+        delete enemy2.getAnimFrame;
 
         // exit to next level
         restoreCheats();
-        switchState(cookieCutscene2.nextState, 60);
+        switchState(tubieManCutscene2.nextState, 60);
     };
 
     return newChildObject(scriptState, {
@@ -12250,18 +11760,18 @@ var cookieCutscene2 = (function() {
             mspac.setDir(DIR_LEFT);
             
             // initial ghost states
-            inky.frames = 0;
-            inky.mode = GHOST_OUTSIDE;
-            inky.scared = false;
-            inky.setPos(pac.pixel.x-42, 99);
-            inky.setDir(DIR_RIGHT);
-            inky.faceDirEnum = DIR_RIGHT;
-            pinky.frames = 3;
-            pinky.mode = GHOST_OUTSIDE;
-            pinky.scared = false;
-            pinky.setPos(mspac.pixel.x+49, 180);
-            pinky.setDir(DIR_LEFT);
-            pinky.faceDirEnum = DIR_LEFT;
+            enemy3.frames = 0;
+            enemy3.mode = GHOST_OUTSIDE;
+            enemy3.scared = false;
+            enemy3.setPos(pac.pixel.x-42, 99);
+            enemy3.setDir(DIR_RIGHT);
+            enemy3.faceDirEnum = DIR_RIGHT;
+            enemy2.frames = 3;
+            enemy2.mode = GHOST_OUTSIDE;
+            enemy2.scared = false;
+            enemy2.setPos(mspac.pixel.x+49, 180);
+            enemy2.setDir(DIR_LEFT);
+            enemy2.faceDirEnum = DIR_LEFT;
 
             // clear other states
             backupCheats();
@@ -12273,20 +11783,20 @@ var cookieCutscene2 = (function() {
             mspac.getStepFrame = function() { return Math.floor(this.frames/4)%4; };
 
             // step ghost animation every six frames
-            inky.getAnimFrame = function() { return Math.floor(this.frames/8)%2; };
-            pinky.getAnimFrame = function() { return Math.floor(this.frames/8)%2; };
+            enemy3.getAnimFrame = function() { return Math.floor(this.frames/8)%2; };
+            enemy2.getAnimFrame = function() { return Math.floor(this.frames/8)%2; };
 
             // set actor step sizes
             pac.getNumSteps = function() { return 1; };
             mspac.getNumSteps = function() { return 1; };
-            inky.getNumSteps = function() { return 1; };
-            pinky.getNumSteps = function() { return 1; };
+            enemy3.getNumSteps = function() { return 1; };
+            enemy2.getNumSteps = function() { return 1; };
 
             // set steering functions
             pac.steer = function(){};
             mspac.steer = function(){};
-            inky.steer = function(){};
-            pinky.steer = function(){};
+            enemy3.steer = function(){};
+            enemy2.steer = function(){};
         },
         triggers: {
 
@@ -12294,12 +11804,12 @@ var cookieCutscene2 = (function() {
             0: {
                 update: function() {
                     update();
-                    if (inky.pixel.x == 105) {
+                    if (enemy3.pixel.x == 105) {
                         // speed up the ghosts
-                        inky.getNumSteps = function() {
+                        enemy3.getNumSteps = function() {
                             return Actor.prototype.getStepSizeFromTable.call(this, 5, STEP_ELROY2);
                         };
-                        pinky.getNumSteps = function() {
+                        enemy2.getNumSteps = function() {
                             return Actor.prototype.getStepSizeFromTable.call(this, 5, STEP_ELROY2);
                         };
                     }
@@ -12311,14 +11821,14 @@ var cookieCutscene2 = (function() {
             300: (function(){
 
                 // bounce animation when ghosts bump heads
-                var inkyBounceX =  [ 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0];
-                var inkyBounceY =  [-1, 0,-1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0,-1, 0,-1, 0, 0, 0, 0, 0, 1, 0, 1];
-                var pinkyBounceX = [ 0, 0, 0, 0,-1, 0,-1, 0, 0,-1, 0,-1, 0,-1, 0, 0,-1, 0,-1, 0,-1, 0, 0,-1, 0,-1, 0,-1, 0, 0];
-                var pinkyBounceY = [ 0, 0, 0,-1, 0,-1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0,-1, 0,-1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0];
-                var inkyBounceFrame = 0;
-                var pinkyBounceFrame = 0;
-                var inkyBounceFrameLen = inkyBounceX.length;
-                var pinkyBounceFrameLen = pinkyBounceX.length;
+                var enemy3BounceX =  [ 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0];
+                var enemy3BounceY =  [-1, 0,-1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0,-1, 0,-1, 0, 0, 0, 0, 0, 1, 0, 1];
+                var enemy2BounceX = [ 0, 0, 0, 0,-1, 0,-1, 0, 0,-1, 0,-1, 0,-1, 0, 0,-1, 0,-1, 0,-1, 0, 0,-1, 0,-1, 0,-1, 0, 0];
+                var enemy2BounceY = [ 0, 0, 0,-1, 0,-1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0,-1, 0,-1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0];
+                var enemy3BounceFrame = 0;
+                var enemy2BounceFrame = 0;
+                var enemy3BounceFrameLen = enemy3BounceX.length;
+                var enemy2BounceFrameLen = enemy2BounceX.length;
 
                 // ramp animation for players
                 var rampX = [0, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1];
@@ -12345,7 +11855,7 @@ var cookieCutscene2 = (function() {
                 return {
                     init: function() {
                         // reset frames
-                        inkyBounceFrame = pinkyBounceFrame = rampFrame = climbFrame = meetFrame = 0;
+                        enemy3BounceFrame = enemy2BounceFrame = rampFrame = climbFrame = meetFrame = 0;
 
                         // set modes
                         ghostMode = GHOST_RUN;
@@ -12355,19 +11865,19 @@ var cookieCutscene2 = (function() {
                         mspac.setPos(-8,143);
                         mspac.setDir(DIR_RIGHT);
 
-                        pinky.setPos(-81,143);
-                        pinky.faceDirEnum = DIR_RIGHT;
-                        pinky.setDir(DIR_RIGHT);
+                        enemy2.setPos(-81,143);
+                        enemy2.faceDirEnum = DIR_RIGHT;
+                        enemy2.setDir(DIR_RIGHT);
 
                         pac.setPos(223+8+3,142);
                         pac.setDir(DIR_LEFT);
 
-                        inky.setPos(302,143);
-                        inky.faceDirEnum = DIR_LEFT;
-                        inky.setDir(DIR_LEFT);
+                        enemy3.setPos(302,143);
+                        enemy3.faceDirEnum = DIR_LEFT;
+                        enemy3.setDir(DIR_LEFT);
 
                         // set ghost speed
-                        inky.getNumSteps = pinky.getNumSteps = function() {
+                        enemy3.getNumSteps = enemy2.getNumSteps = function() {
                             return "11211212"[this.frames%8];
                         };
                     },
@@ -12435,34 +11945,34 @@ var cookieCutscene2 = (function() {
                         // update ghosts
                         if (ghostMode == GHOST_RUN) {
                             for (j=0; j<2; j++) {
-                                inky.update(j);
-                                pinky.update(j);
+                                enemy3.update(j);
+                                enemy2.update(j);
                             }
 
                             // stop at middle
-                            inky.pixel.x = Math.max(120, inky.pixel.x);
-                            inky.commitPos();
-                            pinky.pixel.x = Math.min(105, pinky.pixel.x);
-                            pinky.commitPos();
+                            enemy3.pixel.x = Math.max(120, enemy3.pixel.x);
+                            enemy3.commitPos();
+                            enemy2.pixel.x = Math.min(105, enemy2.pixel.x);
+                            enemy2.commitPos();
 
-                            if (pinky.pixel.x == 105) {
+                            if (enemy2.pixel.x == 105) {
                                 ghostMode++;
                             }
                         }
                         else if (ghostMode == GHOST_BUMP) {
-                            if (inkyBounceFrame < inkyBounceFrameLen) {
-                                inky.pixel.x += inkyBounceX[inkyBounceFrame];
-                                inky.pixel.y += inkyBounceY[inkyBounceFrame];
+                            if (enemy3BounceFrame < enemy3BounceFrameLen) {
+                                enemy3.pixel.x += enemy3BounceX[enemy3BounceFrame];
+                                enemy3.pixel.y += enemy3BounceY[enemy3BounceFrame];
                             }
-                            if (pinkyBounceFrame < pinkyBounceFrameLen) {
-                                pinky.pixel.x += pinkyBounceX[pinkyBounceFrame];
-                                pinky.pixel.y += pinkyBounceY[pinkyBounceFrame];
+                            if (enemy2BounceFrame < enemy2BounceFrameLen) {
+                                enemy2.pixel.x += enemy2BounceX[enemy2BounceFrame];
+                                enemy2.pixel.y += enemy2BounceY[enemy2BounceFrame];
                             }
-                            inkyBounceFrame++;
-                            pinkyBounceFrame++;
+                            enemy3BounceFrame++;
+                            enemy2BounceFrame++;
                         }
-                        inky.frames++;
-                        pinky.frames++;
+                        enemy3.frames++;
+                        enemy2.frames++;
                     },
                     draw: function() {
                         renderer.blitMap();
@@ -12473,11 +11983,11 @@ var cookieCutscene2 = (function() {
                             }
                             drawPlayer(ctx,mspac);
                         });
-                        if (inkyBounceFrame < inkyBounceFrameLen) {
-                            renderer.drawGhost(inky);
+                        if (enemy3BounceFrame < enemy3BounceFrameLen) {
+                            renderer.drawGhost(enemy3);
                         }
-                        if (pinkyBounceFrame < pinkyBounceFrameLen) {
-                            renderer.drawGhost(pinky);
+                        if (enemy2BounceFrame < enemy2BounceFrameLen) {
+                            renderer.drawGhost(enemy2);
                         }
                         if (playerMode == PLAYER_MEET) {
                             renderer.renderFunc(function(ctx) {
@@ -12492,15 +12002,10 @@ var cookieCutscene2 = (function() {
     }); // returned object
 })(); // mspacCutscene1
 
-var cutscenes = [
-    [pacmanCutscene1], // GAME_PACMAN
-    [mspacmanCutscene1, mspacmanCutscene2], // GAME_MSPACMAN
-    [cookieCutscene1, cookieCutscene2], // GAME_COOKIE
-    [mspacmanCutscene1, mspacmanCutscene2], // GAME_OTTO
-];
+var cutscenes = [tubieManCutscene1, tubieManCutscene2]; // GAME_TUBIE_MAN
 
 var isInCutScene = function() {
-    var scenes = cutscenes[gameMode];
+    var scenes = cutscenes;
     var i,len = scenes.length;
     for (i=0; i<len; i++) {
         if (state == scenes[i]) {
@@ -12512,41 +12017,13 @@ var isInCutScene = function() {
 
 // TODO: no cutscene after board 17 (last one after completing board 17)
 var triggerCutsceneAtEndLevel = function() {
-    if (gameMode == GAME_PACMAN) {
-        if (level == 2) {
-            playCutScene(pacmanCutscene1, readyNewState);
-            return true;
-        }
-        /*
-        else if (level == 5) {
-            playCutScene(pacmanCutscene2, readyNewState);
-            return true;
-        }
-        else if (level >= 9 && (level-9)%4 == 0) {
-            playCutScene(pacmanCutscene3, readyNewState);
-            return true;
-        }
-        */
+    if (level == 2) {
+        playCutScene(tubieManCutscene1, readyNewState);
+        return true;
     }
-    else if (gameMode == GAME_MSPACMAN || gameMode == GAME_OTTO) {
-        if (level == 2) {
-            playCutScene(mspacmanCutscene1, readyNewState);
-            return true;
-        }
-        else if (level == 5) {
-            playCutScene(mspacmanCutscene2, readyNewState);
-            return true;
-        }
-    }
-    else if (gameMode == GAME_COOKIE) {
-        if (level == 2) {
-            playCutScene(cookieCutscene1, readyNewState);
-            return true;
-        }
-        else if (level == 5) {
-            playCutScene(cookieCutscene2, readyNewState);
-            return true;
-        }
+    else if (level == 5) {
+        playCutScene(tubieManCutscene2, readyNewState);
+        return true;
     }
 
     // no cutscene triggered
@@ -12564,56 +12041,56 @@ var map;
 
 // actor starting states
 
-blinky.startDirEnum = DIR_LEFT;
-blinky.startPixel = {
+enemy1.startDirEnum = DIR_LEFT;
+enemy1.startPixel = {
     x: 14*tileSize-1,
     y: 14*tileSize+midTile.y
 };
-blinky.cornerTile = {
+enemy1.cornerTile = {
     x: 28-1-2,
     y: 0
 };
-blinky.startMode = GHOST_OUTSIDE;
-blinky.arriveHomeMode = GHOST_LEAVING_HOME;
+enemy1.startMode = GHOST_OUTSIDE;
+enemy1.arriveHomeMode = GHOST_LEAVING_HOME;
 
-pinky.startDirEnum = DIR_DOWN;
-pinky.startPixel = {
+enemy2.startDirEnum = DIR_DOWN;
+enemy2.startPixel = {
     x: 14*tileSize-1,
     y: 17*tileSize+midTile.y,
 };
-pinky.cornerTile = {
+enemy2.cornerTile = {
     x: 2,
     y: 0
 };
-pinky.startMode = GHOST_PACING_HOME;
-pinky.arriveHomeMode = GHOST_PACING_HOME;
+enemy2.startMode = GHOST_PACING_HOME;
+enemy2.arriveHomeMode = GHOST_PACING_HOME;
 
-inky.startDirEnum = DIR_UP;
-inky.startPixel = {
+enemy3.startDirEnum = DIR_UP;
+enemy3.startPixel = {
     x: 12*tileSize-1,
     y: 17*tileSize + midTile.y,
 };
-inky.cornerTile = {
+enemy3.cornerTile = {
     x: 28-1,
     y: 36 - 2,
 };
-inky.startMode = GHOST_PACING_HOME;
-inky.arriveHomeMode = GHOST_PACING_HOME;
+enemy3.startMode = GHOST_PACING_HOME;
+enemy3.arriveHomeMode = GHOST_PACING_HOME;
 
-clyde.startDirEnum = DIR_UP;
-clyde.startPixel = {
+enemy4.startDirEnum = DIR_UP;
+enemy4.startPixel = {
     x: 16*tileSize-1,
     y: 17*tileSize + midTile.y,
 };
-clyde.cornerTile = {
+enemy4.cornerTile = {
     x: 0,
     y: 36-2,
 };
-clyde.startMode = GHOST_PACING_HOME;
-clyde.arriveHomeMode = GHOST_PACING_HOME;
+enemy4.startMode = GHOST_PACING_HOME;
+enemy4.arriveHomeMode = GHOST_PACING_HOME;
 
-pacman.startDirEnum = DIR_LEFT;
-pacman.startPixel = {
+player.startDirEnum = DIR_LEFT;
+player.startPixel = {
     x: 14*tileSize-1,
     y: 26*tileSize + midTile.y,
 };
@@ -12738,19 +12215,7 @@ var getLevelAct = function(level) {
 };
 
 var getActColor = function(act) {
-    if (gameMode == GAME_PACMAN) {
-        return {
-            wallFillColor: mapPacman.wallFillColor,
-            wallStrokeColor: mapPacman.wallStrokeColor,
-            pelletColor: mapPacman.pelletColor,
-        };
-    }
-    else if (gameMode == GAME_MSPACMAN || gameMode == GAME_OTTO) {
-        return getMsPacActColor(act);
-    }
-    else if (gameMode == GAME_COOKIE) {
-        return getCookieActColor(act);
-    }
+    return getCookieActColor(act);
 };
 
 var getActRange = function(act) {
@@ -12786,7 +12251,7 @@ var getCookieActColor = function(act) {
     };
 };
 
-var setNextCookieMap = function() {
+var setNextTubieManMap = function() {
     // cycle the colors
     var i;
     var act = getLevelAct(level);
@@ -13519,7 +12984,8 @@ window.addEventListener("load", function() {
 		switchState(learnState);
 	}
 	else if (anchor == "cheat_pac" || anchor == "cheat_mspac") {
-		gameMode = (anchor == "cheat_pac") ? GAME_PACMAN : GAME_MSPACMAN;
+		//gameMode = (anchor == "cheat_pac") ? GAME_PACMAN : GAME_MSPACMAN;
+		gameMode = GAME_TUBIE_MAN;
 		practiceMode = true;
         switchState(newGameState);
 		for (var i=0; i<4; i++) {
@@ -13528,7 +12994,7 @@ window.addEventListener("load", function() {
 		}
 	}
 	else {
-		switchState(homeState);
+		switchState(preNewGameState);
 	}
     executive.init();
 });

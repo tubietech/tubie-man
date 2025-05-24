@@ -12,59 +12,59 @@ var actorPathLength = 16;
 var targetSize = midTile.y;
 
 // when drawing paths, use these offsets so they don't completely overlap each other
-pacman.pathCenter = { x:0, y:0};
-blinky.pathCenter = { x:-2, y:-2 };
-pinky.pathCenter = { x:-1, y:-1 };
-inky.pathCenter = { x:1, y:1 };
-clyde.pathCenter = { x:2, y:2 };
+player.pathCenter = { x:0, y:0};
+enemy1.pathCenter = { x:-2, y:-2 };
+enemy2.pathCenter = { x:-1, y:-1 };
+enemy3.pathCenter = { x:1, y:1 };
+enemy4.pathCenter = { x:2, y:2 };
 
 /////////////////////////////////////////////////////////////////
-// blinky directly targets pacman
+// blinky directly targets player
 
-blinky.getTargetTile = function() {
-    return { x: pacman.tile.x, y: pacman.tile.y };
+enemy1.getTargetTile = function() {
+    return { x: player.tile.x, y: player.tile.y };
 };
-blinky.getTargetPixel = function() {
-    return { x: pacman.pixel.x, y: pacman.pixel.y };
+enemy1.getTargetPixel = function() {
+    return { x: player.pixel.x, y: player.pixel.y };
 };
-blinky.drawTarget = function(ctx) {
+enemy1.drawTarget = function(ctx) {
     if (!this.targetting) return;
     ctx.fillStyle = this.color;
-    if (this.targetting == 'pacman')
-        renderer.drawCenterPixelSq(ctx, pacman.pixel.x, pacman.pixel.y, targetSize);
+    if (this.targetting == 'player')
+        renderer.drawCenterPixelSq(ctx, player.pixel.x, player.pixel.y, targetSize);
     else
         renderer.drawCenterTileSq(ctx, this.targetTile.x, this.targetTile.y, targetSize);
 };
 
 /////////////////////////////////////////////////////////////////
-// pinky targets four tiles ahead of pacman
-pinky.getTargetTile = function() {
-    var px = pacman.tile.x + 4*pacman.dir.x;
-    var py = pacman.tile.y + 4*pacman.dir.y;
-    if (pacman.dirEnum == DIR_UP) {
+// enemy2 targets four tiles ahead of player
+enemy2.getTargetTile = function() {
+    var px = player.tile.x + 4*player.dir.x;
+    var py = player.tile.y + 4*player.dir.y;
+    if (player.dirEnum == DIR_UP) {
         px -= 4;
     }
     return { x : px, y : py };
 };
-pinky.getTargetPixel = function() {
-    var px = pacman.pixel.x + 4*pacman.dir.x*tileSize;
-    var py = pacman.pixel.y + 4*pacman.dir.y*tileSize;
-    if (pacman.dirEnum == DIR_UP) {
+enemy2.getTargetPixel = function() {
+    var px = player.pixel.x + 4*player.dir.x*tileSize;
+    var py = player.pixel.y + 4*player.dir.y*tileSize;
+    if (player.dirEnum == DIR_UP) {
         px -= 4*tileSize;
     }
     return { x : px, y : py };
 };
-pinky.drawTarget = function(ctx) {
+enemy2.drawTarget = function(ctx) {
     if (!this.targetting) return;
     ctx.fillStyle = this.color;
 
     var pixel = this.getTargetPixel();
 
-    if (this.targetting == 'pacman') {
+    if (this.targetting == 'player') {
         ctx.beginPath();
-        ctx.moveTo(pacman.pixel.x, pacman.pixel.y);
-        if (pacman.dirEnum == DIR_UP) {
-            ctx.lineTo(pacman.pixel.x, pixel.y);
+        ctx.moveTo(player.pixel.x, player.pixel.y);
+        if (player.dirEnum == DIR_UP) {
+            ctx.lineTo(player.pixel.x, pixel.y);
         }
         ctx.lineTo(pixel.x, pixel.y);
         ctx.stroke();
@@ -75,52 +75,52 @@ pinky.drawTarget = function(ctx) {
 };
 
 /////////////////////////////////////////////////////////////////
-// inky targets twice the distance from blinky to two tiles ahead of pacman
-inky.getTargetTile = function() {
-    var px = pacman.tile.x + 2*pacman.dir.x;
-    var py = pacman.tile.y + 2*pacman.dir.y;
-    if (pacman.dirEnum == DIR_UP) {
+// inky targets twice the distance from blinky to two tiles ahead of player
+enemy3.getTargetTile = function() {
+    var px = player.tile.x + 2*player.dir.x;
+    var py = player.tile.y + 2*player.dir.y;
+    if (player.dirEnum == DIR_UP) {
         px -= 2;
     }
     return {
-        x : blinky.tile.x + 2*(px - blinky.tile.x),
-        y : blinky.tile.y + 2*(py - blinky.tile.y),
+        x : enemy1.tile.x + 2*(px - enemy1.tile.x),
+        y : enemy1.tile.y + 2*(py - enemy1.tile.y),
     };
 };
-inky.getJointPixel = function() {
-    var px = pacman.pixel.x + 2*pacman.dir.x*tileSize;
-    var py = pacman.pixel.y + 2*pacman.dir.y*tileSize;
-    if (pacman.dirEnum == DIR_UP) {
+enemy3.getJointPixel = function() {
+    var px = player.pixel.x + 2*player.dir.x*tileSize;
+    var py = player.pixel.y + 2*player.dir.y*tileSize;
+    if (player.dirEnum == DIR_UP) {
         px -= 2*tileSize;
     }
     return { x: px, y: py };
 };
-inky.getTargetPixel = function() {
-    var px = pacman.pixel.x + 2*pacman.dir.x*tileSize;
-    var py = pacman.pixel.y + 2*pacman.dir.y*tileSize;
-    if (pacman.dirEnum == DIR_UP) {
+enemy3.getTargetPixel = function() {
+    var px = player.pixel.x + 2*player.dir.x*tileSize;
+    var py = player.pixel.y + 2*player.dir.y*tileSize;
+    if (player.dirEnum == DIR_UP) {
         px -= 2*tileSize;
     }
     return {
-        x : blinky.pixel.x + 2*(px-blinky.pixel.x),
-        y : blinky.pixel.y + 2*(py-blinky.pixel.y),
+        x : enemy1.pixel.x + 2*(px-enemy1.pixel.x),
+        y : enemy1.pixel.y + 2*(py-enemy1.pixel.y),
     };
 };
-inky.drawTarget = function(ctx) {
+enemy3.drawTarget = function(ctx) {
     if (!this.targetting) return;
     var pixel;
 
     var joint = this.getJointPixel();
 
-    if (this.targetting == 'pacman') {
+    if (this.targetting == 'player') {
         pixel = this.getTargetPixel();
         ctx.beginPath();
-        ctx.moveTo(pacman.pixel.x, pacman.pixel.y);
-        if (pacman.dirEnum == DIR_UP) {
-            ctx.lineTo(pacman.pixel.x, joint.y);
+        ctx.moveTo(player.pixel.x, player.pixel.y);
+        if (player.dirEnum == DIR_UP) {
+            ctx.lineTo(player.pixel.x, joint.y);
         }
         ctx.lineTo(joint.x, joint.y);
-        ctx.moveTo(blinky.pixel.x, blinky.pixel.y);
+        ctx.moveTo(enemy1.pixel.x, enemy1.pixel.y);
         ctx.lineTo(pixel.x, pixel.y);
         ctx.closePath();
         ctx.stroke();
@@ -141,54 +141,54 @@ inky.drawTarget = function(ctx) {
 };
 
 /////////////////////////////////////////////////////////////////
-// clyde targets pacman if >=8 tiles away, otherwise targets home
+// clyde targets player if >=8 tiles away, otherwise targets home
 
-clyde.getTargetTile = function() {
-    var dx = pacman.tile.x - (this.tile.x + this.dir.x);
-    var dy = pacman.tile.y - (this.tile.y + this.dir.y);
+enemy4.getTargetTile = function() {
+    var dx = player.tile.x - (this.tile.x + this.dir.x);
+    var dy = player.tile.y - (this.tile.y + this.dir.y);
     var dist = dx*dx+dy*dy;
     if (dist >= 64) {
-        this.targetting = 'pacman';
-        return { x: pacman.tile.x, y: pacman.tile.y };
+        this.targetting = 'player';
+        return { x: player.tile.x, y: player.tile.y };
     }
     else {
         this.targetting = 'corner';
         return { x: this.cornerTile.x, y: this.cornerTile.y };
     }
 };
-clyde.getTargetPixel = function() {
+enemy4.getTargetPixel = function() {
     // NOTE: won't ever need this function for corner tile because it is always outside
-    return { x: pacman.pixel.x, y: pacman.pixel.y };
+    return { x: player.pixel.x, y: player.pixel.y };
 };
-clyde.drawTarget = function(ctx) {
+enemy4.drawTarget = function(ctx) {
     if (!this.targetting) return;
     ctx.fillStyle = this.color;
 
-    if (this.targetting == 'pacman') {
+    if (this.targetting == 'player') {
         ctx.beginPath();
         if (true) {
             // draw a radius
-            ctx.arc(pacman.pixel.x, pacman.pixel.y, tileSize*8,0, 2*Math.PI);
+            ctx.arc(player.pixel.x, player.pixel.y, tileSize*8,0, 2*Math.PI);
             ctx.closePath();
         }
         else {
             // draw a distance stick
-            ctx.moveTo(pacman.pixel.x, pacman.pixel.y);
-            var dx = clyde.pixel.x - pacman.pixel.x;
-            var dy = clyde.pixel.y - pacman.pixel.y;
+            ctx.moveTo(player.pixel.x, player.pixel.y);
+            var dx = enemy4.pixel.x - player.pixel.x;
+            var dy = enemy4.pixel.y - player.pixel.y;
             var dist = Math.sqrt(dx*dx+dy*dy);
             dx = dx/dist*tileSize*8;
             dy = dy/dist*tileSize*8;
-            ctx.lineTo(pacman.pixel.x + dx, pacman.pixel.y + dy);
+            ctx.lineTo(player.pixel.x + dx, player.pixel.y + dy);
         }
         ctx.stroke();
-        renderer.drawCenterPixelSq(ctx, pacman.pixel.x, pacman.pixel.y, targetSize);
+        renderer.drawCenterPixelSq(ctx, player.pixel.x, player.pixel.y, targetSize);
     }
     else {
         // draw a radius
         if (ghostCommander.getCommand() == GHOST_CMD_CHASE) {
             ctx.beginPath();
-            ctx.arc(pacman.pixel.x, pacman.pixel.y, tileSize*8,0, 2*Math.PI);
+            ctx.arc(player.pixel.x, player.pixel.y, tileSize*8,0, 2*Math.PI);
             ctx.strokeStyle = "rgba(255,255,255,0.25)";
             ctx.stroke();
         }
@@ -198,56 +198,56 @@ clyde.drawTarget = function(ctx) {
 
 
 /////////////////////////////////////////////////////////////////
-// pacman targets twice the distance from pinky to pacman or target pinky
+// player targets twice the distance from enemy2 to player or target enemy2
 
-pacman.setTarget = function() {
-    if (blinky.mode == GHOST_GOING_HOME || blinky.scared) {
-        this.targetTile.x = pinky.tile.x;
-        this.targetTile.y = pinky.tile.y;
-        this.targetting = 'pinky';
+player.setTarget = function() {
+    if (enemy1.mode == GHOST_GOING_HOME || enemy1.scared) {
+        this.targetTile.x = enemy2.tile.x;
+        this.targetTile.y = enemy2.tile.y;
+        this.targetting = 'enemy2';
     }
     else {
-        this.targetTile.x = pinky.tile.x + 2*(pacman.tile.x-pinky.tile.x);
-        this.targetTile.y = pinky.tile.y + 2*(pacman.tile.y-pinky.tile.y);
+        this.targetTile.x = enemy2.tile.x + 2*(player.tile.x-enemy2.tile.x);
+        this.targetTile.y = enemy2.tile.y + 2*(player.tile.y-enemy2.tile.y);
         this.targetting = 'flee';
     }
 };
-pacman.drawTarget = function(ctx) {
+player.drawTarget = function(ctx) {
     if (!this.ai) return;
     ctx.fillStyle = this.color;
     var px,py;
 
     if (this.targetting == 'flee') {
-        px = pacman.pixel.x - pinky.pixel.x;
-        py = pacman.pixel.y - pinky.pixel.y;
-        px = pinky.pixel.x + 2*px;
-        py = pinky.pixel.y + 2*py;
+        px = player.pixel.x - enemy2.pixel.x;
+        py = player.pixel.y - enemy2.pixel.y;
+        px = enemy2.pixel.x + 2*px;
+        py = enemy2.pixel.y + 2*py;
         ctx.beginPath();
-        ctx.moveTo(pinky.pixel.x, pinky.pixel.y);
+        ctx.moveTo(enemy2.pixel.x, enemy2.pixel.y);
         ctx.lineTo(px,py);
         ctx.closePath();
         ctx.stroke();
         renderer.drawCenterPixelSq(ctx, px, py, targetSize);
     }
     else {
-        renderer.drawCenterPixelSq(ctx, pinky.pixel.x, pinky.pixel.y, targetSize);
+        renderer.drawCenterPixelSq(ctx, enemy2.pixel.x, enemy2.pixel.y, targetSize);
     };
 
 };
-pacman.getPathDistLeft = function(fromPixel, dirEnum) {
+player.getPathDistLeft = function(fromPixel, dirEnum) {
     var distLeft = tileSize;
     var px,py;
-    if (this.targetting == 'pinky') {
+    if (this.targetting == 'enemy2') {
         if (dirEnum == DIR_UP || dirEnum == DIR_DOWN)
-            distLeft = Math.abs(fromPixel.y - pinky.pixel.y);
+            distLeft = Math.abs(fromPixel.y - enemy2.pixel.y);
         else
-            distLeft = Math.abs(fromPixel.x - pinky.pixel.x);
+            distLeft = Math.abs(fromPixel.x - enemy2.pixel.x);
     }
     else { // 'flee'
-        px = pacman.pixel.x - pinky.pixel.x;
-        py = pacman.pixel.y - pinky.pixel.y;
-        px = pinky.pixel.x + 2*px;
-        py = pinky.pixel.y + 2*py;
+        px = player.pixel.x - enemy2.pixel.x;
+        py = player.pixel.y - enemy2.pixel.y;
+        px = enemy2.pixel.x + 2*px;
+        py = enemy2.pixel.y + 2*py;
         if (dirEnum == DIR_UP || dirEnum == DIR_DOWN)
             distLeft = Math.abs(py - fromPixel.y);
         else

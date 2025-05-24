@@ -13,8 +13,8 @@ var elroyTimer = (function(){
         return function(stage) {
             var i = level;
             if (i>21) i = 21;
-            var pacman_max_pellets = 244;
-            return pacman_max_pellets - dotsLeft[stage-1][i-1];
+            var player_max_pellets = 244;
+            return player_max_pellets - dotsLeft[stage-1][i-1];
         };
     })();
 
@@ -43,21 +43,21 @@ var elroyTimer = (function(){
         update: function() {
 
             // stop waiting for clyde when clyde leaves home
-            if (waitForClyde && clyde.mode != GHOST_PACING_HOME)
+            if (waitForClyde && enemy4.mode != GHOST_PACING_HOME)
                 waitForClyde = false;
 
             if (waitForClyde) {
-                blinky.elroy = 0;
+                enemy1.elroy = 0;
             }
             else {
                 if (map.dotsEaten >= getDotsEatenLimit(2)) {
-                    blinky.elroy = 2;
+                    enemy1.elroy = 2;
                 }
                 else if (map.dotsEaten >= getDotsEatenLimit(1)) {
-                    blinky.elroy = 1;
+                    enemy1.elroy = 1;
                 }
                 else {
-                    blinky.elroy = 0;
+                    enemy1.elroy = 0;
                 }
             }
         },

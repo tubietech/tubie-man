@@ -47,7 +47,7 @@ BaseFruit.prototype = {
             this.scoreFramesLeft--;
     },
     isCollide: function() {
-        return Math.abs(pacman.pixel.y - this.pixel.y) <= midTile.y && Math.abs(pacman.pixel.x - this.pixel.x) <= midTile.x;
+        return Math.abs(player.pixel.y - this.pixel.y) <= midTile.y && Math.abs(player.pixel.x - this.pixel.x) <= midTile.x;
     },
     testCollide: function() {
         if (this.isPresent() && this.isCollide()) {
@@ -334,17 +334,4 @@ MsPacFruit.prototype = newChildObject(BaseFruit.prototype, {
     },
 });
 
-var fruit;
-var setFruitFromGameMode = (function() {
-    var pacfruit = new PacFruit();
-    var mspacfruit = new MsPacFruit();
-    fruit = pacfruit;
-    return function() {
-        if (gameMode == GAME_PACMAN) {
-            fruit = pacfruit;
-        }
-        else {
-            fruit = mspacfruit;
-        }
-    };
-})();
+var fruit = new MsPacFruit();

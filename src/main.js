@@ -11,7 +11,8 @@ window.addEventListener("load", function() {
 		switchState(learnState);
 	}
 	else if (anchor == "cheat_pac" || anchor == "cheat_mspac") {
-		gameMode = (anchor == "cheat_pac") ? GAME_PACMAN : GAME_MSPACMAN;
+		//gameMode = (anchor == "cheat_pac") ? GAME_PACMAN : GAME_MSPACMAN;
+		gameMode = GAME_TUBIE_MAN;
 		practiceMode = true;
         switchState(newGameState);
 		for (var i=0; i<4; i++) {
@@ -20,7 +21,7 @@ window.addEventListener("load", function() {
 		}
 	}
 	else {
-		switchState(homeState);
+		switchState(preNewGameState);
 	}
     executive.init();
 });

@@ -8,19 +8,19 @@ var ghostReleaser = (function(){
     var MODE_PERSONAL = 0;
     var MODE_GLOBAL = 1;
 
-    // ghost enumerations
-    var PINKY = 1;
-    var INKY = 2;
-    var CLYDE = 3;
+    // enemy enumerations
+    var ENEMY_2 = 1;
+    var ENEMY_3 = 2;
+    var ENEMY_4 = 3;
 
-    // this is how many frames it will take to release a ghost after pacman stops eating
+    // this is how many frames it will take to release a ghost after player stops eating
     var getTimeoutLimit = function() { return (level < 5) ? 4*60 : 3*60; };
 
     // dot limits used in personal mode to release ghost after # of dots have been eaten
     var personalDotLimit = {};
-    personalDotLimit[PINKY] = function() { return 0; };
-    personalDotLimit[INKY] = function() { return (level==1) ? 30 : 0; };
-    personalDotLimit[CLYDE] = function() {
+    personalDotLimit[ENEMY_2] = function() { return 0; };
+    personalDotLimit[ENEMY_3] = function() { return (level==1) ? 30 : 0; };
+    personalDotLimit[ENEMY_4] = function() {
         if (level == 1) return 60;
         if (level == 2) return 50;
         return 0;
@@ -28,9 +28,9 @@ var ghostReleaser = (function(){
 
     // dot limits used in global mode to release ghost after # of dots have been eaten
     var globalDotLimit = {};
-    globalDotLimit[PINKY] = 7;
-    globalDotLimit[INKY] = 17;
-    globalDotLimit[CLYDE] = 32;
+    globalDotLimit[ENEMY_2] = 7;
+    globalDotLimit[ENEMY_3] = 17;
+    globalDotLimit[ENEMY_4] = 32;
 
     var framesSinceLastDot; // frames elapsed since last dot was eaten
     var mode;               // personal or global dot counter mode
@@ -49,9 +49,9 @@ var ghostReleaser = (function(){
         }
         else if (mode == MODE_PERSONAL) {
             savedGhostCounts[t] = {};
-            savedGhostCounts[t][PINKY] = ghostCounts[PINKY];
-            savedGhostCounts[t][INKY] = ghostCounts[INKY];
-            savedGhostCounts[t][CLYDE] = ghostCounts[CLYDE];
+            savedGhostCounts[t][ENEMY_2] = ghostCounts[ENEMY_2];
+            savedGhostCounts[t][ENEMY_3] = ghostCounts[ENEMY_3];
+            savedGhostCounts[t][ENEMY_4] = ghostCounts[ENEMY_4];
         }
     };
 
@@ -62,9 +62,9 @@ var ghostReleaser = (function(){
             globalCount = savedGlobalCount[t];
         }
         else if (mode == MODE_PERSONAL) {
-            ghostCounts[PINKY] = savedGhostCounts[t][PINKY];
-            ghostCounts[INKY] = savedGhostCounts[t][INKY];
-            ghostCounts[CLYDE] = savedGhostCounts[t][CLYDE];
+            ghostCounts[ENEMY_2] = savedGhostCounts[t][ENEMY_2];
+            ghostCounts[ENEMY_3] = savedGhostCounts[t][ENEMY_3];
+            ghostCounts[ENEMY_4] = savedGhostCounts[t][ENEMY_4];
         }
     };
 
@@ -74,9 +74,9 @@ var ghostReleaser = (function(){
         onNewLevel: function() {
             mode = MODE_PERSONAL;
             framesSinceLastDot = 0;
-            ghostCounts[PINKY] = 0;
-            ghostCounts[INKY] = 0;
-            ghostCounts[CLYDE] = 0;
+            ghostCounts[ENEMY_2] = 0;
+            ghostCounts[ENEMY_3] = 0;
+            ghostCounts[ENEMY_4] = 0;
         },
         onRestartLevel: function() {
             mode = MODE_GLOBAL;
@@ -119,18 +119,18 @@ var ghostReleaser = (function(){
             }
             // use global dot counter
             else if (mode == MODE_GLOBAL) {
-                if (globalCount == globalDotLimit[PINKY] && pinky.mode == GHOST_PACING_HOME) {
-                    pinky.leaveHome();
+                if (globalCount == globalDotLimit[ENEMY_2] && enemy2.mode == GHOST_PACING_HOME) {
+                    enemy2.leaveHome();
                     return;
                 }
-                else if (globalCount == globalDotLimit[INKY] && inky.mode == GHOST_PACING_HOME) {
-                    inky.leaveHome();
+                else if (globalCount == globalDotLimit[ENEMY_3] && enemy3.mode == GHOST_PACING_HOME) {
+                    enemy3.leaveHome();
                     return;
                 }
-                else if (globalCount == globalDotLimit[CLYDE] && clyde.mode == GHOST_PACING_HOME) {
+                else if (globalCount == globalDotLimit[ENEMY_4] && enemy4.mode == GHOST_PACING_HOME) {
                     globalCount = 0;
                     mode = MODE_PERSONAL;
-                    clyde.leaveHome();
+                    enemy4.leaveHome();
                     return;
                 }
             }

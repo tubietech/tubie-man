@@ -81,81 +81,76 @@ var fadeNextState = function (prevState, nextState, frameDuration, continueUpdat
 // Home State
 // (the home title screen state)
 
-var homeState = (function(){
+// var homeState = (function(){
 
-    var exitTo = function(s) {
-        switchState(s);
-        menu.disable();
-    };
+//     var exitTo = function(s) {
+//         switchState(s);
+//         menu.disable();
+//     };
 
-    var menu = new Menu("CHOOSE A GAME",2*tileSize,0*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
-    var getIconAnimFrame = function(frame) {
-        frame = Math.floor(frame/3)+1;
-        frame %= 4;
-        if (frame == 3) {
-            frame = 1;
-        }
-        return frame;
-    };
-    var getOttoAnimFrame = function(frame) {
-        frame = Math.floor(frame/3);
-        frame %= 4;
-        return frame;
-    };
-    menu.addTextIconButton(getGameName(GAME_PACMAN),
-        function() {
-            gameMode = GAME_PACMAN;
-            exitTo(preNewGameState);
-        },
-        function(ctx,x,y,frame) {
-            atlas.drawPacmanSprite(ctx,x,y,DIR_RIGHT,getIconAnimFrame(frame));
-        });
-    menu.addTextIconButton(getGameName(GAME_MSPACMAN),
-        function() {
-            gameMode = GAME_MSPACMAN;
-            exitTo(preNewGameState);
-        },
-        function(ctx,x,y,frame) {
-            atlas.drawMsPacmanSprite(ctx,x,y,DIR_RIGHT,getIconAnimFrame(frame));
-        });
-    menu.addTextIconButton(getGameName(GAME_COOKIE),
-        function() {
-            gameMode = GAME_COOKIE;
-            exitTo(preNewGameState);
-        },
-        function(ctx,x,y,frame) {
-            drawCookiemanSprite(ctx,x,y,DIR_RIGHT,getIconAnimFrame(frame), true);
-        });
+//     var menu = new Menu("CHOOSE A GAME",2*tileSize,0*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
+//     var getIconAnimFrame = function(frame) {
+//         frame = Math.floor(frame/3)+1;
+//         frame %= 4;
+//         if (frame == 3) {
+//             frame = 1;
+//         }
+//         return frame;
+//     };
+//     menu.addTextIconButton(getGameName(GAME_PACMAN),
+//         function() {
+//             gameMode = GAME_PACMAN;
+//             exitTo(preNewGameState);
+//         },
+//         function(ctx,x,y,frame) {
+//             atlas.drawPacmanSprite(ctx,x,y,DIR_RIGHT,getIconAnimFrame(frame));
+//         });
+//     menu.addTextIconButton(getGameName(GAME_MSPACMAN),
+//         function() {
+//             gameMode = GAME_MSPACMAN;
+//             exitTo(preNewGameState);
+//         },
+//         function(ctx,x,y,frame) {
+//             atlas.drawMsPacmanSprite(ctx,x,y,DIR_RIGHT,getIconAnimFrame(frame));
+//         });
+//     menu.addTextIconButton(getGameName(GAME_TUBIE_MAN),
+//         function() {
+//             gameMode = GAME_TUBIE_MAN;
+//             exitTo(preNewGameState);
+//         },
+//         function(ctx,x,y,frame) {
+//             drawTubieManSprite(ctx,x,y,DIR_RIGHT,getIconAnimFrame(frame), true);
+//         });
 
-    menu.addSpacer(0.5);
-    menu.addTextIconButton("LEARN",
-        function() {
-            exitTo(learnState);
-        },
-        function(ctx,x,y,frame) {
-            atlas.drawGhostSprite(ctx,x,y,Math.floor(frame/8)%2,DIR_RIGHT,false,false,false,blinky.color);
-        });
+//     menu.addSpacer(0.5);
+//     menu.addTextIconButton("LEARN",
+//         function() {
+//             exitTo(learnState);
+//         },
+//         function(ctx,x,y,frame) {
+//             atlas.drawGhostSprite(ctx,x,y,Math.floor(frame/8)%2,DIR_RIGHT,false,false,false,enemy1.color);
+//         });
 
-    return {
-        init: function() {
-            menu.enable();
-            audio.coffeeBreakMusic.startLoop();
-        },
-        draw: function() {
-            renderer.clearMapFrame();
-            renderer.beginMapClip();
-            renderer.renderFunc(menu.draw,menu);
-            renderer.endMapClip();
-        },
-        update: function() {
-            menu.update();
-        },
-        getMenu: function() {
-            return menu;
-        },
-    };
+//     return {
+//         init: function() {
+//             menu.enable();
+//             audio.coffeeBreakMusic.startLoop();
+//         },
+//         draw: function() {
+//             renderer.clearMapFrame();
+//             renderer.beginMapClip();
+//             renderer.renderFunc(menu.draw,menu);
+//             renderer.endMapClip();
+//         },
+//         update: function() {
+//             menu.update();
+//         },
+//         getMenu: function() {
+//             return menu;
+//         },
+//     };
 
-})();
+// })();
 
 //////////////////////////////////////////////////////////////////////////////////////
 // Learn State
@@ -176,7 +171,7 @@ var learnState = (function(){
     menu.addSpacer(7);
     menu.addTextButton("BACK",
         function() {
-            exitTo(homeState);
+            exitTo(preNewGameState);
         });
     menu.backButton = menu.buttons[menu.buttonCount-1];
     menu.noArrowKeys = true;
@@ -188,35 +183,35 @@ var learnState = (function(){
     var y = 4*tileSize;
     var redBtn = new Button(x,y,w,h,function(){
         setAllVisibility(false);
-        blinky.isVisible = true;
-        setVisibility(blinky,true);
+        enemy1.isVisible = true;
+        setVisibility(enemy1,true);
     });
     redBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,blinky.color);
+        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,enemy1.color);
     });
     x += w+pad;
     var pinkBtn = new Button(x,y,w,h,function(){
         setAllVisibility(false);
-        setVisibility(pinky,true);
+        setVisibility(enemy2,true);
     });
     pinkBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,pinky.color);
+        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,enemy2.color);
     });
     x += w+pad;
     var cyanBtn = new Button(x,y,w,h,function(){
         setAllVisibility(false);
-        setVisibility(inky,true);
+        setVisibility(enemy3,true);
     });
     cyanBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,inky.color);
+        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,enemy3.color);
     });
     x += w+pad;
     var orangeBtn = new Button(x,y,w,h,function(){
         setAllVisibility(false);
-        setVisibility(clyde,true);
+        setVisibility(enemy4,true);
     });
     orangeBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,clyde.color);
+        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,enemy4.color);
     });
     var forEachCharBtn = function(callback) {
         callback(redBtn);
@@ -230,10 +225,10 @@ var learnState = (function(){
     };
 
     var setAllVisibility = function(visible) {
-        setVisibility(blinky,visible);
-        setVisibility(pinky,visible);
-        setVisibility(inky,visible);
-        setVisibility(clyde,visible);
+        setVisibility(enemy1,visible);
+        setVisibility(enemy2,visible);
+        setVisibility(enemy3,visible);
+        setVisibility(enemy4,visible);
     };
 
     return {
@@ -252,7 +247,7 @@ var learnState = (function(){
             level = 1;
             practiceMode = false;
             turboMode = false;
-            gameMode = GAME_PACMAN;
+            gameMode = GAME_TUBIE_MAN;
 
             // reset relevant game state
             ghostCommander.reset();
@@ -267,14 +262,14 @@ var learnState = (function(){
                 a.reset();
                 a.mode = GHOST_OUTSIDE;
             }
-            blinky.setPos(14*tileSize-1, 13*tileSize+midTile.y);
-            pinky.setPos(15*tileSize+midTile.x, 13*tileSize+midTile.y);
-            inky.setPos(9*tileSize+midTile.x, 16*tileSize+midTile.y);
-            clyde.setPos(18*tileSize+midTile.x, 16*tileSize+midTile.y);
+            enemy1.setPos(14*tileSize-1, 13*tileSize+midTile.y);
+            enemy2.setPos(15*tileSize+midTile.x, 13*tileSize+midTile.y);
+            enemy3.setPos(9*tileSize+midTile.x, 16*tileSize+midTile.y);
+            enemy4.setPos(18*tileSize+midTile.x, 16*tileSize+midTile.y);
 
-            // set pacman state
-            pacman.reset();
-            pacman.setPos(14*tileSize-1,22*tileSize+midTile.y);
+            // set player state
+            player.reset();
+            player.setPos(14*tileSize-1,22*tileSize+midTile.y);
 
             // start with red ghost
             redBtn.onclick();
@@ -299,7 +294,7 @@ var learnState = (function(){
             });
             var i,j;
             for (j=0; j<2; j++) {
-                pacman.update(j);
+                player.update(j);
                 for (i=0;i<4;i++) {
                     actors[i].update(j);
                 }
@@ -325,23 +320,23 @@ var gameTitleState = (function() {
     var resetTitle = function() {
         if (yellowBtn.isSelected) {
             name = getGameName();
-            nameColor = gameMode == GAME_COOKIE ? "#47b8ff" : pacman.color;
+            nameColor = "#47b8ff";
         }
-        else if (redBtn.isSelected) {
+       else if (redBtn.isSelected) {
             name = getGhostNames()[0];
-            nameColor = blinky.color;
+            nameColor = enemy1.color;
         }
         else if (pinkBtn.isSelected) {
             name = getGhostNames()[1];
-            nameColor = pinky.color;
+            nameColor = enemy2.color;
         }
         else if (cyanBtn.isSelected) {
             name = getGhostNames()[2];
-            nameColor = inky.color;
+            nameColor = enemy3.color;
         }
         else if (orangeBtn.isSelected) {
             name = getGhostNames()[3];
-            nameColor = clyde.color;
+            nameColor = enemy4.color;
         }
         else {
             name = getGameName();
@@ -362,31 +357,31 @@ var gameTitleState = (function() {
         }
     });
     yellowBtn.setIcon(function (ctx,x,y,frame) {
-        getPlayerDrawFunc()(ctx,x,y,DIR_RIGHT,pacman.getAnimFrame(pacman.getStepFrame(Math.floor((gameMode==GAME_PACMAN?frame+4:frame)/1.5))),true);
+        getPlayerDrawFunc()(ctx,x,y,DIR_RIGHT,player.getAnimFrame(player.getStepFrame(Math.floor((gameMode==GAME_PACMAN?frame+4:frame)/1.5))),true);
     });
 
     x += 2*w;
     var redBtn = new Button(x,y,w,h);
     redBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,blinky.color);
+        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,enemy1.color);
     });
 
     x += w;
     var pinkBtn = new Button(x,y,w,h);
     pinkBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,pinky.color);
+        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,enemy2.color);
     });
 
     x += w;
     var cyanBtn = new Button(x,y,w,h)
     cyanBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,inky.color);
+        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,enemy3.color);
     });
 
     x += w;
     var orangeBtn = new Button(x,y,w,h);
     orangeBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,clyde.color);
+        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,enemy4.color);
     });
     
     var forEachCharBtn = function(callback) {
@@ -460,19 +455,19 @@ var preNewGameState = (function() {
             newGameState.setStartLevel(1);
             exitTo(newGameState, 60);
         });
-    menu.addTextButton("PLAY TURBO",
-        function() { 
-            practiceMode = false;
-            turboMode = true;
-            newGameState.setStartLevel(1);
-            exitTo(newGameState, 60);
-        });
-    menu.addTextButton("PRACTICE",
-        function() { 
-            practiceMode = true;
-            turboMode = false;
-            exitTo(selectActState);
-        });
+    // menu.addTextButton("PLAY TURBO",
+    //     function() { 
+    //         practiceMode = false;
+    //         turboMode = true;
+    //         newGameState.setStartLevel(1);
+    //         exitTo(newGameState, 60);
+    //     });
+    // menu.addTextButton("PRACTICE",
+    //     function() { 
+    //         practiceMode = true;
+    //         turboMode = false;
+    //         exitTo(selectActState);
+    //     });
     menu.addSpacer(0.5);
     menu.addTextButton("CUTSCENES",
         function() { 
@@ -482,12 +477,12 @@ var preNewGameState = (function() {
         function() { 
             exitTo(aboutGameState);
         });
-    menu.addSpacer(0.5);
-    menu.addTextButton("BACK",
-        function() {
-            exitTo(homeState);
-        });
-    menu.backButton = menu.buttons[menu.buttonCount-1];
+    // menu.addSpacer(0.5);
+    // menu.addTextButton("BACK",
+    //     function() {
+    //         exitTo(homeState);
+    //     });
+    // menu.backButton = menu.buttons[menu.buttonCount-1];
 
     return {
         init: function() {
@@ -509,6 +504,8 @@ var preNewGameState = (function() {
         },
     };
 })();
+
+var homeState = preNewGameState;
 
 //////////////////////////////////////////////////////////////////////////////////////
 // Select Act State
@@ -694,7 +691,7 @@ var selectLevelState = (function() {
 
     return {
         init: function() {
-            setFruitFromGameMode();
+            // setFruitFromGameMode();
             buildMenu(act);
             gameTitleState.init();
         },
@@ -798,16 +795,16 @@ var cutSceneMenuState = (function() {
     menu.addSpacer(2);
     menu.addTextButton("CUTSCENE 1",
         function() { 
-            exitToCutscene(cutscenes[gameMode][0]);
+            exitToCutscene(cutscenes[0]);
         });
     menu.addTextButton("CUTSCENE 2",
         function() { 
-            exitToCutscene(cutscenes[gameMode][1]);
+            exitToCutscene(cutscenes[1]);
         });
-    menu.addTextButton("CUTSCENE 3",
-        function() { 
-            exitToCutscene(cutscenes[gameMode][2]);
-        });
+    // menu.addTextButton("CUTSCENE 3",
+    //     function() { 
+    //         exitToCutscene(cutscenes[2]);
+    //     });
     menu.addSpacer();
     menu.addTextButton("BACK",
         function() {
@@ -849,7 +846,7 @@ var scoreState = (function(){
     var menu = new Menu("", 2*tileSize,mapHeight-6*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
     menu.addTextButton("BACK",
         function() {
-            exitTo(homeState);
+            exitTo(preNewGameState);
         });
     menu.backButton = menu.buttons[menu.buttonCount-1];
 
@@ -947,11 +944,11 @@ var scoreState = (function(){
 
         y += tileSize*3;
         ctx.fillStyle = scoreColor; ctx.fillText(highScores[4], x,y);
-        atlas.drawCookiemanSprite(ctx,x+2*tileSize,y+tileSize/2,DIR_LEFT,1);
+        atlas.drawTubieManSprite(ctx,x+2*tileSize,y+tileSize/2,DIR_LEFT,1);
         y += tileSize*2;
         ctx.fillStyle = scoreColor; ctx.fillText(highScores[5], x,y);
         drawContrails(x+2*tileSize,y+tileSize/2);
-        atlas.drawCookiemanSprite(ctx,x+2*tileSize,y+tileSize/2,DIR_LEFT,1);
+        atlas.drawTubieManSprite(ctx,x+2*tileSize,y+tileSize/2,DIR_LEFT,1);
     };
 
     var drawFood = function(ctx) {
@@ -1079,13 +1076,13 @@ var aboutState = (function(){
     };
 
     var menu = new Menu("", 2*tileSize,mapHeight-11*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
-    menu.addTextButton("GO TO PROJECT PAGE",
+    menu.addTextButton("VIEW ON GITHUB",
         function() {
-            window.open("https://github.com/shaunew/Pac-Man");
+            window.open("https://github.com/tubietech/tubie-man");
         });
     menu.addTextButton("BACK",
         function() {
-            exitTo(homeState);
+            exitTo(preNewGameState);
         });
     menu.backButton = menu.buttons[menu.buttonCount-1];
 
@@ -1101,7 +1098,14 @@ var aboutState = (function(){
         ctx.fillText("DEVELOPER", x,y);
         y += tileSize*2;
         ctx.fillStyle = "#777";
-        ctx.fillText("SHAUN WILLIAMS", x,y);
+        ctx.fillText("ERIC WEBER", x,y);
+
+        y += tileSize*4;
+        ctx.fillStyle = "#0FF";
+        ctx.fillText("BASED ON WORK BY",x,y);
+        y += tileSize*2;
+        ctx.fillStyle = "#777";
+        ctx.fillText("SHAUN WILLIAMS",x,y);
 
         y += tileSize*4;
         ctx.fillStyle = "#0FF";
@@ -1111,20 +1115,6 @@ var aboutState = (function(){
         ctx.fillText("JAMEY PITTMAN",x,y);
         y += tileSize*2;
         ctx.fillText("BART GRANTHAM",x,y);
-
-        y += tileSize*4;
-        ctx.fillStyle = "#FF0";
-        ctx.fillText("PAC-MAN",x,y);
-        y += tileSize*2;
-        ctx.fillStyle = "#777";
-        ctx.fillText("NAMCO",x,y);
-
-        y += tileSize*4;
-        ctx.fillStyle = "#FF0";
-        ctx.fillText("MS. PAC-MAN / CRAZY OTTO",x,y);
-        y += tileSize*2;
-        ctx.fillStyle = "#777";
-        ctx.fillText("GENERAL COMPUTING",x,y);
     };
 
     return {
@@ -1167,7 +1157,7 @@ var newGameState = (function() {
             level = startLevel-1;
             extraLives = practiceMode ? Infinity : 3;
             setScore(0);
-            setFruitFromGameMode();
+            // setFruitFromGameMode();
             readyNewState.init();
         },
         setStartLevel: function(i) {
@@ -1241,15 +1231,7 @@ var readyNewState = newChildObject(readyState, {
 
         // increment level and ready the next map
         level++;
-        if (gameMode == GAME_PACMAN) {
-            map = mapPacman;
-        }
-        else if (gameMode == GAME_MSPACMAN || gameMode == GAME_OTTO) {
-            setNextMsPacMap();
-        }
-        else if (gameMode == GAME_COOKIE) {
-            setNextCookieMap();
-        }
+        setNextTubieManMap();
         map.resetCurrent();
         fruit.onNewLevel();
         renderer.drawMap();
@@ -1308,12 +1290,12 @@ var playState = {
         var i,g;
         for (i = 0; i<4; i++) {
             g = ghosts[i];
-            if (g.tile.x == pacman.tile.x && g.tile.y == pacman.tile.y && g.mode == GHOST_OUTSIDE) {
+            if (g.tile.x == player.tile.x && g.tile.y == player.tile.y && g.mode == GHOST_OUTSIDE) {
                 if (g.scared) { // eat ghost
                     energizer.addPoints();
                     g.onEaten();
                 }
-                else if (pacman.invincible) // pass through ghost
+                else if (player.invincible) // pass through ghost
                     continue;
                 else // killed by ghost
                     switchState(deadState);
@@ -1368,8 +1350,8 @@ var playState = {
                 // update actors one step at a time
                 for (j=0; j<maxSteps; j++) {
 
-                    // advance pacman
-                    pacman.update(j);
+                    // advance player
+                    player.update(j);
 
                     // test collision with fruit
                     fruit.testCollide();
@@ -1382,7 +1364,7 @@ var playState = {
                         break;
                     }
 
-                    // test pacman collision before and after updating ghosts
+                    // test player collision before and after updating ghosts
                     // (redundant to prevent pass-throughs)
                     // (if collision happens, stop immediately.)
                     if (this.isPacmanCollide()) break;
@@ -1519,7 +1501,7 @@ var deadState = (function() {
                 }
             },
             60: {
-                draw: function() { // isolate pacman
+                draw: function() { // isolate player
                     commonDraw();
                     renderer.beginMapClip();
                     renderer.drawPlayer();
@@ -1629,7 +1611,7 @@ var overState = (function() {
         },
         update: function() {
             if (frames == 120) {
-                switchState(homeState,60);
+                switchState(preNewGameState,60);
             }
             else
                 frames++;

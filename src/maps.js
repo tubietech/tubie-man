@@ -8,56 +8,56 @@ var map;
 
 // actor starting states
 
-blinky.startDirEnum = DIR_LEFT;
-blinky.startPixel = {
+enemy1.startDirEnum = DIR_LEFT;
+enemy1.startPixel = {
     x: 14*tileSize-1,
     y: 14*tileSize+midTile.y
 };
-blinky.cornerTile = {
+enemy1.cornerTile = {
     x: 28-1-2,
     y: 0
 };
-blinky.startMode = GHOST_OUTSIDE;
-blinky.arriveHomeMode = GHOST_LEAVING_HOME;
+enemy1.startMode = GHOST_OUTSIDE;
+enemy1.arriveHomeMode = GHOST_LEAVING_HOME;
 
-pinky.startDirEnum = DIR_DOWN;
-pinky.startPixel = {
+enemy2.startDirEnum = DIR_DOWN;
+enemy2.startPixel = {
     x: 14*tileSize-1,
     y: 17*tileSize+midTile.y,
 };
-pinky.cornerTile = {
+enemy2.cornerTile = {
     x: 2,
     y: 0
 };
-pinky.startMode = GHOST_PACING_HOME;
-pinky.arriveHomeMode = GHOST_PACING_HOME;
+enemy2.startMode = GHOST_PACING_HOME;
+enemy2.arriveHomeMode = GHOST_PACING_HOME;
 
-inky.startDirEnum = DIR_UP;
-inky.startPixel = {
+enemy3.startDirEnum = DIR_UP;
+enemy3.startPixel = {
     x: 12*tileSize-1,
     y: 17*tileSize + midTile.y,
 };
-inky.cornerTile = {
+enemy3.cornerTile = {
     x: 28-1,
     y: 36 - 2,
 };
-inky.startMode = GHOST_PACING_HOME;
-inky.arriveHomeMode = GHOST_PACING_HOME;
+enemy3.startMode = GHOST_PACING_HOME;
+enemy3.arriveHomeMode = GHOST_PACING_HOME;
 
-clyde.startDirEnum = DIR_UP;
-clyde.startPixel = {
+enemy4.startDirEnum = DIR_UP;
+enemy4.startPixel = {
     x: 16*tileSize-1,
     y: 17*tileSize + midTile.y,
 };
-clyde.cornerTile = {
+enemy4.cornerTile = {
     x: 0,
     y: 36-2,
 };
-clyde.startMode = GHOST_PACING_HOME;
-clyde.arriveHomeMode = GHOST_PACING_HOME;
+enemy4.startMode = GHOST_PACING_HOME;
+enemy4.arriveHomeMode = GHOST_PACING_HOME;
 
-pacman.startDirEnum = DIR_LEFT;
-pacman.startPixel = {
+player.startDirEnum = DIR_LEFT;
+player.startPixel = {
     x: 14*tileSize-1,
     y: 26*tileSize + midTile.y,
 };
@@ -182,19 +182,7 @@ var getLevelAct = function(level) {
 };
 
 var getActColor = function(act) {
-    if (gameMode == GAME_PACMAN) {
-        return {
-            wallFillColor: mapPacman.wallFillColor,
-            wallStrokeColor: mapPacman.wallStrokeColor,
-            pelletColor: mapPacman.pelletColor,
-        };
-    }
-    else if (gameMode == GAME_MSPACMAN || gameMode == GAME_OTTO) {
-        return getMsPacActColor(act);
-    }
-    else if (gameMode == GAME_COOKIE) {
-        return getCookieActColor(act);
-    }
+    return getCookieActColor(act);
 };
 
 var getActRange = function(act) {
@@ -230,7 +218,7 @@ var getCookieActColor = function(act) {
     };
 };
 
-var setNextCookieMap = function() {
+var setNextTubieManMap = function() {
     // cycle the colors
     var i;
     var act = getLevelAct(level);

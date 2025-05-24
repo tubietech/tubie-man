@@ -12,6 +12,13 @@ var DIR_LEFT = 1;
 var DIR_DOWN = 2;
 var DIR_RIGHT = 3;
 
+const Directions = Object.freeze({
+    UP: 0,
+    LEFT: 1,
+    DOWN: 2,
+    RIGHT: 3
+});
+
 var getClockwiseAngleFromTop = function(dirEnum) {
     return -dirEnum*Math.PI/2;
 };

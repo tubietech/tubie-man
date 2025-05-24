@@ -1466,7 +1466,7 @@ var drawDeadOttoSprite = function(ctx,x,y) {
     drawOttoSprite(ctx,x,y,DIR_LEFT,2,Math.PI/2);
 };
 
-// draw pacman body
+// draw player body
 var drawPacmanSprite = function(ctx,x,y,dirEnum,angle,mouthShift,scale,centerShift,alpha,color,rot_angle) {
 
     if (mouthShift == undefined) mouthShift = 0;
@@ -1508,7 +1508,7 @@ var drawPacmanSprite = function(ctx,x,y,dirEnum,angle,mouthShift,scale,centerShi
     ctx.restore();
 };
 
-// draw giant pacman body
+// draw giant player body
 var drawGiantPacmanSprite = function(ctx,x,y,dirEnum,frame) {
 
     var color = "#FF0";
@@ -1645,10 +1645,10 @@ var drawMsPacmanSprite = function(ctx,x,y,dirEnum,frame,rot_angle) {
     ctx.restore();
 };
 
-var drawCookiemanSprite = (function(){
+var drawTubieManSprite = (function(){
 
     // TODO: draw pupils separately in atlas
-    //      composite the body frame and a random pupil frame when drawing cookie-man
+    //      composite the body frame and a random pupil frame when drawing tubie-man
 
     var prevFrame = undefined;
     var sx1 = 0; // shift x for first pupil
@@ -1678,7 +1678,7 @@ var drawCookiemanSprite = (function(){
         // draw body
         var draw = function(angle) {
             //angle = Math.PI/6*frame;
-            drawPacmanSprite(ctx,x,y,dirEnum,angle,undefined,undefined,undefined,undefined,"#ff6e31",rot_angle);
+            drawPacmanSprite(ctx,x,y,dirEnum,angle,undefined,undefined,undefined,undefined,"#FF6E31",rot_angle);
         };
         if (frame == 0) {
             // closed

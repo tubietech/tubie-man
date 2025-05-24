@@ -1,8 +1,8 @@
 {
-  "name": "pacman",
+  "name": "tubie-man",
   "version": "1.0.0",
-  "description": "Everyone's favorite arcade game",
-  "main": "pacman.js",
+  "description": "Everyone's favorite arcade game for tubies!",
+  "main": "tubie-man.js",
   "directories": {
     "doc": "doc"
   },
@@ -14,17 +14,23 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/masonicGIT/pacman.git"
+    "url": "git+https://github.com/tubietech/tubie-man.git"
   },
   "keywords": [
-    "pacman"
+    "tubie",
+    "gtube",
+    "g-tube",
+    "j-tube",
+    "gj-tube",
+    "HPN",
+    "enteral"
   ],
-  "author": "Shaun Williams, Mason Borda",
+  "author": "Eric Weber",
   "license": "SEE LICENSE IN LICENSE",
   "bugs": {
-    "url": "https://github.com/masonicGIT/pacman/issues"
+    "url": "https://github.com/tubietech/tubie-man/issues"
   },
-  "homepage": "https://github.com/masonicGIT/pacman#readme",
+  "homepage": "https://github.com/tubietech/tubie-man#readme",
   "dependencies": {
     "node": "^20.1.0"
   },
