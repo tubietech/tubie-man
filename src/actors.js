@@ -29,7 +29,7 @@ enemy4.color = "#FFB851";
 enemy4.pathColor = "#FFB851";
 enemy4.isVisible = true;
 
-// Previously Named player
+// Previously Named pacman
 var player = new Player();
 player.name = "tubie-man";
 player.color = "#FF6E31";

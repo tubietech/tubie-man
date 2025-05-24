@@ -8151,7 +8151,7 @@ enemy4.color = "#FFB851";
 enemy4.pathColor = "#FFB851";
 enemy4.isVisible = true;
 
-// Previously Named player
+// Previously Named pacman
 var player = new Player();
 player.name = "tubie-man";
 player.color = "#FF6E31";
@@ -11087,7 +11087,8 @@ const Keys = Object.freeze({
     NUM_6: "Numpad6",
     NUM_7: "Numpad7",
     NUM_8: "Numpad8",
-    NUM_9: "Numpad9"
+    NUM_9: "Numpad9",
+    NUM_ENTER: "NumpadEnterA"
 });
 
 // Maps Keys to Input Types
@@ -11342,10 +11343,7 @@ const addKeyInputMapentry = (key, input) => {
         addKeyInputMapentry(key, input);
     }
 
-    // boolean states of each key
-    // var keyStates = {}
-
-    // hook my key listeners to the window's listeners
+    // Add keypress listeners and connect to the inputQueue
     window.addEventListener("keydown", function(e) {        
         const keyCode = e.code;
         
@@ -11390,6 +11388,7 @@ const addKeyInputMapentry = (key, input) => {
     // Menu Navigation & Interaction Keys
     addKeyDownHandler(Keys.ESC, Actions.EXIT, true, function(){_INPUT_menu.backButton ? _INPUT_menu.backButton.onclick():0; return true}, isInMenu);
     addKeyDownHandler(Keys.ENTER, Actions.ENTER, true, function(){_INPUT_menu.clickCurrentOption()}, isInMenu);
+    addKeyDownHandler(Keys.NUM_ENTER, Actions.ENTER, true, function(){_INPUT_menu.clickCurrentOption()}, isInMenu);
     addKeyDownHandler(Keys.UP, Actions.MENU_UP, true, function(){_INPUT_menu.selectPrevOption()}, isMenuKeysAllowed);
     addKeyDownHandler(Keys.DOWN, Actions.MENU_DOWN, true, function(){_INPUT_menu.selectNextOption()}, isMenuKeysAllowed);
 
@@ -11582,7 +11581,7 @@ var tubieManCutscene1 = newChildObject(scriptState, {
     },
     triggers: {
 
-        // Blinky chases Pac-Man
+        // Enemy1 chases Player Character
         0: {
             update: function() {
                 var j;
@@ -11597,12 +11596,12 @@ var tubieManCutscene1 = newChildObject(scriptState, {
                 renderer.blitMap();
                 renderer.beginMapClip();
                 renderer.drawPlayer();
-                renderer.drawGhost(blinky);
+                renderer.drawGhost(enemy1);
                 renderer.endMapClip();
             },
         },
 
-        // Pac-Man chases Blinky
+        // Player character chases Enemy1
         260: {
             init: function() {
                 player.setPos(-193, 164);
@@ -11691,7 +11690,7 @@ var tubieManCutscene2 = (function() {
         var func;
         if (player == pac) {
             var y = player.getBounceY(player.pixel.x, player.pixel.y, player.dirEnum);
-            atlas.drawMuppetSprite(ctx, player.pixel.x, y, 0, player.dirEnum, true, false);
+            atlas.drawMonsterSprite(ctx, player.pixel.x, y, 0, player.dirEnum, true, false);
         }
         else if (player == mspac) {
             drawTubieManSprite(ctx, player.pixel.x, player.pixel.y, player.dirEnum, frame, true);
@@ -11800,7 +11799,7 @@ var tubieManCutscene2 = (function() {
         },
         triggers: {
 
-            // Inky chases Pac, Pinky chases Mspac
+            // Enemy3 chases Player, Pinky chases Mspac
             0: {
                 update: function() {
                     update();

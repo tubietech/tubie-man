@@ -51,7 +51,7 @@ var tubieManCutscene1 = newChildObject(scriptState, {
     },
     triggers: {
 
-        // Blinky chases Pac-Man
+        // Enemy1 chases Player Character
         0: {
             update: function() {
                 var j;
@@ -66,12 +66,12 @@ var tubieManCutscene1 = newChildObject(scriptState, {
                 renderer.blitMap();
                 renderer.beginMapClip();
                 renderer.drawPlayer();
-                renderer.drawGhost(blinky);
+                renderer.drawGhost(enemy1);
                 renderer.endMapClip();
             },
         },
 
-        // Pac-Man chases Blinky
+        // Player character chases Enemy1
         260: {
             init: function() {
                 player.setPos(-193, 164);
@@ -160,7 +160,7 @@ var tubieManCutscene2 = (function() {
         var func;
         if (player == pac) {
             var y = player.getBounceY(player.pixel.x, player.pixel.y, player.dirEnum);
-            atlas.drawMuppetSprite(ctx, player.pixel.x, y, 0, player.dirEnum, true, false);
+            atlas.drawMonsterSprite(ctx, player.pixel.x, y, 0, player.dirEnum, true, false);
         }
         else if (player == mspac) {
             drawTubieManSprite(ctx, player.pixel.x, player.pixel.y, player.dirEnum, frame, true);
@@ -269,7 +269,7 @@ var tubieManCutscene2 = (function() {
         },
         triggers: {
 
-            // Inky chases Pac, Pinky chases Mspac
+            // Enemy3 chases Player, Pinky chases Mspac
             0: {
                 update: function() {
                     update();

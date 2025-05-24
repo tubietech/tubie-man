@@ -381,10 +381,7 @@ const addKeyInputMapentry = (key, input) => {
         addKeyInputMapentry(key, input);
     }
 
-    // boolean states of each key
-    // var keyStates = {}
-
-    // hook my key listeners to the window's listeners
+    // Add keypress listeners and connect to the inputQueue
     window.addEventListener("keydown", function(e) {        
         const keyCode = e.code;
         
