@@ -21,6 +21,25 @@ var Menu = function(title,x,y,w,h,pad,font,fontcolor) {
 };
 
 Menu.prototype = {
+    setSize: function (x, y, width, height) {
+        const dx = this.x - x;
+        const dy = this.y - y;
+        const dw = this.w - width;
+        const dh = this.h = height;
+
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.w = width;
+        this.height = height;
+        this.h = height;
+
+        // Update all buttons positions
+        this.buttons.forEach((btn) => {
+            btn.setPosition(dx + btn.x, dy + btn.y);
+            btn.setDimensions(this.w - this.pad * 2, this.h);
+        });
+    },
 
     clickCurrentOption: function() {
         var i;
@@ -33,6 +52,7 @@ Menu.prototype = {
     },
 
     selectNextOption: function() {
+        gameTitleState.blurTitleButtons();
         var i;
         var nextBtn;
         for (i=0; i<this.buttonCount; i++) {
@@ -47,6 +67,7 @@ Menu.prototype = {
     },
 
     selectPrevOption: function() {
+        gameTitleState.blurTitleButtons();
         var i;
         var nextBtn;
         for (i=0; i<this.buttonCount; i++) {
@@ -58,6 +79,16 @@ Menu.prototype = {
         }
         nextBtn = nextBtn || this.buttons[this.buttonCount-1];
         nextBtn.focus();
+    },
+
+    selectNextTitleOption: function() {
+        this.buttons.forEach((btn) => { if(btn.isSelected) btn.blur() });
+        gameTitleState.selectNextTitleButton();
+    },
+
+    selectPrevTitleOption: function() {
+        this.buttons.forEach((btn) => { if(btn.isSelected) btn.blur() });
+        gameTitleState.selectPrevTitleButton();
     },
 
     addToggleButton: function(isOn,setOn) {
@@ -132,7 +163,7 @@ Menu.prototype = {
 
     draw: function(ctx) {
         if (this.title) {
-            ctx.font = tileSize+"px ArcadeR";
+            ctx.font = tileSize+"px 'Press Start 2P'";
             ctx.textBaseline = "middle";
             ctx.textAlign = "center";
             ctx.fillStyle = "#FFF";

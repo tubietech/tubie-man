@@ -78,7 +78,7 @@ var energizer = (function() {
             }
         },
         activate: function() { 
-            audio.ghostNormalMove.stopLoop();
+            audio.enemyMove.stopLoop();
             audio.ghostTurnToBlue.startLoop();
             active = true;
             count = 0;

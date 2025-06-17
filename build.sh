@@ -52,7 +52,7 @@ for file in \
     inGameMenu.js \
     sprites.js \
     Actor.js \
-    Ghost.js \
+    Enemy.js \
     Player.js \
     actors.js \
     targets.js \
@@ -129,7 +129,7 @@ import Head from 'next/head'
 const Index = () => (
   <>
     <Head>
-      <title>Pacman</title>
+      <title>Tubie-Man</title>
     </Head>
     <style jsx global>{\`
       html,

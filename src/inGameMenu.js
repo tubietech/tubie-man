@@ -1,40 +1,43 @@
 ////////////////////////////////////////////////////
 // In-Game Menu
-var inGameMenu = (function() {
+let inGameMenuBtnX, inGameMenuBtnY;
 
-    var w=tileSize*6,h=tileSize*3;
+const inGameMenuBtnDimensions = {
+    width: tileSize * 6,
+    height: tileSize * 3
+}
 
-    var getMainMenu = function() {
-        return practiceMode ? practiceMenu : menu;
-    };
-    var showMainMenu = function() {
-        getMainMenu().enable();
-    };
-    var hideMainMenu = function() {
-        getMainMenu().disable();
-    };
+const setInGameMenuBtnPosition = () => {
+    inGameMenuBtnX = getIsWidescreen() ? (mapCols - 3) * tileSize - inGameMenuBtnDimensions.width / 2 : mapWidth / 2 - inGameMenuBtnDimensions.width / 2;
+    inGameMenuBtnY = getIsWidescreen() ? (tileSize * 0.25) : mapHeight;
+}
 
-    // button to enable in-game menu
-    var btn = new Button(mapWidth/2 - w/2,mapHeight,w,h, function() {
-        showMainMenu();
-        vcr.onHudDisable();
-    });
+const getInGameMenuBtn = (handler) => {
+    const btn = new Button(inGameMenuBtnX, inGameMenuBtnY, inGameMenuBtnDimensions.width, inGameMenuBtnDimensions.height, handler);
     btn.setText("MENU");
-    btn.setFont(tileSize+"px ArcadeR","#FFF");
+    btn.setFont(tileSize + "px 'Press Start 2P'","#FFF");
+    
+    return btn;
+}
+
+const buildInGameMenu = function() {
+    let menu;
+    const showMainMenu = () => menu.enable();
+    const hideMainMenu = () => menu.disable();
 
     // confirms a menu action
-    var confirmMenu = new Menu("QUESTION?",2*tileSize,5*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
+    var confirmMenu = new Menu("QUESTION?",2*tileSize,5*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px 'Press Start 2P'", "#EEE");
     confirmMenu.addTextButton("YES", function() {
         confirmMenu.disable();
         confirmMenu.onConfirm();
     });
     confirmMenu.addTextButton("NO", function() {
         confirmMenu.disable();
-        showMainMenu();
+        showMainMenu(menu);
     });
     confirmMenu.addTextButton("CANCEL", function() {
         confirmMenu.disable();
-        showMainMenu();
+        showMainMenu(menu);
     });
     confirmMenu.backButton = confirmMenu.buttons[confirmMenu.buttonCount-1];
 
@@ -46,7 +49,7 @@ var inGameMenu = (function() {
     };
 
     // regular menu
-    var menu = new Menu("PAUSED",2*tileSize,5*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
+    menu = new Menu("PAUSED", 2 * tileSize, 5 * tileSize, mapWidth - 4 * tileSize, 3 * tileSize, tileSize, tileSize + "px 'Press Start 2P'", "#EEE");
     menu.addTextButton("RESUME", function() {
         menu.disable();
     });
@@ -57,78 +60,10 @@ var inGameMenu = (function() {
     });
     menu.backButton = menu.buttons[0];
 
-    // practice menu
-    var practiceMenu = new Menu("PAUSED",2*tileSize,5*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
-    practiceMenu.addTextButton("RESUME", function() {
-        hideMainMenu();
-        vcr.onHudEnable();
-    });
-    practiceMenu.addTextButton("RESTART LEVEL", function() {
-        showConfirm("RESTART LEVEL?", function() {
-            level--;
-            switchState(readyNewState, 60);
-        });
-    });
-    practiceMenu.addTextButton("SKIP LEVEL", function() {
-        showConfirm("SKIP LEVEL?", function() {
-            switchState(readyNewState, 60);
-        });
-    });
-    practiceMenu.addTextButton("CHEATS", function() {
-        practiceMenu.disable();
-        cheatsMenu.enable();
-    });
-    practiceMenu.addTextButton("QUIT", function() {
-        showConfirm("QUIT GAME?", function() {
-            switchState(preNewGameState, 60);
-            clearCheats();
-            vcr.reset();
-        });
-    });
-    practiceMenu.backButton = practiceMenu.buttons[0];
+    setInGameMenuBtnPosition();
+    const btn = getInGameMenuBtn(showMainMenu);
 
-    // cheats menu
-    var cheatsMenu = new Menu("CHEATS",2*tileSize,5*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
-    cheatsMenu.addToggleTextButton("INVINCIBLE",
-        function() {
-            return player.invincible;
-        },
-        function(on) {
-            player.invincible = on;
-        });
-    cheatsMenu.addToggleTextButton("TURBO",
-        function() {
-            return turboMode;
-        },
-        function(on) {
-            turboMode = on;
-        });
-    cheatsMenu.addToggleTextButton("SHOW TARGETS",
-        function() {
-            return enemy1.isDrawTarget;
-        },
-        function(on) {
-            for (var i=0; i<4; i++) {
-                ghosts[i].isDrawTarget = on;
-            }
-        });
-    cheatsMenu.addToggleTextButton("SHOW PATHS",
-        function() {
-            return enemy1.isDrawPath;
-        },
-        function(on) {
-            for (var i=0; i<4; i++) {
-                ghosts[i].isDrawPath = on;
-            }
-        });
-    cheatsMenu.addSpacer(1);
-    cheatsMenu.addTextButton("BACK", function() {
-        cheatsMenu.disable();
-        practiceMenu.enable();
-    });
-    cheatsMenu.backButton = cheatsMenu.buttons[cheatsMenu.buttons.length-1];
-
-    var menus = [menu, practiceMenu, confirmMenu, cheatsMenu];
+    var menus = [menu, confirmMenu];
     var getVisibleMenu = function() {
         var len = menus.length;
         var i;
@@ -153,26 +88,24 @@ var inGameMenu = (function() {
                 btn.update();
             }
         },
-        draw: function(ctx) {
+        draw: (ctx) => {
             var m = getVisibleMenu();
             if (m) {
                 ctx.fillStyle = "rgba(0,0,0,0.8)";
-                ctx.fillRect(-mapPad-1,-mapPad-1,mapWidth+1,mapHeight+1);
+                ctx.fillRect(-mapPadX - 5, -mapPadY - 5, mapWidth + 5 ,mapHeight + 5);
+                m.setSize(2 * tileSize, 5 * tileSize, mapWidth - 4 * tileSize, 3 * tileSize);
                 m.draw(ctx);
             }
             else {
+                setInGameMenuBtnPosition();
+                btn.setPosition(inGameMenuBtnX, inGameMenuBtnY); 
                 btn.draw(ctx);
             }
         },
-        isOpen: function() {
-            return getVisibleMenu() != undefined;
-        },
-        getMenu: function() {
-            return getVisibleMenu();
-        },
-        getMenuButton: function() {
-            return btn;
-        },
+        isOpen: () => getVisibleMenu() != undefined,
+        getMenu: () => getVisibleMenu(),
+        getMenuButton: () => btn
     };
-})();
+}
 
+const inGameMenu = buildInGameMenu();

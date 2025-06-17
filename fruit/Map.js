@@ -338,7 +338,7 @@ Map.prototype.draw = function(ctx,left,top,print) {
 
 };
 
-Map.prototype.drawFruitPaths = function(ctx,left,top,type) {
+Map.prototype.drawBonusPaths = function(ctx,left,top,type) {
 
     // save state
     ctx.save();

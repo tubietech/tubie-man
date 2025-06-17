@@ -67,9 +67,18 @@ var DEBUG = false;
 
 var audio = new preloadAudio();
 
+// Ammount to increase/decrease volume with buttons
+const VOLUME_STEP_SIZE = 10;
+
+let globalVolume = 100;
+
 function audioTrack(url, volume) {
     var audio = new Audio(url);
-    if (volume) audio.volume = volume;
+    this.baseVolume = volume !== undefined ? volume : 100;
+
+    if (volume)
+        audio.volume = volume * (globalVolume / 100);
+
     audio.load();
     var looping = false;
     this.play = function(noResetTime) {
@@ -105,6 +114,7 @@ function audioTrack(url, volume) {
             if (!noResetTime ) audio.currentTime = 0;
         }
         try{
+            audio.volume
             var playPromise = audio.play();
             if(playPromise) {
                 playPromise.then(function(){}).catch(function(err){});
@@ -112,39 +122,128 @@ function audioTrack(url, volume) {
         } 
         catch(err){ console.error(err) }
     }
+    this.updateVolume = function(volume) {
+        if(typeof volume !== "number")
+            throw new Error("Volume must be a number");
+
+        if(volume < -100 || volume > 100)
+            throw new Error("Volume must be a number between -100 and 100 inclusive");
+
+        audio.volume = Math.max(0.0, Math.min(1.0, this.baseVolume * (volume / 100)));
+    }
+    this.mute = function() {
+        audio.muted = true;
+    }
+    this.unmute = function() {
+        audio.muted = false;
+    }
+    this.toggleMute = function() {
+        audio.muted = !audio.muted;
+    }
 }
 
+/**
+"Getting it Done" by Kevin MacLeod (incompetech.com)
+"Robobozo" by Kevin MacLeod (incompetech.com)
+"Spazzmatica" Kevin MacLeod (incompetech.com)
+"Pixel Peeker Polka" Kevin MacLeod (incompetech.com)
+"Bit Shift" Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0 License
+http://creativecommons.org/licenses/by/4.0/
+ */
 
 function preloadAudio() {
-
-    this.credit            = new audioTrack('sounds/credit.mp3');
     this.coffeeBreakMusic  = new audioTrack('sounds/coffee-break-music.mp3');
-    this.die               = new audioTrack('sounds/miss.mp3');
-    this.ghostReturnToHome = new audioTrack('sounds/ghost-return-to-home.mp3');
-    this.eatingGhost       = new audioTrack('sounds/eating-ghost.mp3');
-    this.ghostTurnToBlue   = new audioTrack('sounds/ghost-turn-to-blue.mp3', 0.5);
-    this.eatingFruit       = new audioTrack('sounds/eating-fruit.mp3');
-    this.ghostSpurtMove1   = new audioTrack('sounds/ghost-spurt-move-1.mp3');
-    this.ghostSpurtMove2   = new audioTrack('sounds/ghost-spurt-move-2.mp3');
-    this.ghostSpurtMove3   = new audioTrack('sounds/ghost-spurt-move-3.mp3');
-    this.ghostSpurtMove4   = new audioTrack('sounds/ghost-spurt-move-4.mp3');
-    this.ghostNormalMove   = new audioTrack('sounds/ghost-normal-move.mp3');
-    this.extend            = new audioTrack('sounds/extend.mp3');
-    this.eating            = new audioTrack('sounds/eating.mp3', 0.5);
-    this.startMusic        = new audioTrack('sounds/start-music.mp3');
+    this.die               = new audioTrack('sounds/robobozo-death.mp3');
+    this.ghostReturnToHome = new audioTrack('sounds/enemy_return.mp3');
+    this.eatingEnemy       = new audioTrack('sounds/spazzmatica-powerup.mp3');
+    this.ghostTurnToBlue   = new audioTrack('sounds/spazzmatica-running-2.mp3');
+    this.eatingBonus       = new audioTrack('sounds/pixel-peeker-polka-bonus.mp3');
+    this.enemyMove         = new audioTrack('sounds/chase_2.mp3');
+    this.win               = new audioTrack('sounds/win.mp3');
+    this.eating            = new audioTrack('sounds/tubie-tubie-8.mp3');
+    this.startMusic        = new audioTrack('sounds/bit-shift-clip.mp3');
+    this.mainMenuMusic     = new audioTrack('sounds/getting-it-done.mp3');
+
+    this.tracks = [
+        this.coffeeBreakMusic, this.die, this.ghostReturnToHome, this.eatingEnemy, 
+        this.ghostTurnToBlue, this.eatingBonus, this.enemyMove, this.win,
+        this.eating, this.startMusic, this.mainMenuMusic 
+    ];
 
     this.ghostReset = function(noResetTime) {
         for (var s in this) {
             if (s == 'silence' || s == 'ghostReset' ) return;
-            if (s.match(/^ghost/)) this[s].stopLoop(noResetTime);
+            if (s.match(/^ghost/) && this[s].hasOwnProperty("stopLoop")) this[s].stopLoop(noResetTime);
         }
-    };
+    }
 
     this.silence = function(noResetTime) {
         for (var s in this) {
-            if (s == 'silence' || s == 'ghostReset' ) return;
+            if ((s == 'silence' || s == 'ghostReset') || !this[s].hasOwnProperty("stopLoop")) return;
             this[s].stopLoop(noResetTime);
         }
+    }
+
+    this.isPlaying = function() {
+        return this.tracks
+            .map((track) => track.isPlaying())
+            .reduce((acc, current) => acc || current, false);
+    }
+    
+    this.setVolume = (volume) => {
+        if(typeof volume !== "number")
+            throw new Error("Volume must be a number");
+
+        if(volume < -100 || volume > 100)
+            throw new Error("Volume must be a number between -100 and 100 inclusive");
+
+        globalVolume = Math.max(0, Math.min(100, volume));
+        this.tracks.forEach((track) => track.updateVolume(volume));
+    }
+
+    this.changeVolume = (stepSize) => {
+        console.log(stepSize);
+
+        if(typeof stepSize !== "number")
+            throw new Error("Volume step size must be a number");
+
+        if(stepSize < -100 || stepSize > 100)
+            throw new Error("Volume Step size must be a number between -100 and 100 inclusive");
+
+        this.setVolume(Math.max(-100, Math.min(100, globalVolume + stepSize)));
+    }
+
+    this.volumeUp = (stepSize) => {
+        if(stepSize !== undefined && typeof stepSize !== "number")
+            throw new Error("If specifying a volume step size, it must be a number");
+
+        if(stepSize !== undefined && (stepSize < 0 || stepSize > 100))
+            throw new Error("Volume Step size must be a number between 0 and 100 inclusive");
+
+        this.changeVolume(Math.min(100, (stepSize !== undefined) ? stepSize : VOLUME_STEP_SIZE));
+    }
+
+    this.volumeDown = (stepSize) => {
+        if(stepSize !== undefined && typeof stepSize !== "number")
+            throw new Error("If specifying a volume step size, it must be a number");
+
+        if(stepSize !== undefined && (stepSize < 0 || stepSize >= 100))
+            throw new Error("Volume Step size must be a number between 0 and 100 inclusive");
+
+        this.changeVolume(Math.max(-100, (stepSize !== undefined) ? -stepSize : -VOLUME_STEP_SIZE));
+    }
+
+    this.mute = function() {
+        this.tracks.forEach((track) => track.mute());
+    }
+
+    this.unmute = function() {
+        this.tracks.forEach((track) => track.unmute());
+    }
+
+    this.toggleMute = function() {
+        this.tracks.forEach((track) => track.toggleMute());
     }
 }
 //@line 1 "src/random.js"
@@ -191,12 +290,11 @@ var getGameDescription = function() {
         ];
 };
 
-var getGhostNames = function() {
-    ///return ["sticky","pricky","icky","asher"];
+var getEnemyNames = function() {
     return ghosts.map((ghost) => ghost.name)
 }
 
-var getGhostDrawFunc = function() { return atlas.drawSyringeSprite; }
+var getEnemyDrawFunc = function() { return atlas.drawSyringeSprite; }
 
 var getPlayerDrawFunc = function() { return atlas.drawTubieManSprite; }
 
@@ -277,7 +375,8 @@ var scores = [
 var highScores = [
     10000,10000, // pacman
     10000,10000, // mspac
-    10000,10000, // tubie
+    // 10000,10000, // tubie
+    0, 0,
     10000,10000, // otto
     ];
 
@@ -2448,7 +2547,7 @@ var atlas = (function(){
 
     var canvas,ctx;
     var size = 22;
-    var cols = 14; // has to be ONE MORE than intended to fix some sort of CHROME BUG (last cell always blank?)
+    var cols = 15; // has to be ONE MORE than intended to fix some sort of CHROME BUG (last cell always blank?)
     var rows = 22;
 
     var creates = 0;
@@ -2514,38 +2613,39 @@ var atlas = (function(){
 
         var row = 0;
         drawAtCell(function(x,y) { drawGTube(ctx,x,y); },      row,0);
-        drawAtCell(function(x,y) { drawInfinityPump(ctx,x,y); },  row,1);
-        drawAtCell(function(x,y) { drawOmniPump(ctx,x,y); },      row,2);
-        drawAtCell(function(x,y) { drawJoeyPump(ctx,x,y); },       row,3);
-        drawAtCell(function(x,y) { drawInfinityCharger(ctx,x,y); },       row,4);
-        drawAtCell(function(x,y) { drawInfinityBag(ctx,x,y); },    row,5);
+        drawAtCell(function(x,y) { drawEndlessPump(ctx,x,y); },  row,1);
+        drawAtCell(function(x,y) { drawMarsupialPump(ctx,x,y); },      row,2);
+        drawAtCell(function(x,y) { drawJamiePump(ctx,x,y); },       row,3);
+        drawAtCell(function(x,y) { drawUsbCharger(ctx,x,y); },       row,4);
+        drawAtCell(function(x,y) { drawFeedingBag(ctx,x,y); },    row,5);
         drawAtCell(function(x,y) { drawFormulaBottle(ctx,x,y); },        row,6);
         drawAtCell(function(x,y) { drawExtension(ctx,x,y); },         row,7);
         drawAtCell(function(x,y) { drawEnFitWrench(ctx,x,y); },     row,8);
         drawAtCell(function(x,y) { drawFlyingSquirrel(ctx,x,y); },        row,9);
-        drawAtCell(function(x,y) { drawCurlinPump(ctx,x,y); },      row,10);
+        drawAtCell(function(x,y) { drawStraightenPump(ctx,x,y); },      row,10);
         drawAtCell(function(x,y) { drawCookie(ctx,x,y); },      row,11);
         drawAtCell(function(x,y) { drawCookieFlash(ctx,x,y); },      row,12);
+        drawAtCell(function(x,y) { drawCrossedBandaids(ctx, x, y); }, row, 13)
 
-        var drawGhostCells = function(row,color) {
+        var drawEnemyCells = function(row,color) {
             var i,f;
             var col = 0;
             for (i=0; i<4; i++) { // dirEnum
                 for (f=0; f<2; f++) { // frame
-                    drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, f, i, false, false, false, color); },   row,col);
+                    drawAtCell(function(x,y) { drawEnemySprite(ctx, x,y, f, i, false, false, false, color); },   row,col);
                     col++;
                 }
             }
         };
 
         row++;
-        drawGhostCells(row, "#DE373A");
+        drawEnemyCells(row, "#DE373A");
         row++;
-        drawGhostCells(row, "#55D400");
+        drawEnemyCells(row, "#55D400");
         row++;
-        drawGhostCells(row, "#099EDE");
+        drawEnemyCells(row, "#099EDE");
         row++;
-        drawGhostCells(row, "#FFB851");
+        drawEnemyCells(row, "#FFB851");
 
         row++;
         // draw disembodied eyes
@@ -2553,52 +2653,25 @@ var atlas = (function(){
             var i;
             var col = 0;
             for (i=0; i<4; i++) { // dirEnum
-                drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 0, i, false, false, true, "#3F3F3F"); },     row,col);
+                drawAtCell(function(x,y) { drawEnemySprite(ctx, x,y, 0, i, false, false, true, "#3F3F3F"); },     row,col);
                 col++;
             }
         })();
 
         // draw ghosts scared
-        drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 0, DIR_UP, true, false, false, "#3F3F3F"); }, row,4);
-        drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 1, DIR_UP, true, false, false, "#3F3F3F"); }, row,5);
-        drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 0, DIR_UP, true, true, false, "#3F3F3F"); },  row,6);
-        drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 1, DIR_UP, true, true, false, "#3F3F3F"); },  row,7);
+        drawAtCell(function(x,y) { drawEnemySprite(ctx, x,y, 0, DIR_UP, true, false, false, "#3F3F3F"); }, row,4);
+        drawAtCell(function(x,y) { drawEnemySprite(ctx, x,y, 1, DIR_UP, true, false, false, "#3F3F3F"); }, row,5);
+        drawAtCell(function(x,y) { drawEnemySprite(ctx, x,y, 0, DIR_UP, true, true, false, "#3F3F3F"); },  row,6);
+        drawAtCell(function(x,y) { drawEnemySprite(ctx, x,y, 1, DIR_UP, true, true, false, "#3F3F3F"); },  row,7);
 
-        var drawPacCells = function(row,col,dir) {
-            drawAtCell(function(x,y) { drawPacmanSprite(ctx, x,y, dir, Math.PI/6); }, row, col);
-            drawAtCell(function(x,y) { drawPacmanSprite(ctx, x,y, dir, Math.PI/3); }, row, col+1);
-        };
+
         row++;
 
         // draw player mouth closed
         drawAtCell(function(x,y) { drawPacmanSprite(ctx, x,y, DIR_RIGHT, 0); }, row, 0);
-
+        row ++;
         // draw player directions
-        (function(){
-            var i;
-            var col=1;
-            for (i=0; i<4; i++) {
-                drawPacCells(row,col,i);
-                col+=2;
-            }
-        })();
-
-        var drawMsPacCells = function(row,col,dir) {
-            drawAtCell(function(x,y) { drawMsPacmanSprite(ctx, x,y, dir, 0); }, row, col);
-            drawAtCell(function(x,y) { drawMsPacmanSprite(ctx, x,y, dir, 1); }, row, col+1);
-            drawAtCell(function(x,y) { drawMsPacmanSprite(ctx, x,y, dir, 2); }, row, col+2);
-        };
-        row++;
-        (function(){
-            var i;
-            var col=0;
-            for (i=0; i<4; i++) {
-                drawMsPacCells(row,col,i);
-                col+=3;
-            }
-        })();
-
-        var drawCookieCells = function(row,col,dir) {
+        var drawTubieManCells = function(row,col,dir) {
             drawAtCell(function(x,y) { drawTubieManSprite(ctx, x,y, dir, 0, true); }, row, col);
             drawAtCell(function(x,y) { drawTubieManSprite(ctx, x,y, dir, 1, true); }, row, col+1);
             drawAtCell(function(x,y) { drawTubieManSprite(ctx, x,y, dir, 2, true); }, row, col+2);
@@ -2608,7 +2681,7 @@ var atlas = (function(){
             var i;
             var col=0;
             for (i=0; i<4; i++) {
-                drawCookieCells(row,col,i);
+                drawTubieManCells(row,col,i);
                 col+=3;
             }
         })();
@@ -2648,21 +2721,11 @@ var atlas = (function(){
         drawAtCell(function(x,y) { drawMonsterSprite(ctx, x,y, 0, DIR_UP, true, true, false, "#fff"); },  row,6);
         drawAtCell(function(x,y) { drawMonsterSprite(ctx, x,y, 1, DIR_UP, true, true, false, "#fff"); },  row,7);
 
-        var drawOttoCells = function(row,col,dir) {
-            var i;
-            for (i=0; i<4; i++) { // frame
-                drawAtCell(function(x,y) { drawOttoSprite(ctx, x,y, dir, i); }, row, col);
-                col++;
-            }
-        };
-        row++;
-        drawOttoCells(row,0, DIR_UP);
-        drawOttoCells(row,4, DIR_RIGHT);
-        row++;
-        drawOttoCells(row,0, DIR_DOWN);
-        drawOttoCells(row,4, DIR_LEFT);
+        // row++;
+        // row++;
 
-        row++;
+        // row++;
+        row += 3;
         drawAtCell(function(x,y) { drawPacPoints(ctx, x,y, 200, "#33ffff"); }, row, 0);
         drawAtCell(function(x,y) { drawPacPoints(ctx, x,y, 400, "#33ffff"); }, row, 1);
         drawAtCell(function(x,y) { drawPacPoints(ctx, x,y, 800, "#33ffff"); }, row, 2);
@@ -2676,36 +2739,13 @@ var atlas = (function(){
         drawAtCell(function(x,y) { drawPacPoints(ctx, x,y, 3000, "#ffb8ff"); }, row, 10);
         drawAtCell(function(x,y) { drawPacPoints(ctx, x,y, 5000, "#ffb8ff"); }, row, 11);
         row++;
-        drawAtCell(function(x,y) { drawMsPacPoints(ctx, x,y, 100, "#fff"); }, row, 0);
-        drawAtCell(function(x,y) { drawMsPacPoints(ctx, x,y, 200, "#fff"); }, row, 1);
-        drawAtCell(function(x,y) { drawMsPacPoints(ctx, x,y, 500, "#fff"); }, row, 2);
-        drawAtCell(function(x,y) { drawMsPacPoints(ctx, x,y, 700, "#fff"); }, row, 3);
-        drawAtCell(function(x,y) { drawMsPacPoints(ctx, x,y, 1000, "#fff"); }, row, 4);
-        drawAtCell(function(x,y) { drawMsPacPoints(ctx, x,y, 2000, "#fff"); }, row, 5);
-        drawAtCell(function(x,y) { drawMsPacPoints(ctx, x,y, 5000, "#fff"); }, row, 6);
-
-        row++;
-        drawAtCell(function(x,y) {
-            drawSnail(ctx,x,y, "#0ff");
-        }, row, 0);
-        drawAtCell(function(x,y) {
-            drawSnail(ctx,x,y, "#FFF");
-        }, row, 1);
-
-        var drawMsOttoCells = function(row,col,dir) {
-            var i;
-            for (i=0; i<4; i++) { // frame
-                drawAtCell(function(x,y) { drawMsOttoSprite(ctx, x,y, dir, i); }, row, col);
-                col++;
-            }
-        };
-        row++;
-        drawMsOttoCells(row,0, DIR_UP);
-        drawMsOttoCells(row,4, DIR_RIGHT);
-        row++;
-        drawMsOttoCells(row,0, DIR_DOWN);
-        drawMsOttoCells(row,4, DIR_LEFT);
-
+        drawAtCell(function(x,y) { drawBonusPoints(ctx, x,y, 100, "#fff"); }, row, 0);
+        drawAtCell(function(x,y) { drawBonusPoints(ctx, x,y, 200, "#fff"); }, row, 1);
+        drawAtCell(function(x,y) { drawBonusPoints(ctx, x,y, 500, "#fff"); }, row, 2);
+        drawAtCell(function(x,y) { drawBonusPoints(ctx, x,y, 700, "#fff"); }, row, 3);
+        drawAtCell(function(x,y) { drawBonusPoints(ctx, x,y, 1000, "#fff"); }, row, 4);
+        drawAtCell(function(x,y) { drawBonusPoints(ctx, x,y, 2000, "#fff"); }, row, 5);
+        drawAtCell(function(x,y) { drawBonusPoints(ctx, x,y, 5000, "#fff"); }, row, 6);
     };
 
     var copyCellTo = function(row, col, destCtx, x, y,display) {
@@ -2739,34 +2779,23 @@ var atlas = (function(){
         }
     };
 
-    var copyPacFruitPoints = function(destCtx,x,y,points) {
-        var row = 16;
-        var col = {
+    var copyBonusPoints = function(destCtx,x,y,points) {
+        // var row = 17;
+        const row = 16;
+        const col = {
             100: 4,
+            200: 0,
             300: 5,
             500: 6,
             700: 7,
+            800: 2,
             1000: 8,
+            1600: 3,
             2000: 9,
             3000: 10,
             5000: 11,
         }[points];
-        if (col != undefined) {
-            copyCellTo(row, col, destCtx, x, y);
-        }
-    };
 
-    var copyMsPacFruitPoints = function(destCtx,x,y,points) {
-        var row = 17;
-        var col = {
-            100: 0,
-            200: 1,
-            500: 2,
-            700: 3,
-            1000: 4,
-            2000: 5,
-            5000: 6,
-        }[points];
         if (col != undefined) {
             copyCellTo(row, col, destCtx, x, y);
         }
@@ -2806,17 +2835,7 @@ var atlas = (function(){
     };
 
     var copySyringeSprite = function(destCtx,x,y,frame,dirEnum,scared,flash,eyes_only,color) {
-        if (scared) {
-            if (flash) {
-                copyFruitSprite(destCtx,x,y,"cookieface");
-            }
-            else {
-                copyFruitSprite(destCtx,x,y,"cookie");
-            }
-        }
-        else {
             copyGhostSprite(destCtx,x,y,frame,dirEnum,scared,flash,eyes_only,color);
-        }
     };
 
     var copyMonsterSprite = function(destCtx,x,y,frame,dirEnum,scared,flash,eyes_only,color) {
@@ -2858,20 +2877,20 @@ var atlas = (function(){
         copyCellTo(row,col,destCtx,x,y);
     };
 
-    var copyFruitSprite = function(destCtx,x,y,name) {
+    var copyBonusSprite = function(destCtx,x,y,name) {
         var row = 0;
         var col = {
-            "cherry": 0,
-            "strawberry": 1,
-            "orange": 2,
-            "apple": 3,
-            "melon": 4,
-            "galaxian": 5,
-            "bell": 6,
-            "key": 7,
-            "pretzel": 8,
-            "pear": 9,
-            "banana": 10,
+            "gtube": 0,
+            "endless_pump": 1,
+            "marsupial_pump": 2,
+            "jamie_pump": 3,
+            "usb_charger": 4,
+            "feeding_bag": 5,
+            "formula_bottle": 6,
+            "y_extension": 7,
+            "enfit_wrench": 8,
+            "flying_squirrel": 9,
+            "straighten_pump": 10,
             "cookie": 11,
             "cookieface": 12,
         }[name];
@@ -2879,16 +2898,22 @@ var atlas = (function(){
         copyCellTo(row,col,destCtx,x,y);
     };
 
+    const copyCrossedBandaids = (destCtx, x, y) => {
+        const row = 0;
+        const col = 13;
+        copyCellTo(row, col, destCtx, x, y);
+    }
+
     return {
         create: create,
         getCanvas: function() { return canvas; },
         drawMonsterSprite: copyMonsterSprite,
         drawSyringeSprite: copySyringeSprite,
         drawTubieManSprite: copyTubieManSprite,
-        drawFruitSprite: copyFruitSprite,
-        drawGhostPoints: copyGhostPoints,
-        drawPacFruitPoints: copyPacFruitPoints,
-        drawMsPacFruitPoints: copyMsPacFruitPoints
+        drawBonusSprite: copyBonusSprite,
+        drawEnemyPoints: copyGhostPoints,
+        drawBonusPoints: copyBonusPoints,
+        drawCrossedBandaids: copyCrossedBandaids
     };
 })();
 //@line 1 "src/renderers.js"
@@ -2898,25 +2923,55 @@ var atlas = (function(){
 // Draws everything in the game using swappable renderers
 // to enable to different front-end displays for Pac-Man.
 
-// list of available renderers
-var renderer_list;
-
 // current renderer
-var renderer;
+let renderer;
 
 var renderScale;
 
-var mapMargin = 4*tileSize; // margin between the map and the screen
-var mapPad = tileSize/8; // padding between the map and its clipping
+const getIsWidescreen = () => window.matchMedia("(orientation: landscape)").matches;
 
-var mapWidth = 28*tileSize+mapPad*2;
-var mapHeight = 36*tileSize+mapPad*2;
+const mapDimensions = {
+    standard: {
+        row: 36,
+        col: 28
+    },
+    widescreen: {
+        row: 31,
+        col: 38
+    }
+}
 
-var screenWidth = mapWidth+mapMargin*2;
-var screenHeight = mapHeight+mapMargin*2;
+const setScreenAndMapDimensions = () => {
+    isWidescreen = getIsWidescreen();
+    
+    mapMargin = (getIsWidescreen() ? 1 : 4) * tileSize; // margin between the map and the screen
+
+    // padding between the map and its clipping
+    mapPadX = tileSize / (getIsWidescreen() ? 10 : 8);
+    mapPadY = getIsWidescreen() ? mapPadX : mapPadX;
+
+    mapYOffset = (getIsWidescreen() ? -2 : 0) * tileSize;
+
+    mapCols = (isWidescreen ? mapDimensions.widescreen: mapDimensions.standard).col;
+    mapRows = (isWidescreen ? mapDimensions.widescreen: mapDimensions.standard).row;
+
+    mapWidth = mapCols * tileSize + mapPadX * 2;
+    mapHeight = mapRows * tileSize + mapPadY * 2 + 5;
+
+    screenWidth = mapWidth + mapMargin * 2;
+    screenHeight = mapHeight + mapMargin * (isWidescreen ? 1 : 2);
+}
+
+let isWidescreen, mapMargin, mapPadX, mapPadY, mapYOffset, mapcols, mapRows, mapWidth, mapHeight, screenWidth, screenheight;
+setScreenAndMapDimensions();
 
 // all rendering will be shown on this canvas
 var canvas;
+
+const backgroundColor = "#000";
+const marginColor = "#000";
+
+let initialRender = true;
 
 // switch to the given renderer index
 var switchRenderer = function(i) {
@@ -2929,19 +2984,18 @@ var getDevicePixelRatio = function() {
     // This is necessary for the iPhone4's retina display; otherwise the game would be blurry.
     // The iPad3's retina display @ 2048x1536 starts slowing the game down.
     return 1;
-    if (window.innerWidth <= 320) {
-        return window.devicePixelRatio || 1;
-    }
-    return 1;
+    // if (window.innerWidth <= 320) {
+    //     return window.devicePixelRatio || 1;
+    // }
+    // return 1;
 };
 
 var initRenderer = function(){
-
     var bgCanvas;
     var ctx, bgCtx;
 
     // drawing scale
-    var scale = 2;        // scale everything by this amount
+    var scale = 2;// scale everything by this amount
 
     // (temporary global version of scale just to get things quickly working)
     renderScale = scale; 
@@ -2951,7 +3005,8 @@ var initRenderer = function(){
     // rescale the canvases
     var resetCanvasSizes = function() {
 
-        // set the size of the canvas in actual pixels
+        setScreenAndMapDimensions();
+
         canvas.width = screenWidth * scale;
         canvas.height = screenHeight * scale;
 
@@ -2959,6 +3014,8 @@ var initRenderer = function(){
         var ratio = getDevicePixelRatio();
         canvas.style.width = canvas.width / ratio;
         canvas.style.height = canvas.height / ratio;
+
+        ctx.translate(0, (isWidescreen ? -2 : 0) * tileSize);
 
         if (resets > 0) {
             ctx.restore();
@@ -2968,12 +3025,13 @@ var initRenderer = function(){
 
         bgCanvas.width = mapWidth * scale;
         bgCanvas.height = mapHeight * scale;
+        bgCtx.translate(0, (isWidescreen ? -2 : 0) * tileSize);
+
         if (resets > 0) {
             bgCtx.restore();
         }
         bgCtx.save();
         bgCtx.scale(scale,scale);
-
         resets++;
     };
 
@@ -2988,13 +3046,22 @@ var initRenderer = function(){
 
     // maximize the scale to fit the window
     var fullscreen = function() {
+        
+        setScreenAndMapDimensions();
         // NOTE: css-scaling alternative at https://gist.github.com/1184900
-        renderScale = scale = getTargetScale();
+        scale = getTargetScale();
+        renderScale = scale;
+
         resetCanvasSizes();
         atlas.create();
+        
+        if(inGameMenu)
+            inGameMenu.draw(ctx, true);
+
         if (renderer) {
             renderer.drawMap();
         }
+
         center();
     };
 
@@ -3002,15 +3069,8 @@ var initRenderer = function(){
     var center = function() {
         var s = getTargetScale()/getDevicePixelRatio();
         var w = screenWidth*s;
-        var x = Math.max(0,(window.innerWidth-10)/2 - w/2);
-        var y = 0;
-        /*
-        canvas.style.position = "absolute";
-        canvas.style.left = x;
-        canvas.style.top = y;
-        console.log(canvas.style.left);
-        */
-        document.body.style.marginLeft = (window.innerWidth - w)/2 + "px";
+
+        document.body.style.marginLeft = (window.innerWidth - w ) / 2 + "px";
     };
 
     // create foreground and background canvases
@@ -3024,22 +3084,29 @@ var initRenderer = function(){
 
     // adapt placement and size to window resizes
     var resizeTimeout;
-    window.addEventListener('resize', function () {
+    
+    const changeHandler = (event) => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(fullscreen, 100);
-    }, false);
+    }
+
+    window.addEventListener('resize', changeHandler, false);
+    screen.orientation.addEventListener("change", changeHandler, false);
 
     //////////////////////
 
     var beginMapFrame = function() {
-        bgCtx.fillStyle = "#000";
-        bgCtx.fillRect(0,0,mapWidth,mapHeight);
-        bgCtx.translate(mapPad, mapPad);
+        bgCtx.save();
+        if(getIsWidescreen() && initialRender) {
+            bgCtx.translate(0,-5 * tileSize); // Translate up to compensate for the HUD movign to the side
+            initialRender = false;
+        }
+        bgCtx.fillStyle = backgroundColor;
+        bgCtx.fillRect(-5, -5, mapWidth + 5, mapHeight + 5);
+        bgCtx.restore();
     };
 
-    var endMapFrame = function() {
-        bgCtx.translate(-mapPad, -mapPad);
-    };
+    var endMapFrame = function() {};
 
     //////////////////////////////////////////////////////////////
     // Common Renderer
@@ -3069,8 +3136,8 @@ var initRenderer = function(){
 
             // subtract one from size due to shift done for sprite realignment?
             // (this fixes a bug that leaves unerased artifacts after actors use right-side tunnel
-            ctx.rect(-mapPad,-mapPad,mapWidth-1,mapHeight-1); 
-
+            ctx.fillStyle = "red";
+            ctx.rect(-mapPadX, -mapPadY ,mapWidth - 1, mapHeight - 1);
             ctx.clip();
         },
 
@@ -3079,21 +3146,24 @@ var initRenderer = function(){
         },
 
         beginFrame: function() {
+            
+            checkGamepads();
+            
             this.setOverlayColor(undefined);
             ctx.save();
 
             // clear margin area
-            ctx.fillStyle = "#000";
+            ctx.fillStyle = marginColor;
             (function(w,h,p){
-                ctx.fillRect(0,0,w,p+1);
-                ctx.fillRect(0,p,p,h-2*p);
-                ctx.fillRect(w-p-2,p,p+2,h-2*p);
-                ctx.fillRect(0,h-p-2,w,p+2);
+                ctx.fillRect(0, 0, w, p + 1); //top
+                ctx.fillRect(0, p, p + 2, h - 2 * p); //left
+                ctx.fillRect(w-p-2,p,p+2,h-2*p); //right
+                ctx.fillRect(0,h-p-2,w,p+2); // bottom
             })(screenWidth, screenHeight, mapMargin);
 
             // draw fps
             if (DEBUG) {
-                ctx.font = (tileSize-2) + "px ArcadeR";
+                ctx.font = (tileSize-2) + "px 'Press Start 2P'";
                 ctx.textBaseline = "bottom";
                 ctx.textAlign = "right";
                 ctx.fillStyle = "#333";
@@ -3101,7 +3171,7 @@ var initRenderer = function(){
             }
 
             // translate to map space
-            ctx.translate(mapMargin+mapPad, mapMargin+mapPad);
+            ctx.translate(mapMargin + mapPadX, mapMargin + mapPadY);
         },
 
         endFrame: function() {
@@ -3113,8 +3183,8 @@ var initRenderer = function(){
         },
 
         clearMapFrame: function() {
-            ctx.fillStyle = "#000";
-            ctx.fillRect(-1,-1,mapWidth+1,mapHeight+1);
+            ctx.fillStyle = backgroundColor;
+            ctx.fillRect(-5, -5, mapWidth + 5, mapHeight + 5);
         },
 
         renderFunc: function(f,that) {
@@ -3239,7 +3309,6 @@ var initRenderer = function(){
                 distLeft = actor.getPathDistLeft(pixel, dirEnum);
             }
             else while (true) {
-
                 // predict next turn from current tile
                 openTiles = getOpenTiles(tile, dirEnum);
                 if (actor != player && map.constrainGhostTurns)
@@ -3300,7 +3369,6 @@ var initRenderer = function(){
 
         // erase pellet from background
         erasePellet: function(x,y) {
-            bgCtx.translate(mapPad,mapPad);
             bgCtx.fillStyle = this.floorColor;
             this.drawNoGroutTile(bgCtx,x,y,tileSize);
 
@@ -3309,30 +3377,29 @@ var initRenderer = function(){
             if (map.getTile(x-1,y)==' ') this.drawNoGroutTile(bgCtx,x-1,y,tileSize);
             if (map.getTile(x,y+1)==' ') this.drawNoGroutTile(bgCtx,x,y+1,tileSize);
             if (map.getTile(x,y-1)==' ') this.drawNoGroutTile(bgCtx,x,y-1,tileSize);
-
-            // TODO: fill in adjacent wall tiles?
-
-            bgCtx.translate(-mapPad,-mapPad);
         },
 
         // draw a center screen message (e.g. "start", "ready", "game over")
-        drawMessage: function(text, color, x,y) {
-            ctx.font = tileSize + "px ArcadeR";
+        drawMessage: function(text, color, x, y) {
+            ctx.save()
+            ctx.translate(0, mapYOffset);
+
+            ctx.font = 1.75 * tileSize + "px 'Press Start 2P'";
             ctx.textBaseline = "top";
-            ctx.textAlign = "right";
+            ctx.textAlign = "center";
             ctx.fillStyle = color;
-            x += text.length;
             ctx.fillText(text, x*tileSize, y*tileSize);
+
+            ctx.restore();
         },
 
         drawReadyMessage: function() {
-            this.drawMessage("READY ","#FF0",11,20);
-            drawExclamationPoint(ctx,16*tileSize+3, 20*tileSize+3);
+            this.drawMessage("READY!", "#FF0", mapDimensions.standard.col / 2, mapRows / 2 + 4);
         },
 
         // draw the points earned from the most recently eaten ghost
         drawEatenPoints: function() {
-            atlas.drawGhostPoints(ctx, player.pixel.x, player.pixel.y, energizer.getPoints());
+            atlas.drawEnemyPoints(ctx, player.pixel.x, player.pixel.y, energizer.getPoints());
         },
 
         // draw each actor (ghosts and player)
@@ -3341,7 +3408,7 @@ var initRenderer = function(){
             // draw such that player appears on top
             if (energizer.isActive()) {
                 for (i=0; i<4; i++) {
-                    this.drawGhost(ghosts[i]);
+                    this.drawEnemy(ghosts[i]);
                 }
                 if (!energizer.showingPoints())
                     this.drawPlayer();
@@ -3353,180 +3420,16 @@ var initRenderer = function(){
                 this.drawPlayer();
                 for (i=3; i>=0; i--) {
                     if (ghosts[i].isVisible) {
-                        this.drawGhost(ghosts[i]);
+                        this.drawEnemy(ghosts[i]);
                     }
                 }
                 if (enemy3.isVisible && !enemy1.isVisible) {
-                    this.drawGhost(enemy1,0.5);
+                    this.drawEnemy(enemy1,0.5);
                 }
             }
         },
 
     };
-
-    //////////////////////////////////////////////////////////////
-    // Simple Renderer
-    // (render a minimal Pac-Man display using nothing but squares)
-
-    // constructor
-    var SimpleRenderer = function() {
-
-        // inherit attributes from Common Renderer
-        CommonRenderer.call(this,ctx,bgCtx);
-
-        this.messageRow = 21.7;
-        this.pointsEarnedTextSize = 1.5*tileSize;
-
-        this.backColor = "#222";
-        this.floorColor = "#444";
-        this.flashFloorColor = "#999";
-
-        this.name = "Minimal";
-    };
-
-    SimpleRenderer.prototype = newChildObject(CommonRenderer.prototype, {
-
-        drawMap: function() {
-
-            beginMapFrame();
-
-            var x,y;
-            var i;
-            var tile;
-
-            // draw floor tiles
-            bgCtx.fillStyle = (this.flashLevel ? this.flashFloorColor : this.floorColor);
-            i=0;
-            for (y=0; y<map.numRows; y++)
-            for (x=0; x<map.numCols; x++) {
-                tile = map.currentTiles[i++];
-                if (tile == ' ')
-                    this.drawNoGroutTile(bgCtx,x,y,tileSize);
-            }
-
-            // draw pellet tiles
-            bgCtx.fillStyle = this.pelletColor;
-            i=0;
-            for (y=0; y<map.numRows; y++)
-            for (x=0; x<map.numCols; x++) {
-                tile = map.currentTiles[i++];
-                if (tile == '.')
-                    this.drawNoGroutTile(bgCtx,x,y,tileSize);
-            }
-
-            endMapFrame();
-        },
-
-        refreshPellet: function(x,y) {
-            var i = map.posToIndex(x,y);
-            var tile = map.currentTiles[i];
-            if (tile == ' ') {
-                this.erasePellet(x,y);
-            }
-            else if (tile == '.') {
-                bgCtx.fillStyle = this.pelletColor;
-                this.drawNoGroutTile(bgCtx,x,y,tileSize);
-            }
-        },
-
-
-        // draw the current score and high score
-        drawScore: function() {
-            ctx.font = 1.5*tileSize + "px sans-serif";
-            ctx.textBaseline = "top";
-            ctx.textAlign = "left";
-            ctx.fillStyle = "#FFF";
-            ctx.fillText(getScore(), tileSize, tileSize*2);
-
-            ctx.font = "bold " + 1.5*tileSize + "px sans-serif";
-            ctx.textBaseline = "top";
-            ctx.textAlign = "center";
-            ctx.fillText("high score", tileSize*map.numCols/2, 3);
-            ctx.fillText(getHighScore(), tileSize*map.numCols/2, tileSize*2);
-        },
-
-        // draw the extra lives indicator
-        drawExtraLives: function() {
-            var i;
-            ctx.fillStyle = "rgba(255,255,0,0.6)";
-            var lives = extraLives == Infinity ? 1 : extraLives;
-            for (i=0; i<extraLives; i++)
-                this.drawCenterPixelSq(ctx, (2*i+3)*tileSize, (map.numRows-2)*tileSize+midTile.y,this.actorSize);
-        },
-
-        // draw the current level indicator
-        drawLevelIcons: function() {
-            var i;
-            ctx.fillStyle = "rgba(255,255,255,0.5)";
-            var w = 2;
-            var h = this.actorSize;
-            for (i=0; i<level; i++)
-                ctx.fillRect((map.numCols-2)*tileSize - i*2*w, (map.numRows-2)*tileSize+midTile.y-h/2, w, h);
-        },
-
-        // draw energizer items on foreground
-        drawEnergizers: function() {
-            ctx.fillStyle = this.energizerColor;
-            var e;
-            var i;
-            for (i=0; i<map.numEnergizers; i++) {
-                e = map.energizers[i];
-                if (map.currentTiles[e.x+e.y*map.numCols] == 'o')
-                    this.drawCenterTileSq(ctx,e.x,e.y,this.energizerSize);
-            }
-        },
-
-        // draw player
-        drawPlayer: function(scale, opacity) {
-            if (scale == undefined) scale = 1;
-            if (opacity == undefined) opacity = 1;
-            ctx.fillStyle = "rgba(255,255,0,"+opacity+")";
-            this.drawCenterPixelSq(ctx, player.pixel.x, player.pixel.y, this.actorSize*scale);
-        },
-
-        // draw dying player animation (with 0<=t<=1)
-        drawDyingPlayer: function(t) {
-            var f = t*85;
-            if (f <= 60) {
-                t = f/60;
-                this.drawPlayer(1-t);
-            }
-            else {
-                f -= 60;
-                t = f/15;
-                this.drawPlayer(t,1-t);
-            }
-        },
-
-        // draw ghost
-        drawGhost: function(g) {
-            if (g.mode == GHOST_EATEN)
-                return;
-            var color = g.color;
-            if (g.scared)
-                color = energizer.isFlash() ? "#FFF" : "#2121ff";
-            else if (g.mode == GHOST_GOING_HOME || g.mode == GHOST_ENTERING_HOME)
-                color = "rgba(255,255,255,0.3)";
-            ctx.fillStyle = color;
-            this.drawCenterPixelSq(ctx, g.pixel.x, g.pixel.y, this.actorSize);
-        },
-
-        drawFruit: function() {
-            if (fruit.isPresent()) {
-                ctx.fillStyle = "#0F0";
-                this.drawCenterPixelSq(ctx, fruit.pixel.x, fruit.pixel.y, tileSize+2);
-            }
-            else if (fruit.isScorePresent()) {
-                ctx.font = this.pointsEarnedTextSize + "px sans-serif";
-                ctx.textBaseline = "middle";
-                ctx.textAlign = "center";
-                ctx.fillStyle = "#FFF";
-                ctx.fillText(fruit.getPoints(), fruit.pixel.x, fruit.pixel.y);
-            }
-        },
-
-    });
-
 
     //////////////////////////////////////////////////////////////
     // Arcade Renderer
@@ -3542,30 +3445,32 @@ var initRenderer = function(){
         this.pelletSize = 2;
         this.energizerSize = tileSize;
 
-        this.backColor = "#000";
-        this.floorColor = "#000";
+        this.backColor = backgroundColor;
+        this.floorColor = "backgroundColor";
         this.flashWallColor = "#FFF";
 
         this.name = "Arcade";
     };
 
     ArcadeRenderer.prototype = newChildObject(CommonRenderer.prototype, {
-
         // copy background canvas to the foreground canvas
         blitMap: function() {
             ctx.scale(1/scale,1/scale);
-            ctx.drawImage(bgCanvas,-1-mapPad*scale,-1-mapPad*scale); // offset map to compenstate for misalignment
+            ctx.translate(2 * mapPadX, 3 * mapPadY);
+            ctx.drawImage(bgCanvas, 0, 0);
             ctx.scale(scale,scale);
-            //ctx.clearRect(-mapPad,-mapPad,mapWidth,mapHeight);
         },
 
         drawMap: function(isCutscene) {
-
             // fill background
             beginMapFrame();
 
             if (map) {
+                bgCtx.save();
 
+                if(!isCutscene)
+                    bgCtx.translate(0, mapYOffset);
+                
                 // Sometimes pressing escape during a flash can cause flash to be permanently enabled on maps.
                 // so just turn it off when not in the finish state.
                 if (state != finishState) {
@@ -3595,7 +3500,8 @@ var initRenderer = function(){
                     bgCtx.fillStyle = map.wallFillColor;
                     bgCtx.strokeStyle = map.wallStrokeColor;
                 }
-                for (i=0; i<map.paths.length; i++) {
+
+                for (i = 0; i < map.paths.length; i++) {
                     var path = map.paths[i];
                     bgCtx.beginPath();
                     bgCtx.moveTo(path[0].x, path[0].y);
@@ -3618,49 +3524,39 @@ var initRenderer = function(){
                     this.refreshPellet(x,y,true);
                 }
 
-                if (map.onDraw) {
-                    map.onDraw(bgCtx);
-                }
-
                 if (map.shouldDrawMapOnly) {
                     endMapFrame();
                     return;
                 }
+                bgCtx.restore();
             }
+
             if (level > 0) {
-
-                var numRows = 36;
-                var numCols = 28;
-
                 if (!isCutscene) {
+                    // Hide the right edge of the map in widescreen mode
+                    if(isWidescreen && !isCutscene) {
+                        bgCtx.save();
+                        bgCtx.translate((mapCols - 10) * tileSize + 1, 0); //+1 offsets for the map outline pixel
+                        bgCtx.fillStyle = backgroundColor;
+                        bgCtx.fillRect(0, 0, 3 * tileSize, (mapRows + 1) * tileSize);
+                        bgCtx.restore();
+                    }
+
                     // draw extra lives
                     var i;
                     bgCtx.fillStyle = player.color;
 
                     bgCtx.save();
-                    bgCtx.translate(3*tileSize, (numRows-1)*tileSize);
-                    bgCtx.scale(0.85, 0.85);
+                    bgCtx.translate(isWidescreen ? (mapCols - 6) * tileSize : 3 * tileSize, isWidescreen ? (mapRows - 5) * tileSize : (mapRows-1) * tileSize);
+                    bgCtx.scale(0.9, 0.9);
+                    
                     var lives = extraLives == Infinity ? 1 : extraLives;
-                    for (i=0; i<lives; i++) {
-                        drawTubieManSprite(bgCtx, 0,0, DIR_RIGHT, 1, false);
-                        bgCtx.translate(2*tileSize,0);
+                    for(i=0; i < lives; i++) {
+                        drawTubieManSprite(bgCtx, 0, 0, DIR_RIGHT, 1, false);
+                        bgCtx.translate(2 * tileSize, 0);
                     }
-                    if (extraLives == Infinity) {
-                        bgCtx.translate(-4*tileSize,0);
-
-                        // draw X
-                        /*
-                        bgCtx.translate(-s*2,0);
-                        var s = 2; // radius of each stroke
-                        bgCtx.beginPath();
-                        bgCtx.moveTo(-s,-s);
-                        bgCtx.lineTo(s,s);
-                        bgCtx.moveTo(-s,s);
-                        bgCtx.lineTo(s,-s);
-                        bgCtx.lineWidth = 1;
-                        bgCtx.strokeStyle = "#777";
-                        bgCtx.stroke();
-                        */
+                    if(extraLives == Infinity) {
+                        bgCtx.translate(-4 * tileSize, 0);
 
                         // draw Infinity symbol
                         var r = 2; // radius of each half-circle
@@ -3677,61 +3573,82 @@ var initRenderer = function(){
                         bgCtx.strokeStyle = "#FFF";
                         bgCtx.stroke();
                     }
+
                     bgCtx.restore();
                 }
 
                 // draw level fruit
                 var fruits = fruit.fruitHistory;
-                var i,j;
                 var f,drawFunc;
-                var numFruit = 7;
-                var startLevel = Math.min(numFruit,startLevel);
+                var numFruit = fruit.getNumFruit();
+                // stop after the 11th fruit
+                var startLevel = Math.min(numFruit, Math.max(numFruit, level));
                 var scale = 0.85;
-                for (i=0, j=startLevel-numFruit+1; i<numFruit && j<=level; j++, i++) {
+                
+                const DEBUG_LEVEL_FRUIT = false;
+
+                for (let i = 0, j = startLevel - numFruit + 1; i < numFruit && j <= (DEBUG_LEVEL_FRUIT ? numFruit: level); j++, i++) {
                     f = fruits[j];
                     if (f) {
-                        drawFunc = getSpriteFuncFromFruitName(f.name);
-                        if (drawFunc) {
+                        drawFunc = getSpriteFuncFromBonusName(f.name);
+                        if (!isCutscene && drawFunc) {
                             bgCtx.save();
-                            bgCtx.translate((numCols-3)*tileSize - i*16*scale, (numRows-1)*tileSize);
+                            // For 'traditional' layout, all fruit are in a single row
+                            // For 'widescreen' layout, fruit are stacked in 2 rows of 4
+                            const fruitX = isWidescreen ? (mapCols - (i > 7 ? 5.25 : 6)) * tileSize + ((i % 4) * 1.65 * tileSize): (mapCols - 3.5) * tileSize - i * 16 * scale;
+                            const fruitY = isWidescreen ? (mapRows - (i > 3 ? i > 7 ? 7.5 : 9.25 : 11)) * tileSize : (mapRows - 1) * tileSize;
+
+                            bgCtx.translate(fruitX, fruitY);
                             bgCtx.scale(scale,scale);
                             drawFunc(bgCtx,0,0);
                             bgCtx.restore();
                         }
                     }
                 }
+                
                 if (!isCutscene) {
                     if (level >= 100) {
-                        bgCtx.font = (tileSize-3) + "px ArcadeR";
+                        bgCtx.font = (tileSize-3) + "px 'Press Start 2P'";
                     }
                     else {
-                        bgCtx.font = (tileSize-1) + "px ArcadeR";
+                        bgCtx.font = (tileSize-1) + "px 'Press Start 2P'";
                     }
-                    bgCtx.textBaseline = "middle";
-                    bgCtx.fillStyle = "#777";
                     bgCtx.textAlign = "left";
-                    bgCtx.fillText(level,(numCols-2)*tileSize, (numRows-1)*tileSize);
+                    
+                    if(isWidescreen) {
+                        bgCtx.textBaseline = "bottom";
+                        bgCtx.textAlign = "right";
+                        bgCtx.fillStyle = "orange";
+                        bgCtx.fillText(level, (mapCols - 6) * tileSize, (mapRows - 1) * tileSize);
+                    } else {
+                        bgCtx.textBaseline = "middle";
+                        bgCtx.fillStyle = "#777";
+                        bgCtx.fillText(level,(mapCols - 2) * tileSize, (mapRows - 1) * tileSize);
+                    }
                 }
             }
             endMapFrame();
         },
 
         erasePellet: function(x,y,isTranslated) {
+            bgCtx.save();
+
             if (!isTranslated) {
-                bgCtx.translate(mapPad,mapPad);
+                bgCtx.translate(mapPadX, mapYOffset + mapPadY);
             }
-            bgCtx.fillStyle = "#000";
+
+            bgCtx.fillStyle = backgroundColor;
+            bgCtx.fillStyle = backgroundColor;
             var i = map.posToIndex(x,y);
             var size = map.tiles[i] == 'o' ? this.energizerSize : this.pelletSize;
             this.drawCenterTileSq(bgCtx,x,y,size+2);
-            if (!isTranslated) {
-                bgCtx.translate(-mapPad,-mapPad);
-            }
+
+            bgCtx.restore();
         },
 
         refreshPellet: function(x,y,isTranslated) {
             if (!isTranslated) {
-                bgCtx.translate(mapPad,mapPad);
+                bgCtx.translate(mapPadX, mapPadY);
             }
             var i = map.posToIndex(x,y);
             var tile = map.currentTiles[i];
@@ -3745,84 +3662,99 @@ var initRenderer = function(){
                 bgCtx.translate(-0.5, -0.5);
             }
             else if (tile == 'o') {
-                bgCtx.fillStyle = map.pelletColor;
-                bgCtx.beginPath();
-                bgCtx.arc(x*tileSize+midTile.x+0.5,y*tileSize+midTile.y,this.energizerSize/2,0,Math.PI*2);
-                bgCtx.fill();
+                bgCtx.save();
+                bgCtx.scale(0.5, 0.5);
+                drawCrossedBandaids(bgCtx, 2*x*tileSize+midTile.x+3.5, 2*y*tileSize+midTile.y+5);
+                bgCtx.restore();
             }
             if (!isTranslated) {
-                bgCtx.translate(-mapPad,-mapPad);
+                bgCtx.translate(-mapPadX, -mapPadY);
             }
         },
 
         // draw the current score and high score
         drawScore: function() {
-            ctx.font = tileSize + "px ArcadeR";
+            ctx.font = tileSize + "px 'Press Start 2P'";
             ctx.textBaseline = "top";
             ctx.fillStyle = "#FFF";
 
-            ctx.textAlign = "right";
-            ctx.fillText("1UP", 6*tileSize, 0);
-            ctx.fillText(practiceMode ? "PRACTICE" : "HIGH SCORE", 19*tileSize, 0);
+            const wsScoreBlockX = (mapCols - 3) * tileSize;
+            const wsScoreBlockY = 4 * tileSize;
+            const ws1UpScoreY = 10 * tileSize;
+            const scoreTopMargin = 2;
+
+            if(isWidescreen) {
+                ctx.textAlign = "center";
+                ctx.fillText("HIGH", wsScoreBlockX, wsScoreBlockY);
+                ctx.fillText("SCORE",wsScoreBlockX, wsScoreBlockY + tileSize);
+                ctx.fillText("1UP", wsScoreBlockX, ws1UpScoreY);
+            } else { 
+                ctx.textAlign = "right";
+                ctx.fillText("HIGH SCORE", 19 * tileSize, 0);
+                ctx.fillText("1UP", 6 * tileSize, 0);
+            }
             //ctx.fillText("2UP", 25*tileSize, 0);
 
             // TODO: player two score
             var score = getScore();
-            if (score == 0) {
+            if (score === 0) {
                 score = "00";
             }
-            var y = tileSize+1;
-            ctx.fillText(score, 7*tileSize, y);
+            const y = tileSize + 1;
 
-            if (!practiceMode) {
-                var highScore = getHighScore();
-                if (highScore == 0) {
-                    highScore = "00";
-                }
-                ctx.fillText(highScore, 17*tileSize, y);
+            var highScore = getHighScore();
+            if (highScore === 0) {
+                highScore = "00";
+            }
+            
+            if(isWidescreen) {
+                ctx.fillStyle = "orange";
+                ctx.textAlign = "center";
+                ctx.fillText(highScore, wsScoreBlockX, wsScoreBlockY + (2 * tileSize) + scoreTopMargin);
+                ctx.fillText(score, wsScoreBlockX, ws1UpScoreY + tileSize + scoreTopMargin);
+            } else {
+                ctx.fillText(highScore, 17 * tileSize, y);
+                ctx.fillText(score, 7 * tileSize, y);
             }
         },
 
         // draw ghost
-        drawGhost: function(g,alpha) {
+        drawEnemy: function(g,alpha) {
+            ctx.save()
+            ctx.translate(0, isWidescreen ? 1.25 * mapYOffset : 0);
+
             var backupAlpha;
             if (alpha) {
                 backupAlpha = ctx.globalAlpha;
                 ctx.globalAlpha = alpha;
             }
 
-            var draw = function(mode, pixel, frames, faceDirEnum, scared, isFlash,color, dirEnum) {
+            var draw = function(mode, pixel, frames, faceDirEnum, scared, isFlash ,color, dirEnum) {
                 if (mode == GHOST_EATEN)
                     return;
                 var frame = g.getAnimFrame(frames);
                 var eyes = (mode == GHOST_GOING_HOME || mode == GHOST_ENTERING_HOME);
-                var func = getGhostDrawFunc();
+                var func = getEnemyDrawFunc();
                 var y = g.getBounceY(pixel.x, pixel.y, dirEnum);
                 var x = (g == enemy1 && scared) ? pixel.x+1 : pixel.x; // blinky's sprite is shifted right when scared
 
                 func(ctx,x,y,frame,faceDirEnum,scared,isFlash,eyes,color);
             };
-            vcr.drawHistory(ctx, function(t) {
-                draw(
-                    g.savedMode[t],
-                    g.savedPixel[t],
-                    g.savedFrames[t],
-                    g.savedFaceDirEnum[t],
-                    g.savedScared[t],
-                    energizer.isFlash(),
-                    g.color,
-                    g.savedDirEnum[t]);
-            });
+
             draw(g.mode, g.pixel, g.frames, g.faceDirEnum, g.scared, energizer.isFlash(), g.color, g.dirEnum);
             if (alpha) {
                 ctx.globalAlpha = backupAlpha;
             }
+            ctx.restore();
         },
 
         // draw player
         drawPlayer: function() {
+            ctx.save()
+            ctx.translate(0, isWidescreen ? 1.25 * mapYOffset : 0);
+
             // Query the InptuQueue for the most recent input direction of the player
-            //TODO: Remove Debug Statement
+            // TODO: Possibly add gamepad input update here
             const input = inputQueue.getActiveInput();
             if(input instanceof Input) {
                 const action = input.getAction();
@@ -3858,20 +3790,29 @@ var initRenderer = function(){
                 func(ctx, pixel.x, pixel.y, dirEnum, frame, true);
             };
 
-            vcr.drawHistory(ctx, function(t) {
-                draw(
-                    player.savedPixel[t],
-                    player.savedDirEnum[t],
-                    player.savedSteps[t]);
-            });
+            
             draw(player.pixel, player.dirEnum, player.steps);
             if (player.invincible) {
                 ctx.globalAlpha = 1;
             }
+
+            if(isWidescreen) {
+                ctx.save();
+                ctx.translate((mapCols - 10) * tileSize + 1, 0); //+1 offsets for the map outline pixel
+                ctx.fillStyle = backgroundColor;
+                ctx.fillRect(0, 0, 3 * tileSize, (mapRows + 1) * tileSize);
+                ctx.restore();
+            }
+
+            ctx.restore();
         },
 
         // draw dying player animation (with 0<=t<=1)
         drawDyingPlayer: function(t) {
+            ctx.save();
+            
+            ctx.translate(0, isWidescreen ? 1.25 * mapYOffset : 0);
+
             var frame = player.getAnimFrame();
 
             // spin 540 degrees
@@ -3879,49 +3820,43 @@ var initRenderer = function(){
             var step = (Math.PI/4) / maxAngle; // 45 degree steps
             var angle = Math.floor(t/step)*step*maxAngle;
             drawTubieManSprite(ctx, player.pixel.x, player.pixel.y, player.dirEnum, frame, false, angle);
+            
+            ctx.restore();
         },
 
         // draw exploding player animation (with 0<=t<=1)
-        drawExplodingPlayer: function(t) {
+        drawExplodingPlayer: function(t) {            
+            ctx.save();
+            
+            ctx.translate(0, mapYOffset - tileSize / 1.5);
+
             var frame = player.getAnimFrame();
             drawPacmanSprite(ctx, player.pixel.x, player.pixel.y, player.dirEnum, 0, 0, t,-3,1-t);
+
+            ctx.restore();
         },
 
         // draw fruit
-        drawFruit: function() {
+        drawBonus: function() {
+            ctx.save();
+            ctx.translate(0, isWidescreen ? 1.25 * mapYOffset : 0);
 
             if (fruit.getCurrentFruit()) {
                 var name = fruit.getCurrentFruit().name;
 
-                // draw history trails of the fruit if applicable
-                if (fruit.savedPixel) {
-                    vcr.drawHistory(ctx, function(t) {
-                        var pixel = fruit.savedPixel[t];
-                        if (pixel) {
-                            atlas.drawFruitSprite(ctx, pixel.x, pixel.y, name);
-                        }
-                    });
-                }
-
                 if (fruit.isPresent()) {
-                    atlas.drawFruitSprite(ctx, fruit.pixel.x, fruit.pixel.y, name);
+                    atlas.drawBonusSprite(ctx, fruit.pixel.x, fruit.pixel.y, name);
                 }
                 else if (fruit.isScorePresent()) {
-                    atlas.drawMsPacFruitPoints(ctx, fruit.pixel.x, fruit.pixel.y, fruit.getPoints());
+                    atlas.drawBonusPoints(ctx, fruit.pixel.x, fruit.pixel.y, fruit.getPoints());
                 }
             }
+            ctx.restore();
         },
 
     });
 
-    //
-    // Create list of available renderers
-    //
-    renderer_list = [
-        new SimpleRenderer(), // Currently Broken
-        new ArcadeRenderer(),
-    ];
-    renderer = renderer_list[1];
+    renderer = new ArcadeRenderer();
 };
 //@line 1 "src/hud.js"
 
@@ -4069,8 +4004,6 @@ var Button = function(x,y,w,h,onclick) {
     // text and icon padding
     this.pad = tileSize;
 
-
-
     // icon attributes
     this.frame = 0;
 
@@ -4166,6 +4099,16 @@ var Button = function(x,y,w,h,onclick) {
 };
 
 Button.prototype = {
+    
+    setPosition: function(x, y) {
+        this.x = x;
+        this.y = y;
+    },
+
+    setDimensions: function(w, h) {
+        this.w = w;
+        this.h = h;
+    },
 
     contains: function(x,y) {
         return x >= this.x && x <= this.x+this.w &&
@@ -4318,6 +4261,25 @@ var Menu = function(title,x,y,w,h,pad,font,fontcolor) {
 };
 
 Menu.prototype = {
+    setSize: function (x, y, width, height) {
+        const dx = this.x - x;
+        const dy = this.y - y;
+        const dw = this.w - width;
+        const dh = this.h = height;
+
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.w = width;
+        this.height = height;
+        this.h = height;
+
+        // Update all buttons positions
+        this.buttons.forEach((btn) => {
+            btn.setPosition(dx + btn.x, dy + btn.y);
+            btn.setDimensions(this.w - this.pad * 2, this.h);
+        });
+    },
 
     clickCurrentOption: function() {
         var i;
@@ -4330,6 +4292,7 @@ Menu.prototype = {
     },
 
     selectNextOption: function() {
+        gameTitleState.blurTitleButtons();
         var i;
         var nextBtn;
         for (i=0; i<this.buttonCount; i++) {
@@ -4344,6 +4307,7 @@ Menu.prototype = {
     },
 
     selectPrevOption: function() {
+        gameTitleState.blurTitleButtons();
         var i;
         var nextBtn;
         for (i=0; i<this.buttonCount; i++) {
@@ -4355,6 +4319,16 @@ Menu.prototype = {
         }
         nextBtn = nextBtn || this.buttons[this.buttonCount-1];
         nextBtn.focus();
+    },
+
+    selectNextTitleOption: function() {
+        this.buttons.forEach((btn) => { if(btn.isSelected) btn.blur() });
+        gameTitleState.selectNextTitleButton();
+    },
+
+    selectPrevTitleOption: function() {
+        this.buttons.forEach((btn) => { if(btn.isSelected) btn.blur() });
+        gameTitleState.selectPrevTitleButton();
     },
 
     addToggleButton: function(isOn,setOn) {
@@ -4429,7 +4403,7 @@ Menu.prototype = {
 
     draw: function(ctx) {
         if (this.title) {
-            ctx.font = tileSize+"px ArcadeR";
+            ctx.font = tileSize+"px 'Press Start 2P'";
             ctx.textBaseline = "middle";
             ctx.textAlign = "center";
             ctx.fillStyle = "#FFF";
@@ -4451,41 +4425,44 @@ Menu.prototype = {
 //@line 1 "src/inGameMenu.js"
 ////////////////////////////////////////////////////
 // In-Game Menu
-var inGameMenu = (function() {
+let inGameMenuBtnX, inGameMenuBtnY;
 
-    var w=tileSize*6,h=tileSize*3;
+const inGameMenuBtnDimensions = {
+    width: tileSize * 6,
+    height: tileSize * 3
+}
 
-    var getMainMenu = function() {
-        return practiceMode ? practiceMenu : menu;
-    };
-    var showMainMenu = function() {
-        getMainMenu().enable();
-    };
-    var hideMainMenu = function() {
-        getMainMenu().disable();
-    };
+const setInGameMenuBtnPosition = () => {
+    inGameMenuBtnX = getIsWidescreen() ? (mapCols - 3) * tileSize - inGameMenuBtnDimensions.width / 2 : mapWidth / 2 - inGameMenuBtnDimensions.width / 2;
+    inGameMenuBtnY = getIsWidescreen() ? (tileSize * 0.25) : mapHeight;
+}
 
-    // button to enable in-game menu
-    var btn = new Button(mapWidth/2 - w/2,mapHeight,w,h, function() {
-        showMainMenu();
-        vcr.onHudDisable();
-    });
+const getInGameMenuBtn = (handler) => {
+    const btn = new Button(inGameMenuBtnX, inGameMenuBtnY, inGameMenuBtnDimensions.width, inGameMenuBtnDimensions.height, handler);
     btn.setText("MENU");
-    btn.setFont(tileSize+"px ArcadeR","#FFF");
+    btn.setFont(tileSize + "px 'Press Start 2P'","#FFF");
+    
+    return btn;
+}
+
+const buildInGameMenu = function() {
+    let menu;
+    const showMainMenu = () => menu.enable();
+    const hideMainMenu = () => menu.disable();
 
     // confirms a menu action
-    var confirmMenu = new Menu("QUESTION?",2*tileSize,5*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
+    var confirmMenu = new Menu("QUESTION?",2*tileSize,5*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px 'Press Start 2P'", "#EEE");
     confirmMenu.addTextButton("YES", function() {
         confirmMenu.disable();
         confirmMenu.onConfirm();
     });
     confirmMenu.addTextButton("NO", function() {
         confirmMenu.disable();
-        showMainMenu();
+        showMainMenu(menu);
     });
     confirmMenu.addTextButton("CANCEL", function() {
         confirmMenu.disable();
-        showMainMenu();
+        showMainMenu(menu);
     });
     confirmMenu.backButton = confirmMenu.buttons[confirmMenu.buttonCount-1];
 
@@ -4497,7 +4474,7 @@ var inGameMenu = (function() {
     };
 
     // regular menu
-    var menu = new Menu("PAUSED",2*tileSize,5*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
+    menu = new Menu("PAUSED", 2 * tileSize, 5 * tileSize, mapWidth - 4 * tileSize, 3 * tileSize, tileSize, tileSize + "px 'Press Start 2P'", "#EEE");
     menu.addTextButton("RESUME", function() {
         menu.disable();
     });
@@ -4508,78 +4485,10 @@ var inGameMenu = (function() {
     });
     menu.backButton = menu.buttons[0];
 
-    // practice menu
-    var practiceMenu = new Menu("PAUSED",2*tileSize,5*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
-    practiceMenu.addTextButton("RESUME", function() {
-        hideMainMenu();
-        vcr.onHudEnable();
-    });
-    practiceMenu.addTextButton("RESTART LEVEL", function() {
-        showConfirm("RESTART LEVEL?", function() {
-            level--;
-            switchState(readyNewState, 60);
-        });
-    });
-    practiceMenu.addTextButton("SKIP LEVEL", function() {
-        showConfirm("SKIP LEVEL?", function() {
-            switchState(readyNewState, 60);
-        });
-    });
-    practiceMenu.addTextButton("CHEATS", function() {
-        practiceMenu.disable();
-        cheatsMenu.enable();
-    });
-    practiceMenu.addTextButton("QUIT", function() {
-        showConfirm("QUIT GAME?", function() {
-            switchState(preNewGameState, 60);
-            clearCheats();
-            vcr.reset();
-        });
-    });
-    practiceMenu.backButton = practiceMenu.buttons[0];
+    setInGameMenuBtnPosition();
+    const btn = getInGameMenuBtn(showMainMenu);
 
-    // cheats menu
-    var cheatsMenu = new Menu("CHEATS",2*tileSize,5*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
-    cheatsMenu.addToggleTextButton("INVINCIBLE",
-        function() {
-            return player.invincible;
-        },
-        function(on) {
-            player.invincible = on;
-        });
-    cheatsMenu.addToggleTextButton("TURBO",
-        function() {
-            return turboMode;
-        },
-        function(on) {
-            turboMode = on;
-        });
-    cheatsMenu.addToggleTextButton("SHOW TARGETS",
-        function() {
-            return enemy1.isDrawTarget;
-        },
-        function(on) {
-            for (var i=0; i<4; i++) {
-                ghosts[i].isDrawTarget = on;
-            }
-        });
-    cheatsMenu.addToggleTextButton("SHOW PATHS",
-        function() {
-            return enemy1.isDrawPath;
-        },
-        function(on) {
-            for (var i=0; i<4; i++) {
-                ghosts[i].isDrawPath = on;
-            }
-        });
-    cheatsMenu.addSpacer(1);
-    cheatsMenu.addTextButton("BACK", function() {
-        cheatsMenu.disable();
-        practiceMenu.enable();
-    });
-    cheatsMenu.backButton = cheatsMenu.buttons[cheatsMenu.buttons.length-1];
-
-    var menus = [menu, practiceMenu, confirmMenu, cheatsMenu];
+    var menus = [menu, confirmMenu];
     var getVisibleMenu = function() {
         var len = menus.length;
         var i;
@@ -4604,30 +4513,27 @@ var inGameMenu = (function() {
                 btn.update();
             }
         },
-        draw: function(ctx) {
+        draw: (ctx) => {
             var m = getVisibleMenu();
             if (m) {
                 ctx.fillStyle = "rgba(0,0,0,0.8)";
-                ctx.fillRect(-mapPad-1,-mapPad-1,mapWidth+1,mapHeight+1);
+                ctx.fillRect(-mapPadX - 5, -mapPadY - 5, mapWidth + 5 ,mapHeight + 5);
+                m.setSize(2 * tileSize, 5 * tileSize, mapWidth - 4 * tileSize, 3 * tileSize);
                 m.draw(ctx);
             }
             else {
+                setInGameMenuBtnPosition();
+                btn.setPosition(inGameMenuBtnX, inGameMenuBtnY); 
                 btn.draw(ctx);
             }
         },
-        isOpen: function() {
-            return getVisibleMenu() != undefined;
-        },
-        getMenu: function() {
-            return getVisibleMenu();
-        },
-        getMenuButton: function() {
-            return btn;
-        },
+        isOpen: () => getVisibleMenu() != undefined,
+        getMenu: () => getVisibleMenu(),
+        getMenuButton: () => btn
     };
-})();
+}
 
-//@line 1 "src/sprites.js"
+const inGameMenu = buildInGameMenu();//@line 1 "src/sprites.js"
 //////////////////////////////////////////////////////////////////////////////////////
 // Sprites
 // (sprites are created using canvas paths)
@@ -4648,7 +4554,7 @@ var drawLine = function(ctx, x, y, dx, dy, lineWidth, color) {
 }
 var drawPixel = function(ctx, x, y, scale, color) { drawLine(ctx, x, y, scl(scale, 1), 0, scl(scale, 1), color) };
 
-var drawGhostSprite = (function(){
+var drawEnemySprite = (function(){
     var drawSyringe = function(ctx, dirEnum, flash, color, eyesOnly) {
         var s = 0.6; // scale factor
 
@@ -4889,7 +4795,6 @@ var drawGhostSprite = (function(){
             ctx.fillRect(scl(s, 15), scl(s, 9), scl(s, 18), scl(s, 3));
         }
 
-
         ctx.save();
         ctx.translate(-3, -3);
 
@@ -4906,7 +4811,6 @@ var drawGhostSprite = (function(){
 
         ctx.restore();
     }
-
 
     return function(ctx, x, y, frame, dirEnum, scared, flash, eyesOnly, color) {
         ctx.save();
@@ -5211,7 +5115,7 @@ var drawPacPoints = (function(){
 })();
 
 // draw points displayed when ms. pac-man eats a fruit
-var drawMsPacPoints = (function(){
+var drawBonusPoints = (function(){
     var ctx;
     var color = "#fff";
 
@@ -5743,359 +5647,6 @@ var drawMonsterSprite = (function(){
     };
 })();
 
-var drawColoredOttoSprite = function(color,eyeColor) {
-    var ctx;
-
-    var plotLine = function(points,color) {
-        var len = points.length;
-        var i;
-        ctx.beginPath();
-        ctx.moveTo(points[0],points[1]);
-        for (i=2; i<len; i+=2) {
-            ctx.lineTo(points[i],points[i+1]);
-        }
-        ctx.lineWidth = 1.0;
-        ctx.lineCap = ctx.lineJoin = "round";
-        ctx.strokeStyle = color;
-        ctx.stroke();
-    };
-
-    var plotSolid = function(points,color) {
-        var len = points.length;
-        var i;
-        ctx.beginPath();
-        ctx.moveTo(points[0],points[1]);
-        for (i=2; i<len; i+=2) {
-            ctx.lineTo(points[i],points[i+1]);
-        }
-        ctx.closePath();
-        ctx.lineWidth = 1.0;
-        ctx.lineJoin = "round";
-        ctx.fillStyle = ctx.strokeStyle = color;
-        ctx.fill();
-        ctx.stroke();
-    };
-
-    var drawRightEye = function() {
-        plotSolid([
-            -4,-5,
-            -3,-6,
-            -2,-6,
-            -2,-5,
-            -3,-4,
-            -4,-4,
-        ],eyeColor);
-    };
-
-    var drawRight0 = function() {
-        plotSolid([
-            -5,-4,
-            -3,-6,
-            2,-6,
-            3,-5,
-            -1,-3,
-            3,-1,
-            1,1,
-            1,3,
-            3,6,
-            5,4,
-            6,4,
-            6,5,
-            4,7,
-            2,7,
-            -1,1,
-            -4,4,
-            -3,6,
-            -3,7,
-            -4,7,
-            -6,5,
-            -6,4,
-            -3,1,
-            -5,-1,
-        ],color);
-        drawRightEye();
-    };
-    var drawRight1 = function() {
-        plotSolid([
-            -5,-4,
-            -3,-6,
-            1,-6,
-            3,-4,
-            3,-1,
-            1,1,
-            1,6,
-            4,6,
-            4,7,
-            0,7,
-            0,1,
-            -2,1,
-            -4,3,
-            -4,4,
-            -3,5,
-            -3,6,
-            -4,6,
-            -5,4,
-            -5,3,
-            -3,1,
-            -5,-1,
-        ],color);
-        drawRightEye();
-    };
-    var drawRight2 = function() {
-        plotSolid([
-            -5,-4,
-            -3,-6,
-            2,-6,
-            3,-5,
-            -1,-3,
-            3,-1,
-            1,1,
-            1,3,
-            4,3,
-            4,4,
-            0,4,
-            0,1,
-            -2,1,
-            -2,6,
-            1,6,
-            1,7,
-            -3,7,
-            -3,1,
-            -5,-1,
-        ],color);
-        drawRightEye();
-    };
-    var drawRight3 = function() {
-        plotSolid([
-            -5,-4,
-            -3,-6,
-            2,-6,
-            -2,-3,
-            2,0,
-            1,1,
-            3,5,
-            5,3,
-            6,3,
-            6,4,
-            4,6,
-            2,6,
-            -1,1,
-            -3,1,
-            -3,6,
-            0,6,
-            0,7,
-            -4,7,
-            -4,2,
-            -3,1,
-            -5,-1,
-        ],color);
-        drawRightEye();
-    };
-
-    var drawUpDownEyes = function() {
-        plotSolid([
-            -5,-5,
-            -4,-6,
-            -3,-6,
-            -3,-5,
-            -4,-4,
-            -5,-4,
-        ],eyeColor);
-        plotSolid([
-            3,-6,
-            4,-6,
-            5,-5,
-            5,-4,
-            4,-4,
-            3,-5,
-        ],eyeColor);
-    };
-
-    var drawUpDownHead = function() {
-        plotSolid([
-            -4,-4,
-            -2,-6,
-            2,-6,
-            4,-4,
-            4,-1,
-            2,1,
-            -2,1,
-            -4,-1,
-        ],color);
-    };
-
-    var drawUpDownLeg0 = function(y,xs) {
-        ctx.save();
-        ctx.translate(0,y);
-        ctx.scale(xs,1);
-
-        plotSolid([
-            1,0,
-            2,0,
-            2,6,
-            4,6,
-            4,7,
-            1,7,
-        ],color);
-
-        ctx.restore();
-    };
-
-    var drawUpDownLeg1 = function(y,xs) {
-        ctx.save();
-        ctx.translate(0,y);
-        ctx.scale(xs,1);
-
-        plotSolid([
-            1,0,
-            2,0,
-            2,4,
-            3,5,
-            4,4,
-            5,4,
-            5,5,
-            3,7,
-            2,7,
-            1,6,
-        ],color);
-
-        ctx.restore();
-    };
-    var drawUpDownLegs0 = function() {
-        drawUpDownLeg0(0,-1);
-        drawUpDownLeg1(-2,1);
-    };
-
-    var drawUpDownLegs1 = function() {
-        drawUpDownLeg0(-2,-1);
-        drawUpDownLeg1(-2,1);
-    };
-
-    var drawUpDownLegs2 = function() {
-        drawUpDownLeg1(-2,-1);
-        drawUpDownLeg0(0,1);
-    };
-
-    var drawUpDownLegs3 = function() {
-        drawUpDownLeg1(0,-1);
-        drawUpDownLeg0(0,1);
-    };
-
-    var drawDown0 = function() {
-        drawUpDownHead();
-        drawUpDownEyes();
-        drawUpDownLegs0();
-        plotLine([-2,-3,2,-3],"#000");
-    };
-    var drawDown1 = function() {
-        drawUpDownHead();
-        drawUpDownEyes();
-        drawUpDownLegs1();
-    };
-    var drawDown2 = function() {
-        drawUpDownHead();
-        drawUpDownEyes();
-        drawUpDownLegs2();
-        plotLine([-2,-3,2,-3],"#000");
-    };
-    var drawDown3 = function() {
-        drawUpDownHead();
-        drawUpDownEyes();
-        drawUpDownLegs3();
-        plotSolid([
-            -2,-3,
-            0,-5,
-            2,-3,
-            0,-1,
-        ],"#000");
-    };
-
-    var drawUp0 = function() {
-        drawUpDownEyes();
-        drawUpDownHead();
-        drawUpDownLegs0();
-    };
-    var drawUp1 = function() {
-        drawUpDownEyes();
-        drawUpDownHead();
-        drawUpDownLegs1();
-    };
-    var drawUp2 = function() {
-        drawUpDownEyes();
-        drawUpDownHead();
-        drawUpDownLegs2();
-    };
-    var drawUp3 = function() {
-        drawUpDownEyes();
-        drawUpDownHead();
-        drawUpDownLegs3();
-    };
-
-    return function(_ctx,x,y,dirEnum,frame,rotate) {
-        ctx = _ctx;
-
-        ctx.save();
-        ctx.translate(x+0.5,y+0.5);
-        if (rotate) {
-            ctx.rotate(rotate);
-        }
-
-        if (dirEnum == DIR_RIGHT) {
-            ctx.translate(0,-1); // correct my coordinate system
-            [drawRight0, drawRight1, drawRight2, drawRight3][frame]();
-        }
-        else if (dirEnum == DIR_LEFT) {
-            ctx.translate(0,-1); // correct my coordinate system
-            ctx.scale(-1,1);
-            [drawRight0, drawRight1, drawRight2, drawRight3][frame]();
-        }
-        else if (dirEnum == DIR_DOWN) {
-            ctx.translate(0,-1); // correct my coordinate system
-            [drawDown0, drawDown1, drawDown2, drawDown3][frame]();
-        }
-        else if (dirEnum == DIR_UP) {
-            ctx.translate(0,-1); // correct my coordinate system
-            [drawUp0, drawUp1, drawUp2, drawUp3][frame]();
-        }
-
-        ctx.restore();
-    };
-};
-
-var drawOttoSprite = drawColoredOttoSprite("#FF0","#00F");
-var drawMsOttoSprite = drawColoredOttoSprite("#F00","#FFF");
-
-var drawDeadOttoSprite = function(ctx,x,y) {
-    var plotOutline = function(points,color) {
-        var len = points.length;
-        var i;
-        ctx.beginPath();
-        ctx.moveTo(points[0],points[1]);
-        for (i=2; i<len; i+=2) {
-            ctx.lineTo(points[i],points[i+1]);
-        }
-        ctx.closePath();
-        ctx.lineWidth = 1.0;
-        ctx.lineCap = ctx.lineJoin = "round";
-        ctx.strokeStyle = color;
-        ctx.stroke();
-    };
-    ctx.save();
-    ctx.translate(x+2,y);
-    plotOutline([
-        3,-5,
-        -1,-5,
-        -2,-6,
-        -2,-7,
-        -1,-8,
-        3,-8,
-        4,-7,
-        4,-6,
-    ],"#F00");
-    ctx.restore();
-    drawOttoSprite(ctx,x,y,DIR_LEFT,2,Math.PI/2);
-};
-
 // draw player body
 var drawPacmanSprite = function(ctx,x,y,dirEnum,angle,mouthShift,scale,centerShift,alpha,color,rot_angle) {
 
@@ -6177,109 +5728,9 @@ var drawGiantPacmanSprite = function(ctx,x,y,dirEnum,frame) {
     ctx.restore();
 };
 
-var drawMsPacmanSprite = function(ctx,x,y,dirEnum,frame,rot_angle) {
-    var angle = 0;
-
-    // draw body
-    if (frame == 0) {
-        // closed
-        drawPacmanSprite(ctx,x,y,dirEnum,0,undefined,undefined,undefined,undefined,undefined,rot_angle);
-    }
-    else if (frame == 1) {
-        // open
-        angle = Math.atan(4/5);
-        drawPacmanSprite(ctx,x,y,dirEnum,angle,undefined,undefined,undefined,undefined,undefined,rot_angle);
-        angle = Math.atan(4/8); // angle for drawing eye
-    }
-    else if (frame == 2) {
-        // wide
-        angle = Math.atan(6/3);
-        drawPacmanSprite(ctx,x,y,dirEnum,angle,undefined,undefined,undefined,undefined,undefined,rot_angle);
-        angle = Math.atan(6/6); // angle for drawing eye
-    }
-
-    ctx.save();
-    ctx.translate(x,y);
-    if (rot_angle) {
-        ctx.rotate(rot_angle);
-    }
-
-    // reflect or rotate sprite according to current direction
-    var d90 = Math.PI/2;
-    if (dirEnum == DIR_UP)
-        ctx.rotate(-d90);
-    else if (dirEnum == DIR_DOWN)
-        ctx.rotate(d90);
-    else if (dirEnum == DIR_LEFT)
-        ctx.scale(-1,1);
-
-    // bow
-    var x=-7.5,y=-7.5;
-    ctx.fillStyle = "#F00";
-    ctx.beginPath(); ctx.arc(x+1,y+4,1.25,0,Math.PI*2); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.arc(x+2,y+5,1.25,0,Math.PI*2); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.arc(x+3,y+3,1.25,0,Math.PI*2); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.arc(x+4,y+1,1.25,0,Math.PI*2); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.arc(x+5,y+2,1.25,0,Math.PI*2); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = "#0031FF";
-    ctx.beginPath(); ctx.arc(x+2.5,y+3.5,0.5,0,Math.PI*2); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.arc(x+3.5,y+2.5,0.5,0,Math.PI*2); ctx.closePath(); ctx.fill();
-
-    // lips
-    ctx.strokeStyle = "#F00";
-    ctx.lineWidth = 1.25;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    if (frame == 0) {
-        ctx.moveTo(5,0);
-        ctx.lineTo(6.5,0);
-        ctx.moveTo(6.5,-1.5);
-        ctx.lineTo(6.5,1.5);
-    }
-    else {
-        var r1 = 7.5;
-        var r2 = 8.5;
-        var c = Math.cos(angle);
-        var s = Math.sin(angle);
-        ctx.moveTo(-3+r1*c,r1*s);
-        ctx.lineTo(-3+r2*c,r2*s);
-        ctx.moveTo(-3+r1*c,-r1*s);
-        ctx.lineTo(-3+r2*c,-r2*s);
-    }
-    ctx.stroke();
-
-    // mole
-    ctx.beginPath();
-    ctx.arc(-3,2,0.5,0,Math.PI*2);
-    ctx.fillStyle = "#000";
-    ctx.fill();
-
-    // eye
-    ctx.strokeStyle = "#000";
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    if (frame == 0) {
-        ctx.moveTo(-2.5,-2);
-        ctx.lineTo(-0.5,-2);
-    }
-    else {
-        var r1 = 0.5;
-        var r2 = 2.5;
-        var c = Math.cos(angle);
-        var s = Math.sin(angle);
-        ctx.moveTo(-3+r1*c,-2-r1*s);
-        ctx.lineTo(-3+r2*c,-2-r2*s);
-    }
-    ctx.stroke();
-
-    ctx.restore();
-};
-
 var drawTubieManSprite = (function(){
-
     // TODO: draw pupils separately in atlas
-    //      composite the body frame and a random pupil frame when drawing tubie-man
-
+    //       composite the body frame and a random pupil frame when drawing tubie-man
     var prevFrame = undefined;
     var sx1 = 0; // shift x for first pupil
     var sy1 = 0; // shift y for first pupil
@@ -6288,7 +5739,7 @@ var drawTubieManSprite = (function(){
 
     var er = 2.1; // eye radius
     var pr = 1; // pupil radius
-    var tr = 0.7 // tube circle radius
+    var tr = 1; // tube circle radius
 
     var movePupils = function() {
         var a1 = Math.random()*Math.PI*2;
@@ -6303,13 +5754,14 @@ var drawTubieManSprite = (function(){
     };
 
     return function(ctx,x,y,dirEnum,frame,shake,rot_angle) {
-        var angle = 0;
+        let angle = 0;
 
         // draw body
-        var draw = function(angle) {
+        const draw = function(angle) {
             //angle = Math.PI/6*frame;
             drawPacmanSprite(ctx,x,y,dirEnum,angle,undefined,undefined,undefined,undefined,"#FF6E31",rot_angle);
         };
+
         if (frame == 0) {
             // closed
             draw(0);
@@ -6342,13 +5794,16 @@ var drawTubieManSprite = (function(){
         else if (dirEnum == DIR_LEFT)
             ctx.scale(-1,1);
 
-        var x = -4; // pivot point
-        var y = -3.5;
-        var tx = -4;
-        var ty = 2;
+        const ex = -4; // pivot point
+        const ey = -3.5;
+        const tx = -3.5;
+        const ty = 2;
+        const ngx = -4.75;
+        const ngy = -0.75;
         var r1 = 3; // distance from pivot of first eye
         var r2 = 6.5; // distance from pivot of second eye
         var r3 = 0; // distance from pivot of tube
+        var r4 = 4.5; // distance from pivot of ng tube;
         angle /= 3; // angle from pivot point
         angle += Math.PI/8;
         var c = Math.cos(angle);
@@ -6363,30 +5818,30 @@ var drawTubieManSprite = (function(){
 
         // second eyeball
         ctx.beginPath();
-        ctx.arc(x+r2*c, y-r2*s, er, 0, Math.PI*2);
+        ctx.arc(ex+r2*c, ey-r2*s, er, 0, Math.PI*2);
         ctx.fillStyle = "#FFF";
         ctx.fill();
         // second pupil
         ctx.beginPath();
-        ctx.arc(x+r2*c+sx2, y-r2*s+sy2, pr, 0, Math.PI*2);
+        ctx.arc(ex+r2*c+sx2, ey-r2*s+sy2, pr, 0, Math.PI*2);
         ctx.fillStyle = "#000";
         ctx.fill();
 
         // first eyeball
         ctx.beginPath();
-        ctx.arc(x+r1*c, y-r1*1.8*s, er, 0, Math.PI*2);
+        ctx.arc(ex+r1*c, ey-r1*1.8*s, er, 0, Math.PI*2);
         ctx.fillStyle = "#FFF";
         ctx.fill();
         // first pupil
         ctx.beginPath();
-        ctx.arc(x+r1*c+sx1, y-r1*1.8*s+sy1, pr, 0, Math.PI*2);
+        ctx.arc(ex+r1*c+sx1, ey-r1*1.8*s+sy1, pr, 0, Math.PI*2);
         ctx.fillStyle = "#000";
         ctx.fill();
 
-        var tubeColor = "#FFF";
-        var tubeAccentColor = "#808080";
-        var tubeLength = 2.2;
-        var tubeThickness = 0.65
+        const tubeColor = "#FFF";
+        const tubeAccentColor = "#808080";
+        const tubeLength = 3;
+        const tubeThickness = 1.125
 
         //tube
         //tube-line
@@ -6408,587 +5863,1647 @@ var drawTubieManSprite = (function(){
         ctx.fillStyle = tubeAccentColor;
         ctx.fill();
 
-        ctx.restore();
+        //ng-tube
+        const centerX = 0;
+        const centerY = 0;
 
+        const ngTubeLength = 5.25;
+        const ngTubeThickness = 0.5;
+        const tubieManRadius = 7.65;
+
+        const ngStartX = ngx - 0.75 + r4 * c + ngTubeLength / 3;
+        const ngStartY = ngy - r4 * s;
+
+        const distFromStartToCenter = Math.sqrt(Math.pow(ngStartX - centerX, 2) + Math.pow(ngStartY - centerY, 2));
+        const distanceToEdge = tubieManRadius - distFromStartToCenter;
+
+        const ngEndX = (ngx + r4 * c - distanceToEdge);
+        const ngEndY = (ngy - r4 * s);
+
+        const cp1X = (ngx - 1.5 + r4 - 1.2 * c + tubeLength / 2);
+        const cp1Y = (ngy - r4/2 * s);
+        const cp2X = (ngx - 1.5 + r4 - 2 * c + tubeLength / 2.5);
+        const cp2Y = (ngy - r4/2 * s);
+
+        const ngTubeColor = "#FFE9AC";
+ 
+        ctx.beginPath();
+        ctx.moveTo(ngStartX, ngStartY);
+        ctx.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, ngEndX, ngEndY);
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = ngTubeColor;
+        ctx.lineWidth = ngTubeThickness;
+        ctx.stroke();
+
+        const DEBUG_NG_TUBE = false;
+
+        if(DEBUG_NG_TUBE) {
+            ctx.fillStyle = "#0F0";
+            ctx.beginPath();
+            ctx.arc(cp1X, cp1Y, 0.25, 0, 2 * Math.PI); // Control point one
+            ctx.arc(cp2X, cp2Y, 0.25, 0, 2 * Math.PI); // Control point two
+            ctx.fill();
+
+            ctx.fillStyle = "#00F";
+            ctx.beginPath();
+            ctx.arc(0, 0, 0.25, 0, 2 * Math.PI); // Tubie-Man center
+            ctx.fill();
+        }
+
+        ctx.restore();
     };
 })();
 
 ////////////////////////////////////////////////////////////////////
 // FRUIT SPRITES
 
-// G-Tube
-var drawGTube = function(ctx,x,y) {
-
-    // cherry
-    var cherry = function(x,y) {
-        ctx.save();
-        ctx.translate(x,y);
-
-        // red fruit
-        ctx.beginPath();
-        ctx.arc(2.5,2.5,3,0,Math.PI*2);
-        ctx.lineWidth = 1.0;
-        ctx.strokeStyle = "#000";
-        ctx.stroke();
-        ctx.fillStyle = "#ff0000";
-        ctx.fill();
-
-        // white shine
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(1,3);
-        ctx.lineTo(2,4);
-        ctx.strokeStyle = "#fff";
-        ctx.stroke();
-        ctx.restore();
-    };
-
+// GTube
+var drawGTube = function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 8, y - 8);
 
-    // draw both cherries
-    cherry(-6,-1);
-    cherry(-1,1);
+    // Path generated from SVG w/ Inkscape
+	ctx.fillStyle = 'rgb(227, 222, 219)';
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
 
-    // draw stems
-    ctx.beginPath();
-    ctx.moveTo(-3,0);
-    ctx.bezierCurveTo(-1,-2, 2,-4, 5,-5);
-    ctx.lineTo(5,-4);
-    ctx.bezierCurveTo(3,-4, 1,0, 1,2);
-    ctx.strokeStyle = "#ff9900";
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.stroke();
+	ctx.beginPath();
+	ctx.moveTo(6, 14);
+	ctx.lineTo(6, 15);
+	ctx.quadraticCurveTo(6, 15, 6, 15);
+	ctx.lineTo(10, 15);
+	ctx.quadraticCurveTo(10, 15, 10, 15);
+	ctx.lineTo(10, 14);
+	ctx.quadraticCurveTo(10, 14, 10, 14);
+	ctx.lineTo(6, 14);
+	ctx.quadraticCurveTo(6, 14, 6, 14);
+	ctx.fill();
+	
+    // #rect3
+	ctx.beginPath();
+	ctx.rect(5, 13, 6, 1);
+	ctx.fill();
+	
+    // #rect4
+	ctx.beginPath();
+	ctx.rect(4, 12, 8, 1);
+	ctx.fill();
+	
+    // #rect5
+	ctx.beginPath();
+	ctx.rect(5, 11, 6, 1);
+	ctx.fill();
+	
+    // #rect6
+	ctx.beginPath();
+	ctx.rect(6, 10, 4, 1);
+	ctx.fill();
+	
+    // #rect8
+	ctx.beginPath();
+	ctx.moveTo(3, 3);
+	ctx.lineTo(3, 5);
+	ctx.quadraticCurveTo(3, 5, 3, 5);
+	ctx.lineTo(11, 5);
+	ctx.quadraticCurveTo(11, 5, 11, 5);
+	ctx.lineTo(11, 3);
+	ctx.quadraticCurveTo(11, 3, 11, 3);
+	ctx.lineTo(3, 3);
+	ctx.quadraticCurveTo(3, 3, 3, 3);
+	ctx.fill();
+	
+    // #rect9
+	ctx.beginPath();
+	ctx.moveTo(10, 4);
+	ctx.lineTo(10, 5);
+	ctx.quadraticCurveTo(10, 5, 10, 5);
+	ctx.lineTo(14, 5);
+	ctx.quadraticCurveTo(14, 5, 14, 5);
+	ctx.lineTo(14, 4);
+	ctx.quadraticCurveTo(14, 4, 14, 4);
+	ctx.lineTo(10, 4);
+	ctx.quadraticCurveTo(10, 4, 10, 4);
+	ctx.fill();
+	
+    // #rect10
+	ctx.beginPath();
+	ctx.moveTo(14, 2);
+	ctx.lineTo(14, 4);
+	ctx.quadraticCurveTo(14, 4, 14, 4);
+	ctx.lineTo(15, 4);
+	ctx.quadraticCurveTo(15, 4, 15, 4);
+	ctx.lineTo(15, 2);
+	ctx.quadraticCurveTo(15, 2, 15, 2);
+	ctx.lineTo(14, 2);
+	ctx.quadraticCurveTo(14, 2, 14, 2);
+	ctx.fill();
+	
+    // #rect11
+	ctx.beginPath();
+	ctx.moveTo(5, 1);
+	ctx.lineTo(5, 2);
+	ctx.quadraticCurveTo(5, 2, 5, 2);
+	ctx.lineTo(14, 2);
+	ctx.quadraticCurveTo(14, 2, 14, 2);
+	ctx.lineTo(14, 1);
+	ctx.quadraticCurveTo(14, 1, 14, 1);
+	ctx.lineTo(5, 1);
+	ctx.quadraticCurveTo(5, 1, 5, 1);
+	ctx.fill();
+	
+    // #rect12
+	ctx.beginPath();
+	ctx.moveTo(1, 2);
+	ctx.lineTo(1, 5);
+	ctx.quadraticCurveTo(1, 5, 1, 5);
+	ctx.lineTo(4, 5);
+	ctx.quadraticCurveTo(4, 5, 4, 5);
+	ctx.lineTo(4, 2);
+	ctx.quadraticCurveTo(4, 2, 4, 2);
+	ctx.lineTo(1, 2);
+	ctx.quadraticCurveTo(1, 2, 1, 2);
+	ctx.fill();
+	
+
+	ctx.fillStyle = 'rgb(183, 190, 200)';
+
+    // #rect13
+	ctx.beginPath();
+	ctx.moveTo(6, 2);
+	ctx.lineTo(6, 3);
+	ctx.quadraticCurveTo(6, 3, 6, 3);
+	ctx.lineTo(10, 3);
+	ctx.quadraticCurveTo(10, 3, 10, 3);
+	ctx.lineTo(10, 2);
+	ctx.quadraticCurveTo(10, 2, 10, 2);
+	ctx.lineTo(6, 2);
+	ctx.quadraticCurveTo(6, 2, 6, 2);
+	ctx.fill();
+	
+    // #rect7
+	ctx.beginPath();
+	ctx.rect(7, 3, 2, 12);
+	ctx.fill();
+	
+
+	ctx.fillStyle = 'rgb(170, 204, 255)';
+
+    // #rect15
+	ctx.beginPath();
+	ctx.moveTo(2, 3);
+	ctx.lineTo(2, 4);
+	ctx.quadraticCurveTo(2, 4, 2, 4);
+	ctx.lineTo(3, 4);
+	ctx.quadraticCurveTo(3, 4, 3, 4);
+	ctx.lineTo(3, 3);
+	ctx.quadraticCurveTo(3, 3, 3, 3);
+	ctx.lineTo(2, 3);
+	ctx.quadraticCurveTo(2, 3, 2, 3);
+	ctx.fill();
+
+    ctx.restore();
+}
+
+// Endless Pump
+var drawEndlessPump = function(ctx, x, y) {
+    ctx.save();
+    ctx.translate(x - 8, y - 8);
+
+    // Path generated from SVG w/ Inkscape
+	ctx.fillStyle = 'rgb(16, 164, 179)';
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
+
+    // #rect2
+	ctx.beginPath();
+	ctx.moveTo(2, 5);
+	ctx.lineTo(2, 4);
+	ctx.lineTo(14, 4);
+	ctx.lineTo(14, 5);
+	ctx.lineTo(15, 5);
+	ctx.lineTo(15, 13);
+	ctx.lineTo(1, 13);
+	ctx.lineTo(1, 5);
+	ctx.closePath();
+	ctx.fill();
+	
+    // #rect14
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(214, 217, 224)';
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
+	ctx.moveTo(2, 4);
+	ctx.lineTo(2, 3);
+	ctx.lineTo(14, 3);
+	ctx.lineTo(14, 4);
+	ctx.lineTo(15, 4);
+	ctx.lineTo(15, 7);
+	ctx.lineTo(14, 7);
+	ctx.lineTo(14, 8);
+	ctx.lineTo(2, 8);
+	ctx.lineTo(2, 7);
+	ctx.lineTo(1, 7);
+	ctx.lineTo(1, 4);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(214, 217, 224)';
+
+    // #rect4
+	ctx.beginPath();
+	ctx.rect(2, 9, 6, 3);
+	ctx.fill();
+    
+	
+	ctx.fillStyle = 'rgb(34, 149, 161)';
+
+    // #rect5
+	ctx.beginPath();
+	ctx.rect(9, 9, 1, 1);
+	ctx.fill();
+
+    // #rect6
+	ctx.beginPath();
+	ctx.rect(9, 11, 1, 1);
+	ctx.fill();
+	
+    // #rect7
+	ctx.beginPath();
+	ctx.rect(11, 9, 1, 1);
+	ctx.fill();
+	
+    // #rect8
+	ctx.beginPath();
+	ctx.rect(11, 11, 1, 1);
+	ctx.fill();
+	
+    // #rect9
+	ctx.beginPath();
+	ctx.rect(13, 9, 1, 1);
+	ctx.fill();
+	
+    // #rect10
+	ctx.beginPath();
+	ctx.rect(13, 11, 1, 1);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(119, 119, 126)';
+	ctx.lineWidth = 0.5;
+
+    // #path12
+	ctx.beginPath();
+	ctx.moveTo(2, 4);
+	ctx.lineTo(2, 6);
+	ctx.lineTo(9, 6);
+	ctx.lineTo(9, 4);
+	ctx.closePath();
+	ctx.fill();
+    
+	ctx.fillStyle = 'rgb(34, 149, 161)';
+	
+    // #rect12
+	ctx.beginPath();
+	ctx.rect(13, 4, 1, 1);
+	ctx.fill();
+	
+    // #rect13
+	ctx.beginPath();
+	ctx.rect(13, 6, 1, 1);
+	ctx.fill();
+    
+	ctx.fillStyle = 'rgb(171, 65, 33)';
+	ctx.lineWidth = 2;
+	
+    // #rect13-2
+	ctx.beginPath();
+	ctx.rect(5, 6, 4, 1);
+	ctx.fill();
+
+    ctx.fillStyle = 'rgb(119, 119, 126)';
+
+    // #rect5-4
+	ctx.beginPath();
+	ctx.rect(3, 10, 4, 1);
+	ctx.fill();
 
     ctx.restore();
 };
 
-// Infinity Pump
-var drawInfinityPump = function(ctx,x,y) {
+// Marsupial Pump
+var drawMarsupialPump = function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 8, y - 8);
 
-    // red body
+    // Path generated from SVG w/ Inkscape
+	ctx.fillStyle = 'rgb(230, 230, 230)';
+	ctx.lineWidth = 0.5;
+	ctx.lineJoin = 'round';
+
     ctx.beginPath();
-    ctx.moveTo(-1,-4);
-    ctx.bezierCurveTo(-3,-4,-5,-3, -5,-1);
-    ctx.bezierCurveTo(-5,3,-2,5, 0,6);
-    ctx.bezierCurveTo(3,5, 5,2, 5,0);
-    ctx.bezierCurveTo(5,-3, 3,-4, 0,-4);
-    ctx.fillStyle = "#f00";
-    ctx.fill();
-    ctx.strokeStyle = "#f00";
-    ctx.stroke();
+	ctx.moveTo(2, 4);
+	ctx.lineTo(3, 4);
+	ctx.lineTo(3, 3);
+	ctx.lineTo(13, 3);
+	ctx.lineTo(13, 4);
+	ctx.lineTo(14, 4);
+	ctx.lineTo(14, 5);
+	ctx.lineTo(15, 5);
+	ctx.lineTo(15, 12);
+	ctx.lineTo(14, 12);
+	ctx.lineTo(14, 13);
+	ctx.lineTo(2, 13);
+	ctx.lineTo(2, 12);
+	ctx.lineTo(1, 12);
+	ctx.lineTo(1, 5);
+	ctx.lineTo(2, 5);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(96, 96, 107)';
+	ctx.lineWidth = 1;
 
-    // white spots
-    var spots = [
-        {x:-4,y:-1},
-        {x:-3,y:2 },
-        {x:-2,y:0 },
-        {x:-1,y:4 },
-        {x:0, y:2 },
-        {x:0, y:0 },
-        {x:2, y:4 },
-        {x:2, y:-1 },
-        {x:3, y:1 },
-        {x:4, y:-2 } ];
+    // #rect6-5
+	ctx.beginPath();
+	ctx.rect(2, 7, 1, 1);
+	ctx.fill();
+	
+    // #rect6-5-8
+	ctx.beginPath();
+	ctx.rect(2, 9, 1, 1);
+	ctx.fill();
+	
+    // #rect6-5-1
+	ctx.beginPath();
+	ctx.rect(2, 11, 1, 1);
+	ctx.fill();
 
-    ctx.fillStyle = "#fff";
-    var i,len;
-    for (i=0, len=spots.length; i<len; i++) {
-        var s = spots[i];
-        ctx.beginPath();
-        ctx.arc(s.x,s.y,0.75,0,2*Math.PI);
-        ctx.fill();
-    }
+    // #rect6-5-4
+	ctx.beginPath();
+	ctx.rect(9, 6, 1, 1);
+	ctx.fill();
+    
+	ctx.fillStyle = 'rgb(120, 55, 181)';
 
-    // green leaf
-    ctx.beginPath();
-    ctx.moveTo(0,-4);
-    ctx.lineTo(-3,-4);
-    ctx.lineTo(0,-4);
-    ctx.lineTo(-2,-3);
-    ctx.lineTo(-1,-3);
-    ctx.lineTo(0,-4);
-    ctx.lineTo(0,-2);
-    ctx.lineTo(0,-4);
-    ctx.lineTo(1,-3);
-    ctx.lineTo(2,-3);
-    ctx.lineTo(0,-4);
-    ctx.lineTo(3,-4);
-    ctx.closePath();
-    ctx.strokeStyle = "#00ff00";
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
+    // #rect2
+	ctx.beginPath();
+	ctx.moveTo(3, 3);
+	ctx.lineTo(10, 3);
+	ctx.lineTo(10, 4);
+	ctx.lineTo(4, 4);
+	ctx.lineTo(4, 5);
+	ctx.lineTo(3, 5);
+	ctx.lineTo(3, 6);
+	ctx.lineTo(1, 6);
+	ctx.lineTo(1, 5);
+	ctx.lineTo(2, 5);
+	ctx.lineTo(2, 4);
+	ctx.lineTo(3, 4);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(0, 0, 0)';
 
-    // stem
-    ctx.beginPath();
-    ctx.moveTo(0,-4);
-    ctx.lineTo(0,-5);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = "#fff";
-    ctx.stroke();
-    ctx.restore();
-};
+    // #rect3
+	ctx.beginPath();
+	ctx.moveTo(4, 4);
+	ctx.lineTo(10, 4);
+	ctx.lineTo(10, 5);
+	ctx.lineTo(9, 5);
+	ctx.lineTo(9, 6);
+	ctx.lineTo(3, 6);
+	ctx.lineTo(3, 5);
+	ctx.lineTo(4, 5);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(0, 0, 128)';
 
-// Omni Pump
-var drawOmniPump = function(ctx,x,y) {
-    ctx.save();
-    ctx.translate(x,y);
+    // #rect4
+	ctx.beginPath();
+	ctx.moveTo(12, 6);
+	ctx.lineTo(12, 5);
+	ctx.lineTo(13, 5);
+	ctx.lineTo(13, 6);
+	ctx.lineTo(14, 6);
+	ctx.lineTo(14, 12);
+	ctx.lineTo(11, 12);
+	ctx.lineTo(11, 6);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(194, 194, 200)';
 
-    // orange body
-    ctx.beginPath();
-    ctx.moveTo(-2,-2);
-    ctx.bezierCurveTo(-3,-2, -5,-1, -5,1);
-    ctx.bezierCurveTo(-5,4, -3,6, 0,6);
-    ctx.bezierCurveTo(3,6, 5,4, 5,1);
-    ctx.bezierCurveTo(5,-1, 3,-2, 2,-2);
-    ctx.closePath();
-    ctx.fillStyle="#ffcc33";
-    ctx.fill();
-    ctx.strokeStyle = "#ffcc33";
-    ctx.stroke();
-
-    // stem
-    ctx.beginPath();
-    ctx.moveTo(-1,-1);
-    ctx.quadraticCurveTo(-1,-2,-2,-2);
-    ctx.quadraticCurveTo(-1,-2,-1,-4);
-    ctx.quadraticCurveTo(-1,-2,0,-2);
-    ctx.quadraticCurveTo(-1,-2,-1,-1);
-    ctx.strokeStyle = "#ff9900";
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-
-    // green leaf
-    ctx.beginPath();
-    ctx.moveTo(-0.5,-4);
-    ctx.quadraticCurveTo(0,-5,1,-5);
-    ctx.bezierCurveTo(2,-5, 3,-4,4,-4);
-    ctx.bezierCurveTo(3,-4, 3,-3, 2,-3);
-    ctx.bezierCurveTo(1,-3,1,-4,-0.5,-4);
-    ctx.strokeStyle = "#00ff00";
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-    ctx.fillStyle = "#00ff00";
-    ctx.fill();
-
-    ctx.restore();
-};
-
-// Joey Pump
-var drawJoeyPump = function(ctx,x,y) {
-    ctx.save();
-    ctx.translate(x,y);
-
-    // red fruit
-    ctx.beginPath();
-    ctx.moveTo(-2,-3);
-    ctx.bezierCurveTo(-2,-4,-3,-4,-4,-4);
-    ctx.bezierCurveTo(-5,-4,-6,-3,-6,0);
-    ctx.bezierCurveTo(-6,3,-4,6,-2.5,6);
-    ctx.quadraticCurveTo(-1,6,-1,5);
-    ctx.bezierCurveTo(-1,6,0,6,1,6);
-    ctx.bezierCurveTo(3,6, 5,3, 5,0);
-    ctx.bezierCurveTo(5,-3, 3,-4, 2,-4);
-    ctx.quadraticCurveTo(0,-4,0,-3);
-    ctx.closePath();
-    ctx.fillStyle = "#ff0000";
-    ctx.fill();
-
-    // stem
-    ctx.beginPath();
-    ctx.moveTo(-1,-3);
-    ctx.quadraticCurveTo(-1,-5, 0,-5);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#ff9900';
-    ctx.stroke();
-
-    // shine
-    ctx.beginPath();
-    ctx.moveTo(2,3);
-    ctx.quadraticCurveTo(3,3, 3,1);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = "#fff";
-    ctx.stroke();
+    // #rect5
+	ctx.beginPath();
+	ctx.rect(14, 7, 1, 1);
+	ctx.fill();
+	
+    // #rect7
+	ctx.beginPath();
+	ctx.rect(3, 7, 6, 5);
+	ctx.fill();
 
     ctx.restore();
 };
 
-// Infinity Charger
-var drawInfinityCharger = function(ctx,x,y) {
+// Jamie Pump
+var drawJamiePump = function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 8, y - 8);
 
-    // draw body
-    ctx.beginPath();
-    ctx.arc(0,2,5.5,0,Math.PI*2);
-    ctx.fillStyle = "#7bf331";
-    ctx.fill();
+    // Path generated from SVG w/ Inkscape
+    // #rect1
+	ctx.fillStyle = 'rgb(236, 236, 236)';
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
 
-    // draw stem
-    ctx.beginPath();
-    ctx.moveTo(0,-4);
-    ctx.lineTo(0,-5);
-    ctx.moveTo(2,-5);
-    ctx.quadraticCurveTo(-3,-5,-3,-6);
-    ctx.strokeStyle="#69b4af";
-    ctx.lineCap = "round";
-    ctx.stroke();
+	ctx.beginPath();
+	ctx.moveTo(2, 3);
+	ctx.lineTo(5, 3);
+	ctx.lineTo(5, 2);
+	ctx.lineTo(11, 2);
+	ctx.lineTo(11, 3);
+	ctx.lineTo(14, 3);
+	ctx.lineTo(14, 4);
+	ctx.lineTo(15, 4);
+	ctx.lineTo(15, 11);
+	ctx.lineTo(14, 11);
+	ctx.lineTo(14, 12);
+	ctx.lineTo(11, 12);
+	ctx.lineTo(11, 13);
+	ctx.lineTo(5, 13);
+	ctx.lineTo(5, 12);
+	ctx.lineTo(2, 12);
+	ctx.lineTo(2, 11);
+	ctx.lineTo(1, 11);
+	ctx.lineTo(1, 4);
+	ctx.lineTo(2, 4);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(0, 0, 128)';
 
-    // dark lines
-    /*
-    ctx.beginPath();
-    ctx.moveTo(0,-2);
-    ctx.lineTo(-4,2);
-    ctx.lineTo(-1,5);
-    ctx.moveTo(-3,-1);
-    ctx.lineTo(-2,0);
-    ctx.moveTo(-2,6);
-    ctx.lineTo(1,3);
-    ctx.moveTo(1,7);
-    ctx.lineTo(3,5);
-    ctx.lineTo(0,2);
-    ctx.lineTo(3,-1);
-    ctx.moveTo(2,0);
-    ctx.lineTo(4,2);
-    ctx.strokeStyle="#69b4af";
-    ctx.lineCap = "round";
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-    */
-    // dark spots
-    var spots = [
-        0,-2,
-        -1,-1,
-        -2,0,
-        -3,1,
-        -4,2,
-        -3,3,
-        -2,4,
-        -1,5,
-        -2,6,
-        -3,-1,
-        1,7,
-        2,6,
-        3,5,
-        2,4,
-        1,3,
-        0,2,
-        1,1,
-        2,0,
-        3,-1,
-        3,1,
-        4,2,
-         ];
+    // #rect2
+	ctx.beginPath();
+	ctx.moveTo(3, 4);
+	ctx.lineTo(6, 4);
+	ctx.lineTo(6, 3);
+	ctx.lineTo(10, 3);
+	ctx.lineTo(10, 4);
+	ctx.lineTo(13, 4);
+	ctx.lineTo(13, 5);
+	ctx.lineTo(14, 5);
+	ctx.lineTo(14, 10);
+	ctx.lineTo(13, 10);
+	ctx.lineTo(13, 11);
+	ctx.lineTo(10, 11);
+	ctx.lineTo(10, 12);
+	ctx.lineTo(6, 12);
+	ctx.lineTo(6, 11);
+	ctx.lineTo(3, 11);
+	ctx.lineTo(3, 10);
+	ctx.lineTo(2, 10);
+	ctx.lineTo(2, 5);
+	ctx.lineTo(3, 5);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(160, 160, 160)';
 
-    ctx.fillStyle="#69b4af";
-    var i,len;
-    for (i=0, len=spots.length; i<len; i+=2) {
-        var x = spots[i];
-        var y = spots[i+1];
-        ctx.beginPath();
-        ctx.arc(x,y,0.65,0,2*Math.PI);
-        ctx.fill();
-    }
+    // #rect3
+	ctx.beginPath();
+	ctx.rect(4, 5, 8, 5);
+	ctx.fill();
+	
+    
+	ctx.fillStyle = 'rgb(113, 180, 208)';
 
-    // white spots
-    var spots = [
-        {x: 0,y:-3},
-        {x:-2,y:-1},
-        {x:-4,y: 1},
-        {x:-3,y: 3},
-        {x: 1,y: 0},
-        {x:-1,y: 2},
-        {x:-1,y: 4},
-        {x: 3,y: 2},
-        {x: 1,y: 4},
-         ];
+    // #rect4
+	ctx.beginPath();
+	ctx.rect(3, 5, 1, 1);
+	ctx.fill();
+	
+    // #rect4-8
+	ctx.beginPath();
+	ctx.rect(3, 7, 1, 1);
+	ctx.fill();
+	
+    // #rect4-5
+	ctx.beginPath();
+	ctx.rect(3, 9, 1, 1);
+	ctx.fill();
+	
+    // #rect4-1
+	ctx.beginPath();
+	ctx.rect(12, 9, 1, 1);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(255, 255, 255)';
 
-    ctx.fillStyle = "#fff";
-    var i,len;
-    for (i=0, len=spots.length; i<len; i++) {
-        var s = spots[i];
-        ctx.beginPath();
-        ctx.arc(s.x,s.y,0.65,0,2*Math.PI);
-        ctx.fill();
-    }
+    // #rect4-7
+	ctx.beginPath();
+	ctx.rect(12, 5, 1, 1);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(0, 0, 128)';
+
+    // #rect5
+	ctx.beginPath();
+	ctx.rect(2, 2, 3, 1);
+	ctx.fill();
+	
+    // #rect5-2
+	ctx.beginPath();
+	ctx.rect(11, 2, 3, 1);
+	ctx.fill();
+	
+    // #rect5-2-1
+	ctx.beginPath();
+	ctx.rect(11, 12, 3, 1);
+	ctx.fill();
+	
+    // #rect5-2-7
+	ctx.beginPath();
+	ctx.rect(2, 12, 3, 1);
+	ctx.fill();
+    
+    ctx.restore();
+};
+
+// USB-C Charger
+var drawUsbCharger = function(ctx, x, y) {
+    ctx.save();
+    ctx.translate(x - 8, y - 8);
+
+    // Path generated from SVG w/ Inkscape	
+	ctx.fillStyle = 'rgb(255, 102, 0)';
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
+
+    // #rect1
+	ctx.beginPath();
+	ctx.moveTo(1, 3);
+	ctx.lineTo(1, 13);
+	ctx.lineTo(7, 13);
+	ctx.lineTo(7, 11);
+	ctx.lineTo(15, 11);
+	ctx.lineTo(15, 5);
+	ctx.lineTo(7, 5);
+	ctx.lineTo(7, 3);
+	ctx.lineTo(1, 3);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(212, 85, 0)';
+	ctx.lineWidth = 0.75;
+
+    // #rect3-5
+	ctx.beginPath();
+	ctx.rect(7, 7.5, 8, 1);
+	ctx.fill();
+	
+    // #rect3-2
+	ctx.beginPath();
+	ctx.rect(7, 9.25, 8, 0.75);
+	ctx.fill();
+	
+    // #rect3
+	ctx.beginPath();
+	ctx.rect(7, 6, 8, 0.75);
+	ctx.fill();
+	
+	ctx.lineWidth = 1;
+
+    // #rect4
+	ctx.beginPath();
+	ctx.moveTo(2.5, 6.25);
+	ctx.bezierCurveTo(2, 6.25, 2, 6.5, 2, 6.5);
+	ctx.lineTo(2, 10.5);
+	ctx.bezierCurveTo(2, 10.5, 2.25, 11, 2.5, 11);
+	ctx.lineTo(2.5, 11);
+	ctx.bezierCurveTo(2.75, 10.75, 3, 10.75, 3, 10.5);
+	ctx.lineTo(3, 8.5);
+	ctx.lineTo(6, 8.5);
+	ctx.lineTo(6, 7.5);
+	ctx.lineTo(3, 7.5);
+	ctx.lineTo(3, 6.5);
+	ctx.bezierCurveTo(3, 6.25, 3, 6.25, 2.5, 6.25);
+	ctx.lineTo(2.5, 6.25);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(170, 68, 0)';
+
+    // #rect6
+	ctx.beginPath();
+	ctx.rect(3, 8.5, 2, 1);
+	ctx.fill();
 
     ctx.restore();
 };
 
-// Infinity Bag
-var drawInfinityBag = function(ctx,x,y) {
+// Feeding Bag
+var drawFeedingBag = function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 8, y - 8);
 
-    // draw yellow body
-    ctx.beginPath();
-    ctx.moveTo(-4,-2);
-    ctx.lineTo(4,-2);
-    ctx.lineTo(4,-1);
-    ctx.lineTo(2,1);
-    ctx.lineTo(1,0);
-    ctx.lineTo(0,0);
-    ctx.lineTo(0,5);
-    ctx.lineTo(0,0);
-    ctx.lineTo(-1,0);
-    ctx.lineTo(-2,1);
-    ctx.lineTo(-4,-1);
-    ctx.closePath();
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = ctx.fillStyle = '#fffa36';
-    ctx.fill();
-    ctx.stroke();
+    // Path generated from SVG w/ Inkscape
+	ctx.fillStyle = 'rgb(233, 221, 175)';
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
 
-    // draw red arrow head
     ctx.beginPath();
-    ctx.moveTo(0,-5);
-    ctx.lineTo(-3,-2);
-    ctx.lineTo(-2,-2);
-    ctx.lineTo(-1,-3);
-    ctx.lineTo(0,-3);
-    ctx.lineTo(0,-1);
-    ctx.lineTo(0,-3);
-    ctx.lineTo(1,-3);
-    ctx.lineTo(2,-2);
-    ctx.lineTo(3,-2);
-    ctx.closePath();
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = ctx.fillStyle = "#f00";
-    ctx.fill();
-    ctx.stroke();
+	ctx.moveTo(1, 3);
+	ctx.lineTo(1, 13);
+	ctx.lineTo(4, 13);
+	ctx.lineTo(4, 14);
+	ctx.lineTo(5, 14);
+	ctx.lineTo(5, 15);
+	ctx.lineTo(11, 15);
+	ctx.lineTo(11, 14);
+	ctx.lineTo(12, 14);
+	ctx.lineTo(12, 13);
+	ctx.lineTo(15, 13);
+	ctx.lineTo(15, 3);
+	ctx.lineTo(1, 3);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(16, 164, 179)';
+	ctx.lineWidth = 3;
 
-    // draw blue wings
-    ctx.beginPath();
-    ctx.moveTo(-5,-4);
-    ctx.lineTo(-5,-1);
-    ctx.lineTo(-2,2);
-    ctx.moveTo(5,-4);
-    ctx.lineTo(5,-1);
-    ctx.lineTo(2,2);
-    ctx.strokeStyle = "#00f";
-    ctx.lineJoin = 'round';
-    ctx.stroke();
+    // #rect2-9
+	ctx.beginPath();
+	ctx.rect(5, 1, 6, 5);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(233, 221, 175)';
+	ctx.lineWidth = 1;
+
+    // #rect5
+	ctx.beginPath();
+	ctx.rect(5, 5, 1, 1);
+	ctx.fill();
+	
+    // #rect6
+	ctx.beginPath();
+	ctx.rect(10, 5, 1, 1);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(43, 136, 143)';
+
+    // #rect9
+	ctx.beginPath();
+	ctx.rect(6, 2, 4, 3);
+	ctx.fill();
+
+	ctx.fillStyle = 'rgb(16, 164, 179)';
+
+    // #rect10
+	ctx.beginPath();
+	ctx.rect(6, 2, 1, 1);
+	ctx.fill();
+	
+    // #rect11
+	ctx.beginPath();
+	ctx.rect(9, 2, 1, 1);
+	ctx.fill();
+	
+    // #rect12
+	ctx.beginPath();
+	ctx.rect(9, 4, 1, 1);
+	ctx.fill();
+	
+    // #rect13
+	ctx.beginPath();
+	ctx.rect(6, 4, 1, 1);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(0, 0, 0)';
+    // #rect7
+	ctx.beginPath();
+	ctx.rect(5, 1, 1, 1);
+	ctx.fill();
+	
+    // #rect8
+	ctx.beginPath();
+	ctx.rect(10, 1, 1, 1);
+	ctx.fill();
+
+    // #rect14
+	ctx.beginPath();
+	ctx.rect(1, 3, 1, 1);
+	ctx.fill();
+	
+    // #rect15
+	ctx.beginPath();
+	ctx.rect(14, 3, 1, 1);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(150, 150, 150)';
+
+    // #rect16
+	ctx.beginPath();
+	ctx.rect(2, 6, 1, 6);
+	ctx.fill();
+	
+    // #rect17
+	ctx.beginPath();
+	ctx.rect(11, 6, 3, 2);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(217, 203, 161)';
+
+    // #rect18
+	ctx.beginPath();
+	ctx.rect(5, 8, 6, 1);
+	ctx.fill();
+	
+    // #rect19
+	ctx.beginPath();
+	ctx.rect(5, 10, 6, 1);
+	ctx.fill();
+	
+    // #rect20
+	ctx.beginPath();
+	ctx.rect(5, 12, 6, 1);
+	ctx.fill();
 
     ctx.restore();
 };
 
 // Formula Bottle
-var drawFormulaBottle = function(ctx,x,y) {
+var drawFormulaBottle = function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 8, y - 8);
 
-    // bell body
-    ctx.beginPath();
-    ctx.moveTo(-1,-5);
-    ctx.bezierCurveTo(-4,-5,-6,1,-6,6);
-    ctx.lineTo(5,6);
-    ctx.bezierCurveTo(5,1,3,-5,0,-5);
-    ctx.closePath();
-    ctx.fillStyle = ctx.strokeStyle = "#fffa37";
-    ctx.stroke();
-    ctx.fill();
+    // Path generated from SVG w/ Inkscape
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
 
-    // marks
-    ctx.beginPath();
-    ctx.moveTo(-4,4);
-    ctx.lineTo(-4,3);
-    ctx.moveTo(-3,1);
-    ctx.quadraticCurveTo(-3,-2,-2,-2);
-    ctx.moveTo(-1,-4);
-    ctx.lineTo(0,-4);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#000';
-    ctx.stroke();
+    // #rect2
+	ctx.fillStyle = 'rgb(190, 215, 255)';
+	ctx.beginPath();
+	ctx.rect(3, 2, 9, 14);
+	ctx.fill();
+	
+    // #rect3
+	ctx.fillStyle = 'rgb(226, 237, 255)';
+	ctx.beginPath();
+	ctx.moveTo(5, 4);
+	ctx.lineTo(5, 5);
+	ctx.lineTo(5, 6);
+	ctx.lineTo(4, 6);
+	ctx.lineTo(4, 7);
+	ctx.lineTo(3, 7);
+	ctx.lineTo(3, 11);
+	ctx.lineTo(4, 11);
+	ctx.lineTo(4, 12);
+	ctx.lineTo(5, 12);
+	ctx.lineTo(5, 13);
+	ctx.lineTo(10, 13);
+	ctx.lineTo(10, 12);
+	ctx.lineTo(11, 12);
+	ctx.lineTo(11, 11);
+	ctx.lineTo(12, 11);
+	ctx.lineTo(12, 7);
+	ctx.lineTo(11, 7);
+	ctx.lineTo(11, 6);
+	ctx.lineTo(10, 6);
+	ctx.lineTo(10, 5);
+	ctx.lineTo(10, 4);
+	ctx.lineTo(5, 4);
+	ctx.closePath();
+	ctx.fill();
+	
+    // #rect12
+	ctx.fillStyle = 'rgb(226, 237, 255)';
+	ctx.beginPath();
+	ctx.rect(5, 13, 5, 1);
+	ctx.fill();
 
-    // bell bottom
+    // #rect13
+	ctx.fillStyle = 'rgb(85, 85, 255)';
+	ctx.beginPath();
+	ctx.rect(7, 12, 1, 1);
+	ctx.fill();
+
+    // #rect14
+	ctx.fillStyle = 'rgb(243, 159, 55)';
+	ctx.beginPath();
+	ctx.rect(9, 3, 2, 2);
+	ctx.fill();
+	
+    // #rect15
+	ctx.fillStyle = 'rgb(170, 0, 0)';
+	ctx.beginPath();
+	ctx.rect(4, 4, 2, 1);
+	ctx.fill();
+	
+    // #rect16
+	ctx.fillStyle = 'rgb(255, 42, 42)';
+	ctx.beginPath();
+	ctx.rect(10, 12, 2, 2);
+	ctx.fill();
+	
+    // #rect17
+	ctx.fillStyle = 'rgb(85, 153, 255)';
+	ctx.beginPath();
+	ctx.rect(5, 8, 5, 1);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(44, 90, 160)';
+
+    // #rect6
     ctx.beginPath();
-    ctx.rect(-5.5,6,10,2);
-    ctx.fillStyle = "#68b9fc";
-    ctx.fill();
-    ctx.beginPath();
-    ctx.rect(-0.5,6,2,2);
-    ctx.fillStyle = '#fff';
-    ctx.fill();
+	ctx.rect(6, 6, 3, 1);
+	ctx.fill();
+
+    // #rect18
+	ctx.beginPath();
+	ctx.rect(6, 9, 3, 1);
+	ctx.fill();
+	
+    // #rect19
+	ctx.beginPath();
+	ctx.rect(6, 13, 3, 1);
+	ctx.fill();
+	
+    // #rect20
+	ctx.fillStyle = 'rgb(255, 153, 85)';
+	ctx.beginPath();
+	ctx.rect(4, 12, 1, 1);
+	ctx.fill();
+	
+    // #rect1
+	ctx.fillStyle = 'rgb(255, 255, 255)';
+	ctx.beginPath();
+	ctx.moveTo(5, 0);
+	ctx.lineTo(5, 2);
+	ctx.lineTo(6, 2);
+	ctx.lineTo(6, 3);
+	ctx.lineTo(9, 3);
+	ctx.lineTo(9, 2);
+	ctx.lineTo(10, 2);
+	ctx.lineTo(10, 0);
+	ctx.lineTo(5, 0);
+	ctx.closePath();
+	ctx.fill();
 
     ctx.restore();
 };
 
 // Y-Port Extension
-var drawExtension = function(ctx,x,y) {
+var drawExtension = function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 10, y - 10);
 
-    // draw key metal
-    ctx.beginPath();
-    ctx.moveTo(-1,-2);
-    ctx.lineTo(-1,5);
-    ctx.moveTo(0,6);
-    ctx.quadraticCurveTo(1,6,1,3);
-    ctx.moveTo(1,4);
-    ctx.lineTo(2,4);
-    ctx.moveTo(1,1);
-    ctx.lineTo(1,-2);
-    ctx.moveTo(1,0);
-    ctx.lineTo(2,0);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#fff';
-    ctx.stroke();
+    const s = 0.6;
+    ctx.scale(s, s);
 
-    // draw key top
-    ctx.beginPath();
-    ctx.moveTo(0,-6);
-    ctx.quadraticCurveTo(-3,-6,-3,-4);
-    ctx.lineTo(-3,-2);
-    ctx.lineTo(3,-2);
-    ctx.lineTo(3,-4);
-    ctx.quadraticCurveTo(3,-6, 0,-6);
-    ctx.strokeStyle = ctx.fillStyle = "#68b9fc";
-    ctx.fill();
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(1,-5);
-    ctx.lineTo(-1,-5);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = "#000";
-    ctx.stroke();
+    // Path generated from SVG w/ Inkscape
+    // #rect2
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(200, 190, 183)';
+	ctx.moveTo(6, 5);
+	ctx.lineTo(6, 6);
+	ctx.lineTo(12, 6);
+	ctx.lineTo(12, 5);
+	ctx.lineTo(6, 5);
+	ctx.closePath();
+	ctx.moveTo(12, 6);
+	ctx.lineTo(12, 7);
+	ctx.lineTo(14, 7);
+	ctx.lineTo(14, 6);
+	ctx.lineTo(12, 6);
+	ctx.closePath();
+	ctx.moveTo(14, 7);
+	ctx.lineTo(14, 8);
+	ctx.lineTo(15, 8);
+	ctx.lineTo(15, 7);
+	ctx.lineTo(14, 7);
+	ctx.closePath();
+	ctx.moveTo(15, 8);
+	ctx.lineTo(15, 18);
+	ctx.lineTo(16, 18);
+	ctx.lineTo(16, 8);
+	ctx.lineTo(15, 8);
+	ctx.closePath();
+	ctx.moveTo(15, 18);
+	ctx.lineTo(14, 18);
+	ctx.lineTo(14, 19);
+	ctx.lineTo(15, 19);
+	ctx.lineTo(15, 18);
+	ctx.closePath();
+	ctx.moveTo(14, 19);
+	ctx.lineTo(12, 19);
+	ctx.lineTo(12, 20);
+	ctx.lineTo(7, 20);
+	ctx.lineTo(7, 21);
+	ctx.lineTo(13, 21);
+	ctx.lineTo(13, 20);
+	ctx.lineTo(14, 20);
+	ctx.lineTo(14, 19);
+	ctx.closePath();
+	ctx.moveTo(5, 6);
+	ctx.lineTo(5, 7);
+	ctx.lineTo(6, 7);
+	ctx.lineTo(6, 6);
+	ctx.lineTo(5, 6);
+	ctx.closePath();
+	ctx.moveTo(5, 7);
+	ctx.lineTo(3, 7);
+	ctx.lineTo(3, 8);
+	ctx.lineTo(5, 8);
+	ctx.lineTo(5, 7);
+	ctx.closePath();
+	ctx.moveTo(3, 8);
+	ctx.lineTo(2, 8);
+	ctx.lineTo(2, 24);
+	ctx.lineTo(3, 24);
+	ctx.lineTo(3, 24);
+	ctx.lineTo(3, 25);
+	ctx.lineTo(5, 25);
+	ctx.lineTo(5, 24);
+	ctx.lineTo(4, 24);
+	ctx.lineTo(4, 23);
+	ctx.lineTo(3, 23);
+	ctx.lineTo(3, 8);
+	ctx.closePath();
+	ctx.moveTo(5, 25);
+	ctx.lineTo(5, 26);
+	ctx.lineTo(7, 26);
+	ctx.lineTo(7, 27);
+	ctx.lineTo(25, 27);
+	ctx.lineTo(25, 26);
+	ctx.lineTo(8, 26);
+	ctx.lineTo(8, 25);
+	ctx.lineTo(5, 25);
+	ctx.closePath();
+	ctx.moveTo(25, 26);
+	ctx.lineTo(27, 26);
+	ctx.lineTo(27, 25);
+	ctx.lineTo(25, 25);
+	ctx.lineTo(25, 26);
+	ctx.closePath();
+	ctx.moveTo(27, 25);
+	ctx.lineTo(28, 25);
+	ctx.lineTo(28, 24);
+	ctx.lineTo(27, 24);
+	ctx.lineTo(27, 25);
+	ctx.closePath();
+	ctx.moveTo(28, 24);
+	ctx.lineTo(29, 24);
+	ctx.lineTo(29, 19);
+	ctx.lineTo(30, 19);
+	ctx.lineTo(30, 18);
+	ctx.lineTo(31, 18);
+	ctx.lineTo(31, 17);
+	ctx.lineTo(31, 16);
+	ctx.lineTo(31, 14);
+	ctx.lineTo(31, 12);
+	ctx.lineTo(31, 8);
+	ctx.lineTo(26, 8);
+	ctx.lineTo(26, 10);
+	ctx.lineTo(25, 10);
+	ctx.lineTo(25, 9);
+	ctx.lineTo(24, 9);
+	ctx.lineTo(24, 8);
+	ctx.lineTo(20, 8);
+	ctx.lineTo(20, 10);
+	ctx.lineTo(21, 10);
+	ctx.lineTo(21, 11);
+	ctx.lineTo(20, 11);
+	ctx.lineTo(20, 12);
+	ctx.lineTo(21, 12);
+	ctx.lineTo(21, 13);
+	ctx.lineTo(22, 13);
+	ctx.lineTo(22, 14);
+	ctx.lineTo(23, 14);
+	ctx.lineTo(23, 15);
+	ctx.lineTo(24, 15);
+	ctx.lineTo(24, 16);
+	ctx.lineTo(25, 16);
+	ctx.lineTo(25, 17);
+	ctx.lineTo(26, 17);
+	ctx.lineTo(26, 18);
+	ctx.lineTo(27, 18);
+	ctx.lineTo(27, 19);
+	ctx.lineTo(28, 19);
+	ctx.lineTo(28, 24);
+	ctx.closePath();
+	ctx.fill();
+
+	ctx.fillStyle = 'rgb(128, 0, 128)';
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
+
+    // #rect1
+	ctx.beginPath();
+	ctx.rect(26, 5, 5, 3);
+	ctx.fill();
+
+    // #rect8
+	ctx.beginPath();
+	ctx.moveTo(21, 5);
+	ctx.lineTo(21, 6);
+	ctx.lineTo(20, 6);
+	ctx.lineTo(20, 7);
+	ctx.lineTo(19, 7);
+	ctx.lineTo(19, 8);
+	ctx.lineTo(18, 8);
+	ctx.lineTo(18, 10);
+	ctx.lineTo(19, 10);
+	ctx.lineTo(19, 11);
+	ctx.lineTo(21, 11);
+	ctx.lineTo(21, 10);
+	ctx.lineTo(22, 10);
+	ctx.lineTo(22, 9);
+	ctx.lineTo(23, 9);
+	ctx.lineTo(23, 8);
+	ctx.lineTo(24, 8);
+	ctx.lineTo(24, 7);
+	ctx.lineTo(23, 7);
+	ctx.lineTo(23, 6);
+	ctx.lineTo(22, 6);
+	ctx.lineTo(22, 5);
+	ctx.closePath();
+	ctx.fill();
+	
+	
+    // #rect21-7-7
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(255, 255, 255)';
+	ctx.moveTo(7, 21);
+	ctx.lineTo(7, 22);
+	ctx.lineTo(7, 23);
+	ctx.lineTo(8, 23);
+	ctx.lineTo(8, 22);
+	ctx.lineTo(10, 22);
+	ctx.lineTo(10, 21);
+	ctx.lineTo(7, 21);
+	ctx.closePath();
+	ctx.fill();
 
     ctx.restore();
 };
 
 // EnFIT Wrench
-var drawEnFitWrench = function(ctx,x,y) {
+var drawEnFitWrench = function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 0, y - 15);
 
-    // bread
+    const s = 0.65;
+    ctx.scale(s, s);
+    
+    ctx.rotate(45 * Math.PI / 180);
+
+    // Path generated from SVG w/ Inkscape    
+	ctx.fillStyle = 'rgb(44, 150, 213)';
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
+
     ctx.beginPath();
-    ctx.moveTo(-2,-5);
-    ctx.quadraticCurveTo(-4,-6,-6,-4);
-    ctx.quadraticCurveTo(-7,-2,-5,1);
-    ctx.quadraticCurveTo(-3,4,0,5);
-    ctx.quadraticCurveTo(5,5,5,-1);
-    ctx.quadraticCurveTo(6,-5,3,-5);
-    ctx.quadraticCurveTo(1,-5,0,-2);
-    ctx.quadraticCurveTo(-2,3,-5,5);
-    ctx.moveTo(1,1);
-    ctx.quadraticCurveTo(3,4,4,6);
-    ctx.lineWidth = 2.0;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = "#ffcc33";
-    ctx.stroke();
-
-    // salt
-    var spots = [
-        -5,-6,
-        1,-6,
-        4,-4,
-        -5,0,
-        -2,0,
-        6,1,
-        -4,6,
-        5,5,
-         ];
-
-    ctx.fillStyle = "#fff";
-    var i,len;
-    for (i=0, len=spots.length; i<len; i+=2) {
-        var x = spots[i];
-        var y = spots[i+1];
-        ctx.beginPath();
-        ctx.arc(x,y,0.65,0,2*Math.PI);
-        ctx.fill();
-    }
-
+	ctx.moveTo(3, 10);
+	ctx.lineTo(3, 11);
+	ctx.lineTo(2, 11);
+	ctx.lineTo(2, 12);
+	ctx.lineTo(1, 12);
+	ctx.lineTo(1, 13);
+	ctx.lineTo(0, 13);
+	ctx.lineTo(0, 18);
+	ctx.lineTo(1, 18);
+	ctx.lineTo(1, 19);
+	ctx.lineTo(2, 19);
+	ctx.lineTo(2, 20);
+	ctx.lineTo(3, 20);
+	ctx.lineTo(3, 21);
+	ctx.lineTo(5, 21);
+	ctx.lineTo(5, 17);
+	ctx.lineTo(4, 17);
+	ctx.lineTo(4, 16);
+	ctx.lineTo(2, 16);
+	ctx.lineTo(2, 15);
+	ctx.lineTo(4, 15);
+	ctx.lineTo(4, 13);
+	ctx.lineTo(9, 13);
+	ctx.lineTo(9, 15);
+	ctx.lineTo(11, 15);
+	ctx.lineTo(11, 16);
+	ctx.lineTo(9, 16);
+	ctx.lineTo(9, 17);
+	ctx.lineTo(8, 17);
+	ctx.lineTo(8, 21);
+	ctx.lineTo(10, 21);
+	ctx.lineTo(10, 20);
+	ctx.lineTo(11, 20);
+	ctx.lineTo(11, 19);
+	ctx.lineTo(13, 19);
+	ctx.lineTo(13, 18);
+	ctx.lineTo(24, 18);
+	ctx.lineTo(24, 19);
+	ctx.lineTo(26, 19);
+	ctx.lineTo(26, 20);
+	ctx.lineTo(31, 20);
+	ctx.lineTo(31, 19);
+	ctx.lineTo(32, 19);
+	ctx.lineTo(32, 14);
+	ctx.lineTo(32, 13);
+	ctx.lineTo(32, 12);
+	ctx.lineTo(31, 12);
+	ctx.lineTo(31, 11);
+	ctx.lineTo(26, 11);
+	ctx.lineTo(26, 12);
+	ctx.lineTo(24, 12);
+	ctx.lineTo(24, 13);
+	ctx.lineTo(13, 13);
+	ctx.lineTo(13, 12);
+	ctx.lineTo(11, 12);
+	ctx.lineTo(11, 11);
+	ctx.lineTo(10, 11);
+	ctx.lineTo(10, 10);
+	ctx.lineTo(3, 10);
+	ctx.closePath();
+	ctx.moveTo(27, 14);
+	ctx.lineTo(30, 14);
+	ctx.lineTo(30, 17);
+	ctx.lineTo(27, 17);
+	ctx.lineTo(27, 14);
+	ctx.closePath();
+	ctx.fill();
+    
     ctx.restore();
 };
 
 // Flying Squirrel
-var drawFlyingSquirrel = function(ctx,x,y) {
+var drawFlyingSquirrel = function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 8, y - 8);
 
-    // body
-    ctx.beginPath();
-    ctx.moveTo(0,-4);
-    ctx.bezierCurveTo(-1,-4,-2,-3,-2,-1);
-    ctx.bezierCurveTo(-2,1,-4,2,-4,4);
-    ctx.bezierCurveTo(-4,6,-2,7,0,7);
-    ctx.bezierCurveTo(2,7,4,6,4,4);
-    ctx.bezierCurveTo(4,2,2,1,2,-1);
-    ctx.bezierCurveTo(2,-3,1,-4,0,-4);
-    ctx.fillStyle = ctx.strokeStyle = "#00ff00";
-    ctx.stroke();
-    ctx.fill();
+    // Path generated from SVG w/ Inkscape
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
+    
+    // #rect2
+	ctx.fillStyle = 'rgb(95, 141, 211)';
+	ctx.beginPath();
+	ctx.rect(3, 3, 3, 4);
+	ctx.fill();
+	
+    // #rect3
+	ctx.fillStyle = 'rgb(55, 113, 200)';
+	ctx.beginPath();
+	ctx.moveTo(5, 1);
+	ctx.lineTo(5, 2);
+	ctx.lineTo(4, 2);
+	ctx.lineTo(4, 3);
+	ctx.lineTo(7, 3);
+	ctx.lineTo(7, 2);
+	ctx.lineTo(10, 2);
+	ctx.lineTo(10, 3);
+	ctx.lineTo(11, 3);
+	ctx.lineTo(11, 4);
+	ctx.lineTo(13, 4);
+	ctx.lineTo(13, 3);
+	ctx.lineTo(13, 2);
+	ctx.lineTo(12, 2);
+	ctx.lineTo(12, 1);
+	ctx.lineTo(5, 1);
+	ctx.closePath();
+	ctx.fill();
+	
+    // #rect5
+	ctx.fillStyle = 'rgb(44, 90, 160)';
+	ctx.beginPath();
+	ctx.rect(6, 0, 5, 1);
+	ctx.fill();
+	
+    // #rect14
+	ctx.fillStyle = 'rgb(85, 153, 255)';
+	ctx.beginPath();
+	ctx.moveTo(4, 4);
+	ctx.lineTo(4, 5);
+	ctx.lineTo(3, 5);
+	ctx.lineTo(3, 7);
+	ctx.lineTo(6, 7);
+	ctx.lineTo(6, 5);
+	ctx.lineTo(5, 5);
+	ctx.lineTo(5, 4);
+	ctx.lineTo(4, 4);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(0, 170, 212)';
 
-    // blue shine
-    ctx.beginPath();
-    ctx.moveTo(-2,3);
-    ctx.quadraticCurveTo(-2,5,-1,5);
-    ctx.strokeStyle = "#0033ff";
-    ctx.lineCap = 'round';
-    ctx.stroke();
-
-    // white stem
-    ctx.beginPath();
-    ctx.moveTo(0,-4);
-    ctx.quadraticCurveTo(0,-6,2,-6);
-    ctx.strokeStyle = "#fff";
-    ctx.lineCap = 'round';
-    ctx.stroke();
+// #rect15
+	ctx.beginPath();
+	ctx.rect(3, 7, 4, 2);
+	ctx.fill();
+	
+// #rect16
+	ctx.beginPath();
+	ctx.rect(10, 7, 3, 2);
+	ctx.fill();
+	
+// #rect17
+	ctx.fillStyle = 'rgb(95, 188, 211)';
+	ctx.beginPath();
+	ctx.moveTo(4, 8);
+	ctx.lineTo(4, 9);
+	ctx.lineTo(3, 9);
+	ctx.lineTo(3, 11);
+	ctx.lineTo(8, 11);
+	ctx.lineTo(9, 11);
+	ctx.lineTo(13, 11);
+	ctx.lineTo(13, 9);
+	ctx.lineTo(13, 8);
+	ctx.lineTo(12, 8);
+	ctx.lineTo(12, 9);
+	ctx.lineTo(9, 9);
+	ctx.lineTo(9, 10);
+	ctx.lineTo(8, 10);
+	ctx.lineTo(8, 9);
+	ctx.lineTo(6, 9);
+	ctx.lineTo(6, 8);
+	ctx.lineTo(4, 8);
+	ctx.closePath();
+	ctx.fill();
+	
+// #rect20
+	ctx.fillStyle = 'rgb(135, 205, 222)';
+	ctx.beginPath();
+	ctx.moveTo(7, 10);
+	ctx.lineTo(7, 11);
+	ctx.lineTo(3, 11);
+	ctx.lineTo(3, 13);
+	ctx.lineTo(8, 13);
+	ctx.lineTo(8, 12);
+	ctx.lineTo(9, 12);
+	ctx.lineTo(9, 13);
+	ctx.lineTo(13, 13);
+	ctx.lineTo(13, 11);
+	ctx.lineTo(13, 10);
+	ctx.lineTo(11, 10);
+	ctx.lineTo(11, 11);
+	ctx.lineTo(9, 11);
+	ctx.lineTo(8, 11);
+	ctx.lineTo(8, 10);
+	ctx.lineTo(7, 10);
+	ctx.closePath();
+	ctx.fill();
+	
+// #rect23
+	ctx.fillStyle = 'rgb(170, 238, 255)';
+	ctx.beginPath();
+	ctx.moveTo(4, 12);
+	ctx.lineTo(4, 13);
+	ctx.lineTo(3, 13);
+	ctx.lineTo(3, 15);
+	ctx.lineTo(13, 15);
+	ctx.lineTo(13, 13);
+	ctx.lineTo(6, 13);
+	ctx.lineTo(6, 12);
+	ctx.lineTo(4, 12);
+	ctx.closePath();
+	ctx.fill();
 
     ctx.restore();
 };
 
-// Curlin Pump
-var drawCurlinPump = function(ctx,x,y) {
+// Straighten Pump
+var drawStraightenPump =  function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 8, y - 9);
 
-    // body
-    ctx.beginPath();
-    ctx.moveTo(-5,5);
-    ctx.quadraticCurveTo(-4,5,-2,6);
-    ctx.bezierCurveTo(2,6,6,2,6,-4);
-    ctx.lineTo(3,-3);
-    ctx.lineTo(3,-2);
-    ctx.lineTo(-4,5);
-    ctx.closePath();
-    ctx.fillStyle = ctx.strokeStyle = "#ffff00";
-    ctx.stroke();
-    ctx.fill();
+    const s = 1.1;
+    ctx.scale(s, s);
 
-    // stem
-    ctx.beginPath();
-    ctx.moveTo(4,-5);
-    ctx.lineTo(5,-6);
-    ctx.strokeStyle="#ffff00";
-    ctx.lineCap='round';
-    ctx.stroke();
+    // Path generated from SVG w/ Inkscape
+	ctx.lineWidth = 1.170032;
+	ctx.lineJoin = 'round';
 
-    // black mark
-    ctx.beginPath();
-    ctx.moveTo(3,-1);
-    ctx.lineTo(-2,4);
-    ctx.strokeStyle = "#000";
-    ctx.lineCap='round';
-    ctx.stroke();
+    // Draw pump
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(200, 190, 183)';
+	ctx.moveTo(1, 1);
+	ctx.lineTo(1, 15);
+	ctx.lineTo(12, 15);
+	ctx.lineTo(12, 7);
+	ctx.lineTo(13, 7);
+	ctx.lineTo(13, 6);
+	ctx.lineTo(14, 6);
+	ctx.lineTo(14, 1);
+	ctx.lineTo(12, 1);
+	ctx.lineTo(1, 1);
+	ctx.closePath();
+	ctx.fill();
+	
+    // Draw Screen
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(153, 153, 153)';
+	ctx.rect(2, 2, 11, 3);
+	ctx.fill();
+	
+    // Sraw Keypad
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(204, 204, 204)';
+	ctx.rect(2, 6, 9, 8);
+	ctx.fill();
+	
+    // Draw colored buttons
+	ctx.fillStyle = 'rgb(255, 102, 0)';
 
-    // shine
-    ctx.beginPath();
-    ctx.moveTo(2,3);
-    ctx.lineTo(0,5);
-    ctx.strokeStyle = "#fff";
-    ctx.lineCap='round';
-    ctx.stroke();
+    // Orange #1
+	ctx.beginPath();
+	ctx.rect(3, 7, 1, 1);
+	ctx.fill();
+	
+    // Orange #2
+	ctx.beginPath();
+	ctx.rect(5, 9, 1, 1);
+	ctx.fill();
+	
+    // Red
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(255, 0, 0)';
+	ctx.rect(9, 7, 1, 1);
+	ctx.fill();
+	
+    // Light Oraneg
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(255, 204, 0)';
+	ctx.rect(7, 13, 1, 1);
+	ctx.fill();
+	
+    // Pink
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(255, 170, 238)';
+	ctx.rect(7, 7, 1, 1);
+	ctx.fill();
+	
+    // Light Green
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(0, 128, 0)';
+	ctx.rect(9, 13, 1, 1);
+	ctx.fill();
+	
+    // Green
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(55, 200, 55)';
+	ctx.rect(7, 9, 1, 1);
+	ctx.fill();
+    
+    // Draw blue/purple buttons
+	ctx.fillStyle = 'rgb(102, 0, 255)';
+
+    // #rect11
+	ctx.beginPath();
+	ctx.rect(3, 9, 1, 1);
+	ctx.fill();
+	
+    // #rect12
+	ctx.beginPath();
+	ctx.rect(3, 11, 1, 1);
+	ctx.fill();
+	
+    // #rect13
+	ctx.beginPath();
+	ctx.rect(3, 13, 1, 1);
+	ctx.fill();
+	
+    // #rect14
+	ctx.beginPath();
+	ctx.rect(5, 13, 1, 1);
+	ctx.fill();
+	
+    // #rect15
+	ctx.beginPath();
+	ctx.rect(5, 11, 1, 1);
+	ctx.fill();
+	
+    // #rect16
+	ctx.beginPath();
+	ctx.rect(7, 11, 1, 1);
+	ctx.fill();
+	
+    // #rect17
+	ctx.beginPath();
+	ctx.rect(9, 11, 1, 1);
+	ctx.fill();
+	
+    // #rect18
+	ctx.beginPath();
+	ctx.rect(9, 9, 1, 1);
+	ctx.fill();
 
     ctx.restore();
 };
+
+// Bandaid
+const drawBandaid = function(ctx, x, y, angle) {
+    ctx.save();
+    ctx.translate(x - (angle < 0 ? 14.3 : 1), y - (angle < 0 ? -1.8 : 14));
+    
+    const s = 0.7;
+    ctx.scale(s, s);
+    ctx.rotate(angle * Math.PI / 180);
+
+    // Path generated from SVG w/ Inkscape
+    // Background
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(250, 181, 137)';
+	ctx.moveTo(3, 9);
+	ctx.lineTo(3, 10);
+	ctx.lineTo(2, 10);
+	ctx.lineTo(2, 11);
+	ctx.lineTo(1, 11);
+	ctx.lineTo(1, 16);
+	ctx.lineTo(2, 16);
+	ctx.lineTo(2, 17);
+	ctx.lineTo(3, 17);
+	ctx.lineTo(3, 18);
+	ctx.lineTo(29, 18);
+	ctx.lineTo(29, 17);
+	ctx.lineTo(30, 17);
+	ctx.lineTo(30, 16);
+	ctx.lineTo(31, 16);
+	ctx.lineTo(31, 11);
+	ctx.lineTo(30, 11);
+	ctx.lineTo(30, 10);
+	ctx.lineTo(29, 10);
+	ctx.lineTo(29, 9);
+	ctx.lineTo(3, 9);
+	ctx.closePath();
+	ctx.fill();
+	
+    // Left Spots
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(211, 143, 110)';
+	ctx.moveTo(4, 10);
+	ctx.lineTo(4, 11);
+	ctx.lineTo(5, 11);
+	ctx.lineTo(5, 10);
+	ctx.lineTo(4, 10);
+	ctx.closePath();
+	ctx.moveTo(8, 10);
+	ctx.lineTo(8, 11);
+	ctx.lineTo(9, 11);
+	ctx.lineTo(9, 10);
+	ctx.lineTo(8, 10);
+	ctx.closePath();
+	ctx.moveTo(6, 11);
+	ctx.lineTo(6, 12);
+	ctx.lineTo(7, 12);
+	ctx.lineTo(7, 11);
+	ctx.lineTo(6, 11);
+	ctx.closePath();
+	ctx.moveTo(4, 12);
+	ctx.lineTo(4, 13);
+	ctx.lineTo(5, 13);
+	ctx.lineTo(5, 12);
+	ctx.lineTo(4, 12);
+	ctx.closePath();
+	ctx.moveTo(8, 12);
+	ctx.lineTo(8, 13);
+	ctx.lineTo(9, 13);
+	ctx.lineTo(9, 12);
+	ctx.lineTo(8, 12);
+	ctx.closePath();
+	ctx.moveTo(6, 13);
+	ctx.lineTo(6, 14);
+	ctx.lineTo(7, 14);
+	ctx.lineTo(7, 13);
+	ctx.lineTo(6, 13);
+	ctx.closePath();
+	ctx.moveTo(4, 14);
+	ctx.lineTo(4, 15);
+	ctx.lineTo(5, 15);
+	ctx.lineTo(5, 14);
+	ctx.lineTo(4, 14);
+	ctx.closePath();
+	ctx.moveTo(8, 14);
+	ctx.lineTo(8, 15);
+	ctx.lineTo(9, 15);
+	ctx.lineTo(9, 14);
+	ctx.lineTo(8, 14);
+	ctx.closePath();
+	ctx.moveTo(6, 15);
+	ctx.lineTo(6, 16);
+	ctx.lineTo(7, 16);
+	ctx.lineTo(7, 15);
+	ctx.lineTo(6, 15);
+	ctx.closePath();
+	ctx.moveTo(4, 16);
+	ctx.lineTo(4, 17);
+	ctx.lineTo(5, 17);
+	ctx.lineTo(5, 16);
+	ctx.lineTo(4, 16);
+	ctx.closePath();
+	ctx.moveTo(8, 16);
+	ctx.lineTo(8, 17);
+	ctx.lineTo(9, 17);
+	ctx.lineTo(9, 16);
+	ctx.lineTo(8, 16);
+	ctx.closePath();
+	ctx.fill();
+	
+    // Right Spots
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(211, 143, 110)';
+	ctx.moveTo(23, 10);
+	ctx.lineTo(23, 11);
+	ctx.lineTo(24, 11);
+	ctx.lineTo(24, 10);
+	ctx.lineTo(23, 10);
+	ctx.closePath();
+	ctx.moveTo(27, 10);
+	ctx.lineTo(27, 11);
+	ctx.lineTo(28, 11);
+	ctx.lineTo(28, 10);
+	ctx.lineTo(27, 10);
+	ctx.closePath();
+	ctx.moveTo(25, 11);
+	ctx.lineTo(25, 12);
+	ctx.lineTo(26, 12);
+	ctx.lineTo(26, 11);
+	ctx.lineTo(25, 11);
+	ctx.closePath();
+	ctx.moveTo(23, 12);
+	ctx.lineTo(23, 13);
+	ctx.lineTo(24, 13);
+	ctx.lineTo(24, 12);
+	ctx.lineTo(23, 12);
+	ctx.closePath();
+	ctx.moveTo(27, 12);
+	ctx.lineTo(27, 13);
+	ctx.lineTo(28, 13);
+	ctx.lineTo(28, 12);
+	ctx.lineTo(27, 12);
+	ctx.closePath();
+	ctx.moveTo(25, 13);
+	ctx.lineTo(25, 14);
+	ctx.lineTo(26, 14);
+	ctx.lineTo(26, 13);
+	ctx.lineTo(25, 13);
+	ctx.closePath();
+	ctx.moveTo(23, 14);
+	ctx.lineTo(23, 15);
+	ctx.lineTo(24, 15);
+	ctx.lineTo(24, 14);
+	ctx.lineTo(23, 14);
+	ctx.closePath();
+	ctx.moveTo(27, 14);
+	ctx.lineTo(27, 15);
+	ctx.lineTo(28, 15);
+	ctx.lineTo(28, 14);
+	ctx.lineTo(27, 14);
+	ctx.closePath();
+	ctx.moveTo(25, 15);
+	ctx.lineTo(25, 16);
+	ctx.lineTo(26, 16);
+	ctx.lineTo(26, 15);
+	ctx.lineTo(25, 15);
+	ctx.closePath();
+	ctx.moveTo(23, 16);
+	ctx.lineTo(23, 17);
+	ctx.lineTo(24, 17);
+	ctx.lineTo(24, 16);
+	ctx.lineTo(23, 16);
+	ctx.closePath();
+	ctx.moveTo(27, 16);
+	ctx.lineTo(27, 17);
+	ctx.lineTo(28, 17);
+	ctx.lineTo(28, 16);
+	ctx.lineTo(27, 16);
+	ctx.closePath();
+	ctx.fill();
+	
+    // Center
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(211, 143, 110)';
+	ctx.moveTo(11, 11);
+	ctx.lineTo(11, 10);
+	ctx.lineTo(21, 10);
+	ctx.lineTo(21, 11);
+	ctx.lineTo(22, 11);
+	ctx.lineTo(22, 16);
+	ctx.lineTo(21, 16);
+	ctx.lineTo(21, 17);
+	ctx.lineTo(11, 17);
+	ctx.lineTo(11, 16);
+	ctx.lineTo(10, 16);
+	ctx.lineTo(10, 11);
+	ctx.closePath();
+	ctx.fill();
+
+    ctx.restore();
+}
+
+// New Energizer Pellet Design
+const drawCrossedBandaids = (ctx, x, y) =>  {
+    drawBandaid(ctx, x, y, 45);
+    drawBandaid(ctx, x, y, -45);
+}
 
 var drawCookie = function(ctx,x,y) {
     ctx.save();
@@ -7058,146 +7573,24 @@ var drawCookieFlash = function(ctx,x,y) {
     ctx.restore();
 };
 
-var getSpriteFuncFromFruitName = function(name) {
+var getSpriteFuncFromBonusName = function(name) {
     var funcs = {
-        'cherry': drawGTube,
-        'strawberry': drawInfinityPump,
-        'orange': drawOmniPump,
-        'apple': drawJoeyPump,
-        'melon': drawInfinityCharger,
-        'galaxian': drawInfinityBag,
-        'bell': drawFormulaBottle,
-        'key': drawExtension,
-        'pretzel': drawEnFitWrench,
-        'pear': drawFlyingSquirrel,
-        'banana': drawCurlinPump,
+        'gtube': drawGTube,
+        'endless_pump': drawEndlessPump,
+        'marsupial_pump': drawMarsupialPump,
+        'jamie_pump': drawJamiePump,
+        'usb_charger': drawUsbCharger,
+        'feeding_bag': drawFeedingBag,
+        'formula_bottle': drawFormulaBottle,
+        'y_extension': drawExtension,
+        'enfit_wrench': drawEnFitWrench,
+        'flying_squirrel': drawFlyingSquirrel,
+        'straighten_pump': drawStraightenPump,
         'cookie': drawCookie,
     };
 
     return funcs[name];
 };
-
-var drawRecordSymbol = function(ctx,x,y,color) {
-    ctx.save();
-    ctx.fillStyle = color;
-    ctx.translate(x,y);
-
-    ctx.beginPath();
-    ctx.arc(0,0,4,0,Math.PI*2);
-    ctx.fill();
-
-    ctx.restore();
-};
-
-var drawRewindSymbol = function(ctx,x,y,color) {
-    ctx.save();
-    ctx.fillStyle = color;
-    ctx.translate(x,y);
-
-    var s = 3;
-    var drawTriangle = function(x) {
-        ctx.beginPath();
-        ctx.moveTo(x,s);
-        ctx.lineTo(x-2*s,0);
-        ctx.lineTo(x,-s);
-        ctx.closePath();
-        ctx.fill();
-    };
-    drawTriangle(0);
-    drawTriangle(2*s);
-
-    ctx.restore();
-};
-
-var drawUpSymbol = function(ctx,x,y,color) {
-    ctx.save();
-    ctx.translate(x,y);
-    var s = tileSize;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(0,-s/2);
-    ctx.lineTo(s/2,s/2);
-    ctx.lineTo(-s/2,s/2);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-};
-
-var drawDownSymbol = function(ctx,x,y,color) {
-    ctx.save();
-    ctx.translate(x,y);
-    var s = tileSize;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(0,s/2);
-    ctx.lineTo(s/2,-s/2);
-    ctx.lineTo(-s/2,-s/2);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-};
-
-var drawSnail = (function(){
-    var plotSolid = function(points,color) {
-        var len = points.length;
-        var i;
-        ctx.beginPath();
-        ctx.moveTo(points[0],points[1]);
-        for (i=2; i<len; i+=2) {
-            ctx.lineTo(points[i],points[i+1]);
-        }
-        ctx.closePath();
-        ctx.lineWidth = 1.0;
-        ctx.lineJoin = "round";
-        ctx.fillStyle = ctx.strokeStyle = color;
-        ctx.fill();
-        ctx.stroke();
-    };
-    return function(ctx,x,y,color) {
-        ctx.save();
-        ctx.translate(x,y);
-        ctx.beginPath();
-        ctx.moveTo(-7,3);
-        ctx.lineTo(-5,3);
-        ctx.bezierCurveTo(-6,0,-5,-3,-2,-3);
-        ctx.bezierCurveTo(0,-3,2,-2,2,2);
-        ctx.bezierCurveTo(3,-1,3,-2,5,-2);
-        ctx.bezierCurveTo(6,-2,6,0,5,0);
-        ctx.bezierCurveTo(4,1,4,3,2,3);
-        ctx.closePath();
-
-        ctx.lineWidth = 1.0;
-        ctx.lineCap = ctx.lineJoin = "round";
-        ctx.fillStyle = ctx.strokeStyle = color;
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(4,-2);
-        ctx.lineTo(3,-5);
-        ctx.moveTo(5,-1);
-        ctx.lineTo(7,-5);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(3,-5, 1, 0, Math.PI*2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(7,-5, 1, 0, Math.PI*2);
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.moveTo(-4,1);
-        ctx.bezierCurveTo(-5,-1,-3,-3, -1,-2);
-        ctx.bezierCurveTo(0,-1,0,0,-1,1);
-        ctx.bezierCurveTo(-2,1,-3,0,-2,-0.5);
-        ctx.lineWidth = 0.5;
-        ctx.strokeStyle = "#000";
-        ctx.stroke();
-
-        ctx.restore();
-    };
-})();
 
 var drawHeartSprite = function(ctx,x,y) {
     ctx.save();
@@ -7243,7 +7636,7 @@ var drawExclamationPoint = function(ctx,x,y) {
 // The actor class defines common data functions for the ghosts and player
 // It provides everything for updating position and direction.
 
-// "Ghost" and "Player" inherit from this "Actor"
+// "Enemy" and "Player" inherit from this "Actor"
 
 // Actor constructor
 var Actor = function() {
@@ -7428,9 +7821,9 @@ Actor.prototype.update = function(j) {
     // update head direction
     this.steer();
 };
-//@line 1 "src/Ghost.js"
+//@line 1 "src/Enemy.js"
 //////////////////////////////////////////////////////////////////////////////////////
-// Ghost class
+// Enemy class
 
 // modes representing the ghost's current state
 var GHOST_OUTSIDE = 0;
@@ -7440,8 +7833,8 @@ var GHOST_ENTERING_HOME = 3;
 var GHOST_PACING_HOME = 4;
 var GHOST_LEAVING_HOME = 5;
 
-// Ghost constructor
-var Ghost = function() {
+// Enemy constructor
+var Enemy = function() {
     // inherit data from Actor
     Actor.apply(this);
 
@@ -7450,10 +7843,10 @@ var Ghost = function() {
 };
 
 // inherit functions from Actor class
-Ghost.prototype = newChildObject(Actor.prototype);
+Enemy.prototype = newChildObject(Actor.prototype);
 
 // displacements for ghost bouncing
-Ghost.prototype.getBounceY = (function(){
+Enemy.prototype.getBounceY = (function(){
 
     // NOTE: The bounce animation assumes an actor is moving in straight
     // horizontal or vertical lines between the centers of each tile.
@@ -7501,15 +7894,15 @@ Ghost.prototype.getBounceY = (function(){
     };
 })();
 
-Ghost.prototype.getAnimFrame = function(frames) {
-    if (frames == undefined) {
+Enemy.prototype.getAnimFrame = function(frames) {
+    if (frames == undefined)
         frames = this.frames;
-    }
-    return Math.floor(frames/8)%2; // toggle frame every 8 ticks
+
+    return Math.floor(frames / 8) % 2; // toggle frame every 8 ticks
 };
 
 // reset the state of the ghost on new level or level restart
-Ghost.prototype.reset = function() {
+Enemy.prototype.reset = function() {
 
     // signals
     this.sigReverse = false;
@@ -7536,7 +7929,7 @@ Ghost.prototype.reset = function() {
     this.faceDirEnum = this.dirEnum;
 };
 
-Ghost.prototype.save = function(t) {
+Enemy.prototype.save = function(t) {
     this.savedSigReverse[t] = this.sigReverse;
     this.savedSigLeaveHome[t] = this.sigLeaveHome;
     this.savedMode[t] = this.mode;
@@ -7548,7 +7941,7 @@ Ghost.prototype.save = function(t) {
     Actor.prototype.save.call(this,t);
 };
 
-Ghost.prototype.load = function(t) {
+Enemy.prototype.load = function(t) {
     this.sigReverse = this.savedSigReverse[t];
     this.sigLeaveHome = this.savedSigLeaveHome[t];
     this.mode = this.savedMode[t];
@@ -7561,12 +7954,12 @@ Ghost.prototype.load = function(t) {
 };
 
 // Slow down in the tunnel for first 3 levels
-Ghost.prototype.isSlowInTunnel = function() {
+Enemy.prototype.isSlowInTunnel = function() {
     return level <= 3;
 };
 
 // gets the number of steps to move in this frame
-Ghost.prototype.getNumSteps = function() {
+Enemy.prototype.getNumSteps = function() {
 
     var pattern = STEP_GHOST;
 
@@ -7587,7 +7980,7 @@ Ghost.prototype.getNumSteps = function() {
 };
 
 // signal ghost to reverse direction after leaving current tile
-Ghost.prototype.reverse = function() {
+Enemy.prototype.reverse = function() {
     this.sigReverse = true;
 };
 
@@ -7598,21 +7991,21 @@ Ghost.prototype.reverse = function() {
 // We use this signal to change mode to GHOST_GOING_HOME, which will be
 // set after the update() function is called so that we are still frozen
 // for 3 seconds before traveling home uninterrupted.
-Ghost.prototype.goHome = function() {
+Enemy.prototype.goHome = function() {
     audio.silence();
-    audio.eatingGhost.play();
+    audio.eatingEnemy.play();
     this.mode = GHOST_EATEN;
 };
 
 // Following the pattern that state changes be made via signaling (e.g. reversing, going home)
 // the ghost is commanded to leave home similarly.
 // (not sure if this is correct yet)
-Ghost.prototype.leaveHome = function() {
+Enemy.prototype.leaveHome = function() {
     this.playSounds();
     this.sigLeaveHome = true;
 };
 
-Ghost.prototype.playSounds = function() {
+Enemy.prototype.playSounds = function() {
     var ghostsOutside = 0;
     var ghostsGoingHome = 0;
     for (var i=0; i<4; i++) {
@@ -7620,7 +8013,7 @@ Ghost.prototype.playSounds = function() {
         if (ghosts[i].mode == GHOST_GOING_HOME) ghostsGoingHome++;
     }
     if (ghostsGoingHome > 0) {
-        audio.ghostNormalMove.stopLoop();
+        audio.enemyMove.stopLoop();
         audio.ghostReturnToHome.startLoop(true);
         return;
     }
@@ -7629,15 +8022,15 @@ Ghost.prototype.playSounds = function() {
     }
     if (ghostsOutside > 0 ) {
         if (! this.scared)
-            audio.ghostNormalMove.startLoop(true);
+            audio.enemyMove.startLoop(true);
     }
     else {
-        audio.ghostNormalMove.stopLoop();
+        audio.enemyMove.stopLoop();
     }
 }
 
 // function called when player eats an energizer
-Ghost.prototype.onEnergized = function() {
+Enemy.prototype.onEnergized = function() {
 
     this.reverse();
 
@@ -7649,19 +8042,19 @@ Ghost.prototype.onEnergized = function() {
 };
 
 // function called when this ghost gets eaten
-Ghost.prototype.onEaten = function() {
+Enemy.prototype.onEaten = function() {
     this.goHome();       // go home
     this.scared = false; // turn off scared
 };
 
 // move forward one step
-Ghost.prototype.step = function() {
+Enemy.prototype.step = function() {
     this.setPos(this.pixel.x+this.dir.x, this.pixel.y+this.dir.y);
     return 1;
 };
 
 // ghost home-specific path steering
-Ghost.prototype.homeSteer = (function(){
+Enemy.prototype.homeSteer = (function(){
 
     // steering functions to execute for each mode
     var steerFuncs = {};
@@ -7745,7 +8138,7 @@ Ghost.prototype.homeSteer = (function(){
 })();
 
 // special case for Ms. Pac-Man game that randomly chooses a corner for blinky and pinky when scattering
-Ghost.prototype.isScatterBrain = function() {
+Enemy.prototype.isScatterBrain = function() {
     var scatter = false;
     if (ghostCommander.getCommand() == GHOST_CMD_SCATTER) {
         scatter = (this == enemy1 || this == enemy2);
@@ -7754,7 +8147,7 @@ Ghost.prototype.isScatterBrain = function() {
 };
 
 // determine direction
-Ghost.prototype.steer = function() {
+Enemy.prototype.steer = function() {
 
     var dirEnum;                         // final direction to update to
     var openTiles;                       // list of four booleans indicating which surrounding tiles are open
@@ -7849,9 +8242,9 @@ Ghost.prototype.steer = function() {
             if (!dirDecided) {
                 // Do not constrain turns for ghosts going home. (thanks bitwave)
                 if (this.mode != GHOST_GOING_HOME) {
-                    if (map.constrainGhostTurns) {
+                    if (map.constrainEnemyTurns) {
                         // edit openTiles to reflect the current map's special contraints
-                        map.constrainGhostTurns(nextTile, openTiles, this.dirEnum);
+                        map.constrainEnemyTurns(nextTile, openTiles, this.dirEnum);
                     }
                 }
 
@@ -7865,7 +8258,7 @@ Ghost.prototype.steer = function() {
     }
 };
 
-Ghost.prototype.getPathDistLeft = function(fromPixel, dirEnum) {
+Enemy.prototype.getPathDistLeft = function(fromPixel, dirEnum) {
     var distLeft = tileSize;
     var pixel = this.getTargetPixel();
     if (this.targetting == 'player') {
@@ -7878,7 +8271,7 @@ Ghost.prototype.getPathDistLeft = function(fromPixel, dirEnum) {
     return distLeft;
 };
 
-Ghost.prototype.setTarget = function() {
+Enemy.prototype.setTarget = function() {
     // This sets the target tile when in chase mode.
     // The "target" is always Pac-Man when in this mode,
     // except for enemy4.  He runs away back home sometimes,
@@ -8124,44 +8517,43 @@ Player.prototype.update = function(j) {
 // create all the actors
 
 // Previously Named blinky
-var enemy1 = new Ghost();
-enemy1.name = "sticky";
+var enemy1 = new Enemy();
+enemy1.name = "STICKY";
 enemy1.color = "#DE373A";
 enemy1.pathColor = "#DE373A";
 enemy1.isVisible = true;
 
 // Previously Named pinky
-var enemy2 = new Ghost();
-enemy2.name = "pricky";
+var enemy2 = new Enemy();
+enemy2.name = "PRICKY";
 enemy2.color = "#55D400";
 enemy2.pathColor = "#55D400";
 enemy2.isVisible = true;
 
 // Previously Named inky
-var enemy3 = new Ghost();
-enemy3.name = "icky";
+var enemy3 = new Enemy();
+enemy3.name = "ICKY";
 enemy3.color = "#099EDE";
 enemy3.pathColor = "#099EDE";
 enemy3.isVisible = true;
 
 // Previously Named clyde
-var enemy4 = new Ghost();
-enemy4.name = "asher";
+var enemy4 = new Enemy();
+enemy4.name = "ASHER";
 enemy4.color = "#FFB851";
 enemy4.pathColor = "#FFB851";
 enemy4.isVisible = true;
 
 // Previously Named pacman
 var player = new Player();
-player.name = "tubie-man";
+player.name = "TUBIE-MAN";
 player.color = "#FF6E31";
 player.pathColor = "@FF6E31";
 
 // order at which they appear in original arcade memory
 // (suggests drawing/update order)
 var actors = [enemy1, enemy2, enemy3, enemy4, player];
-var ghosts = [enemy1, enemy2, enemy3, enemy4];
-//@line 1 "src/targets.js"
+var ghosts = [enemy1, enemy2, enemy3, enemy4];//@line 1 "src/targets.js"
 /////////////////////////////////////////////////////////////////
 // Targetting
 // (a definition for each actor's targetting algorithm and a draw function to visualize it)
@@ -8827,7 +9219,7 @@ var energizer = (function() {
             }
         },
         activate: function() { 
-            audio.ghostNormalMove.stopLoop();
+            audio.enemyMove.stopLoop();
             audio.ghostTurnToBlue.startLoop();
             active = true;
             count = 0;
@@ -8912,7 +9304,7 @@ BaseFruit.prototype = {
         if (this.isPresent() && this.isCollide()) {
             addScore(this.getPoints());
             audio.silence(true);
-            audio.eatingFruit.play();
+            audio.eatingBonus.play();
             setTimeout(ghosts[0].playSounds, 500);
             this.reset();
             this.scoreFramesLeft = this.scoreDuration*60;
@@ -8920,122 +9312,26 @@ BaseFruit.prototype = {
     },
 };
 
-// PAC-MAN FRUIT
-
-var PacFruit = function() {
-    BaseFruit.call(this);
-    this.fruits = [
-        {name:'cherry',     points:100},
-        {name:'strawberry', points:300},
-        {name:'orange',     points:500},
-        {name:'apple',      points:700},
-        {name:'melon',      points:1000},
-        {name:'galaxian',   points:2000},
-        {name:'bell',       points:3000},
-        {name:'key',        points:5000},
-    ];
-
-    this.order = [
-        0,  // level 1
-        1,  // level 2 
-        2,  // level 3
-        2,  // level 4
-        3,  // level 5
-        3,  // level 6
-        4,  // level 7
-        4,  // level 8
-        5,  // level 9
-        5,  // level 10
-        6,  // level 11
-        6,  // level 12
-        7]; // level 13+
-
-    this.dotLimit1 = 70;
-    this.dotLimit2 = 170;
-
-    this.duration = 9; // number of seconds that the fruit is on the screen
-    this.framesLeft; // frames left until fruit is off the screen
-
-    this.savedFramesLeft = {};
-};
-
-PacFruit.prototype = newChildObject(BaseFruit.prototype, {
-
-    onNewLevel: function() {
-        this.setCurrentFruit(this.getFruitIndexFromLevel(level));
-        BaseFruit.prototype.onNewLevel.call(this);
-    },
-
-    getFruitFromLevel: function(i) {
-        return this.fruits[this.getFruitIndexFromLevel(i)];
-    },
-
-    getFruitIndexFromLevel: function(i) {
-        if (i > 13) {
-            i = 13;
-        }
-        return this.order[i-1];
-    },
-
-    buildFruitHistory: function() {
-        this.fruitHistory = {};
-        var i;
-        for (i=1; i<= level; i++) {
-            this.fruitHistory[i] = this.fruits[this.getFruitIndexFromLevel(i)];
-        }
-    },
-
-    initiate: function() {
-        var x = 13;
-        var y = 20;
-        this.pixel.x = tileSize*(1+x)-1;
-        this.pixel.y = tileSize*y + midTile.y;
-        this.framesLeft = 60*this.duration;
-    },
-
-    isPresent: function() {
-        return this.framesLeft > 0;
-    },
-
-    reset: function() {
-        BaseFruit.prototype.reset.call(this);
-
-        this.framesLeft = 0;
-    },
-
-    update: function() {
-        BaseFruit.prototype.update.call(this);
-
-        if (this.framesLeft > 0)
-            this.framesLeft--;
-    },
-
-    save: function(t) {
-        BaseFruit.prototype.save.call(this,t);
-        this.savedFramesLeft[t] = this.framesLeft;
-    },
-    load: function(t) {
-        BaseFruit.prototype.load.call(this,t);
-        this.framesLeft = this.savedFramesLeft[t];
-    },
-});
-
-// MS. PAC-MAN FRUIT
+// Tubie-Man Fruits
 
 var PATH_ENTER = 0;
 var PATH_PEN = 1;
 var PATH_EXIT = 2;
 
-var MsPacFruit = function() {
+var TMFruit = function() {
     BaseFruit.call(this);
     this.fruits = [
-        {name: 'cherry',     points: 100},
-        {name: 'strawberry', points: 200},
-        {name: 'orange',     points: 500},
-        {name: 'pretzel',    points: 700},
-        {name: 'apple',      points: 1000},
-        {name: 'pear',       points: 2000},
-        {name: 'banana',     points: 5000},
+        {name: 'gtube',     points: 100},
+        {name: 'endless_pump', points: 200},
+        {name: 'marsupial_pump',     points: 300},
+        {name: 'jamie_pump',    points: 500},
+        {name: 'usb_charger',      points: 700},
+        {name: 'feeding_bag',       points: 800},
+        {name: 'formula_bottle',     points: 1000},
+        {name: 'y_extension',      points: 1600},
+        {name: 'enfit_wrench',       points: 2000},
+        {name: 'flying_squirrel',     points: 3000},
+        {name: 'straighten_pump',      points: 5000}
     ];
 
     this.dotLimit1 = 64;
@@ -9051,14 +9347,19 @@ var MsPacFruit = function() {
     this.savedPath = {};
 };
 
-MsPacFruit.prototype = newChildObject(BaseFruit.prototype, {
+TMFruit.prototype = newChildObject(BaseFruit.prototype, {
+
+    getNumFruit: function() {
+        return this.fruits.length + 1; // Offset by 1 b/c levels don't start at 0
+    },
 
     shouldRandomizeFruit: function() {
-        return level > 7;
+        // return level > 11;
+        return level > this.getNumFruit();
     },
 
     getFruitFromLevel: function(i) {
-        if (i <= 7) {
+        if (i <= this.getNumFruit()) {
             return this.fruits[i-1];
         }
         else {
@@ -9079,7 +9380,7 @@ MsPacFruit.prototype = newChildObject(BaseFruit.prototype, {
     buildFruitHistory: function() {
         this.fruitHistory = {};
         var i;
-        for (i=1; i<= Math.max(level,7); i++) {
+        for (i=1; i<= Math.max(level, this.getNumFruit()); i++) {
             this.fruitHistory[i] = this.fruits[i-1];
         }
     },
@@ -9100,8 +9401,9 @@ MsPacFruit.prototype = newChildObject(BaseFruit.prototype, {
 
     initiate: function() {
         if (this.shouldRandomizeFruit()) {
-            this.setCurrentFruit(getRandomInt(0,6));
+            this.setCurrentFruit(getRandomInt(0, this.getNumFruit() - 1));
         }
+
         var entrances = map.fruitPaths.entrances;
         var e = entrances[getRandomInt(0,entrances.length-1)];
         this.initiatePath(e.path);
@@ -9193,7 +9495,7 @@ MsPacFruit.prototype = newChildObject(BaseFruit.prototype, {
     },
 });
 
-var fruit = new MsPacFruit();
+var fruit = new TMFruit();
 //@line 1 "src/executive.js"
 var executive = (function(){
 
@@ -9349,7 +9651,13 @@ var state;
 // switches to another game state
 var switchState = function(nextState,fadeDuration, continueUpdate1, continueUpdate2) {
     state = (fadeDuration) ? fadeNextState(state,nextState,fadeDuration,continueUpdate1, continueUpdate2) : nextState;
-    audio.silence();
+    const isCurrentStateMenu = state.hasOwnProperty("getMenu") && state.getMenu() instanceof Menu;
+    const isNextStateMenu = nextState.hasOwnProperty("getMenu") && nextState.getMenu() instanceof Menu;
+
+    // Don't pause menu when switching from one menu to another
+    if(!(isCurrentStateMenu && isNextStateMenu))
+        audio.silence();
+
     state.init();
     if (executive.isPaused()) {
         executive.togglePause();
@@ -9418,238 +9726,6 @@ var fadeNextState = function (prevState, nextState, frameDuration, continueUpdat
 };
 
 //////////////////////////////////////////////////////////////////////////////////////
-// Home State
-// (the home title screen state)
-
-// var homeState = (function(){
-
-//     var exitTo = function(s) {
-//         switchState(s);
-//         menu.disable();
-//     };
-
-//     var menu = new Menu("CHOOSE A GAME",2*tileSize,0*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
-//     var getIconAnimFrame = function(frame) {
-//         frame = Math.floor(frame/3)+1;
-//         frame %= 4;
-//         if (frame == 3) {
-//             frame = 1;
-//         }
-//         return frame;
-//     };
-//     menu.addTextIconButton(getGameName(GAME_PACMAN),
-//         function() {
-//             gameMode = GAME_PACMAN;
-//             exitTo(preNewGameState);
-//         },
-//         function(ctx,x,y,frame) {
-//             atlas.drawPacmanSprite(ctx,x,y,DIR_RIGHT,getIconAnimFrame(frame));
-//         });
-//     menu.addTextIconButton(getGameName(GAME_MSPACMAN),
-//         function() {
-//             gameMode = GAME_MSPACMAN;
-//             exitTo(preNewGameState);
-//         },
-//         function(ctx,x,y,frame) {
-//             atlas.drawMsPacmanSprite(ctx,x,y,DIR_RIGHT,getIconAnimFrame(frame));
-//         });
-//     menu.addTextIconButton(getGameName(GAME_TUBIE_MAN),
-//         function() {
-//             gameMode = GAME_TUBIE_MAN;
-//             exitTo(preNewGameState);
-//         },
-//         function(ctx,x,y,frame) {
-//             drawTubieManSprite(ctx,x,y,DIR_RIGHT,getIconAnimFrame(frame), true);
-//         });
-
-//     menu.addSpacer(0.5);
-//     menu.addTextIconButton("LEARN",
-//         function() {
-//             exitTo(learnState);
-//         },
-//         function(ctx,x,y,frame) {
-//             atlas.drawGhostSprite(ctx,x,y,Math.floor(frame/8)%2,DIR_RIGHT,false,false,false,enemy1.color);
-//         });
-
-//     return {
-//         init: function() {
-//             menu.enable();
-//             audio.coffeeBreakMusic.startLoop();
-//         },
-//         draw: function() {
-//             renderer.clearMapFrame();
-//             renderer.beginMapClip();
-//             renderer.renderFunc(menu.draw,menu);
-//             renderer.endMapClip();
-//         },
-//         update: function() {
-//             menu.update();
-//         },
-//         getMenu: function() {
-//             return menu;
-//         },
-//     };
-
-// })();
-
-//////////////////////////////////////////////////////////////////////////////////////
-// Learn State
-
-var learnState = (function(){
-
-    var exitTo = function(s) {
-        switchState(s);
-        menu.disable();
-        forEachCharBtn(function (btn) {
-            btn.disable();
-        });
-        setAllVisibility(true);
-        clearCheats();
-    };
-
-    var menu = new Menu("LEARN", 2*tileSize,-tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
-    menu.addSpacer(7);
-    menu.addTextButton("BACK",
-        function() {
-            exitTo(preNewGameState);
-        });
-    menu.backButton = menu.buttons[menu.buttonCount-1];
-    menu.noArrowKeys = true;
-
-    var pad = tileSize;
-    var w = 30;
-    var h = 30;
-    var x = mapWidth/2 - 2*(w) - 1.5*pad;
-    var y = 4*tileSize;
-    var redBtn = new Button(x,y,w,h,function(){
-        setAllVisibility(false);
-        enemy1.isVisible = true;
-        setVisibility(enemy1,true);
-    });
-    redBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,enemy1.color);
-    });
-    x += w+pad;
-    var pinkBtn = new Button(x,y,w,h,function(){
-        setAllVisibility(false);
-        setVisibility(enemy2,true);
-    });
-    pinkBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,enemy2.color);
-    });
-    x += w+pad;
-    var cyanBtn = new Button(x,y,w,h,function(){
-        setAllVisibility(false);
-        setVisibility(enemy3,true);
-    });
-    cyanBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,enemy3.color);
-    });
-    x += w+pad;
-    var orangeBtn = new Button(x,y,w,h,function(){
-        setAllVisibility(false);
-        setVisibility(enemy4,true);
-    });
-    orangeBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_DOWN,undefined,undefined,undefined,enemy4.color);
-    });
-    var forEachCharBtn = function(callback) {
-        callback(redBtn);
-        callback(pinkBtn);
-        callback(cyanBtn);
-        callback(orangeBtn);
-    };
-
-    var setVisibility = function(g,visible) {
-        g.isVisible = g.isDrawTarget = g.isDrawPath = visible;
-    };
-
-    var setAllVisibility = function(visible) {
-        setVisibility(enemy1,visible);
-        setVisibility(enemy2,visible);
-        setVisibility(enemy3,visible);
-        setVisibility(enemy4,visible);
-    };
-
-    return {
-        init: function() {
-
-            menu.enable();
-            forEachCharBtn(function (btn) {
-                btn.enable();
-            });
-
-            // set map
-            map = mapLearn;
-            renderer.drawMap();
-
-            // set game parameters
-            level = 1;
-            practiceMode = false;
-            turboMode = false;
-            gameMode = GAME_TUBIE_MAN;
-
-            // reset relevant game state
-            ghostCommander.reset();
-            energizer.reset();
-            ghostCommander.setCommand(GHOST_CMD_CHASE);
-            ghostReleaser.onNewLevel();
-            elroyTimer.onNewLevel();
-
-            // set ghost states
-            for (i=0; i<4; i++) {
-                var a = actors[i];
-                a.reset();
-                a.mode = GHOST_OUTSIDE;
-            }
-            enemy1.setPos(14*tileSize-1, 13*tileSize+midTile.y);
-            enemy2.setPos(15*tileSize+midTile.x, 13*tileSize+midTile.y);
-            enemy3.setPos(9*tileSize+midTile.x, 16*tileSize+midTile.y);
-            enemy4.setPos(18*tileSize+midTile.x, 16*tileSize+midTile.y);
-
-            // set player state
-            player.reset();
-            player.setPos(14*tileSize-1,22*tileSize+midTile.y);
-
-            // start with red ghost
-            redBtn.onclick();
-
-        },
-        draw: function() {
-            renderer.blitMap();
-            renderer.renderFunc(menu.draw,menu);
-            forEachCharBtn(function (btn) {
-                renderer.renderFunc(btn.draw,btn);
-            });
-            renderer.beginMapClip();
-            renderer.drawPaths();
-            renderer.drawActors();
-            renderer.drawTargets();
-            renderer.endMapClip();
-        },
-        update: function() {
-            menu.update();
-            forEachCharBtn(function (btn) {
-                btn.update();
-            });
-            var i,j;
-            for (j=0; j<2; j++) {
-                player.update(j);
-                for (i=0;i<4;i++) {
-                    actors[i].update(j);
-                }
-            }
-            for (i=0; i<5; i++)
-                actors[i].frames++;
-        },
-        getMenu: function() {
-            return menu;
-        },
-    };
-
-})();
-
-//////////////////////////////////////////////////////////////////////////////////////
 // Game Title
 // (provides functions for managing the game title with clickable player and enemies below it)
 
@@ -9658,24 +9734,24 @@ var gameTitleState = (function() {
     var name,nameColor;
 
     var resetTitle = function() {
-        if (yellowBtn.isSelected) {
+        if (playerBtn.isSelected) {
             name = getGameName();
             nameColor = "#47b8ff";
         }
        else if (redBtn.isSelected) {
-            name = getGhostNames()[0];
+            name = getEnemyNames()[0];
             nameColor = enemy1.color;
         }
         else if (pinkBtn.isSelected) {
-            name = getGhostNames()[1];
+            name = getEnemyNames()[1];
             nameColor = enemy2.color;
         }
         else if (cyanBtn.isSelected) {
-            name = getGhostNames()[2];
+            name = getEnemyNames()[2];
             nameColor = enemy3.color;
         }
         else if (orangeBtn.isSelected) {
-            name = getGhostNames()[3];
+            name = getEnemyNames()[3];
             nameColor = enemy4.color;
         }
         else {
@@ -9684,11 +9760,11 @@ var gameTitleState = (function() {
         }
     };
 
-    var w = 20;
-    var h = 30;
-    var x = mapWidth/2 - 3*w;
-    var y = 3*tileSize;
-    var yellowBtn = new Button(x,y,w,h,function() {
+    var w = 30;
+    var h = 40;
+    var x = mapWidth / 2 - 3 * w;
+    var y = 3 * tileSize;
+    var playerBtn = new Button(x,y,w,h,function() {
         if (gameMode == GAME_MSPACMAN) {
             gameMode = GAME_OTTO;
         }
@@ -9696,44 +9772,62 @@ var gameTitleState = (function() {
             gameMode = GAME_MSPACMAN;
         }
     });
-    yellowBtn.setIcon(function (ctx,x,y,frame) {
-        getPlayerDrawFunc()(ctx,x,y,DIR_RIGHT,player.getAnimFrame(player.getStepFrame(Math.floor((gameMode==GAME_PACMAN?frame+4:frame)/1.5))),true);
+    playerBtn.setIcon(function (ctx,x,y,frame) {
+        ctx.save();
+        ctx.scale(1.25, 1.25);
+        getPlayerDrawFunc()(ctx,x/1.25,y/1.25,DIR_RIGHT,player.getAnimFrame(player.getStepFrame(Math.floor(frame/1.5))),true);
+        ctx.restore();
     });
 
     x += 2*w;
     var redBtn = new Button(x,y,w,h);
     redBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,enemy1.color);
+        ctx.save();
+        ctx.scale(1.25, 1.25);
+        getEnemyDrawFunc()(ctx,x/1.25,y/1.25,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,enemy1.color);
+        ctx.restore();
     });
 
     x += w;
     var pinkBtn = new Button(x,y,w,h);
     pinkBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,enemy2.color);
+        ctx.save();
+        ctx.scale(1.25, 1.25);
+        getEnemyDrawFunc()(ctx,x/1.25,y/1.25,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,enemy2.color);
+        ctx.restore();
     });
 
     x += w;
     var cyanBtn = new Button(x,y,w,h)
     cyanBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,enemy3.color);
+        ctx.save();
+        ctx.scale(1.25, 1.25);
+        getEnemyDrawFunc()(ctx,x/1.25,y/1.25,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,enemy3.color);
+        ctx.restore();
     });
 
     x += w;
     var orangeBtn = new Button(x,y,w,h);
     orangeBtn.setIcon(function (ctx,x,y,frame) {
-        getGhostDrawFunc()(ctx,x,y,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,enemy4.color);
+        ctx.save();
+        ctx.scale(1.25, 1.25);
+        getEnemyDrawFunc()(ctx,x / 1.25,y / 1.25,Math.floor(frame/6)%2,DIR_LEFT,undefined,undefined,undefined,enemy4.color);
+        ctx.restore();
     });
     
     var forEachCharBtn = function(callback) {
-        callback(yellowBtn);
+        callback(playerBtn);
         callback(redBtn);
         callback(pinkBtn);
         callback(cyanBtn);
         callback(orangeBtn);
     };
+
     forEachCharBtn(function(btn) {
         btn.borderBlurColor = btn.borderFocusColor = "#000";
     });
+
+    const titleButtons = [playerBtn, redBtn, pinkBtn, cyanBtn, orangeBtn];
 
     return {
         init: function() {
@@ -9748,17 +9842,29 @@ var gameTitleState = (function() {
             });
         },
         draw: function() {
+            setScreenAndMapDimensions();
+            
+            const w = 20;
+            let x = mapWidth / 2 - 3 * w;
+            const y = 3 * tileSize;
+
+            playerBtn.setPosition(x, y);
+            redBtn.setPosition(x += 2 * w, y);
+            pinkBtn.setPosition(x += w, y);
+            cyanBtn.setPosition(x += w, y);
+            orangeBtn.setPosition(x += w, y);
+            
             forEachCharBtn(function (btn) {
                 renderer.renderFunc(btn.draw,btn);
             });
 
             resetTitle();
             renderer.renderFunc(function(ctx){
-                ctx.font = tileSize+"px ArcadeR";
+                ctx.font = tileSize + "px 'Press Start 2P'";
                 ctx.fillStyle = nameColor;
                 ctx.textAlign = "center";
                 ctx.textBaseline = "top";
-                ctx.fillText(name, mapWidth/2, tileSize);
+                ctx.fillText(name, mapWidth / 2, tileSize);
             });
         },
         update: function() {
@@ -9766,9 +9872,37 @@ var gameTitleState = (function() {
                 btn.update();
             });
         },
-        getYellowBtn: function() {
-            return yellowBtn;
+        getplayerBtn: function() {
+            return playerBtn;
         },
+        getTitleButtons: function() {
+            return titleButtons;
+        },
+        selectNextTitleButton: function() {
+            if(!audio.isPlaying())
+                audio.mainMenuMusic.startLoop(true);
+
+            const selectedTitleButtonIndex = titleButtons.map((btn) => btn.isSelected).reduce((prev, current, index) => current === true ? index : prev, -1);
+            const nextTitleButtonIndex = selectedTitleButtonIndex >= titleButtons.length - 1 ? 0 : selectedTitleButtonIndex + 1;
+
+            if(selectedTitleButtonIndex >= 0)
+                titleButtons[selectedTitleButtonIndex].blur();
+            titleButtons[nextTitleButtonIndex].focus();
+        },
+        selectPrevTitleButton: function() {
+            if(!audio.isPlaying())
+                audio.mainMenuMusic.startLoop(true);
+            
+            const selectedTitleButtonIndex = titleButtons.map((btn) => btn.isSelected).reduce((prev, current, index) => current === true ? index : prev, -1);
+            const nextTitleButtonIndex = selectedTitleButtonIndex <= 0 ? titleButtons.length - 1 : selectedTitleButtonIndex - 1;
+
+            if(selectedTitleButtonIndex >= 0)
+                titleButtons[selectedTitleButtonIndex].blur();
+            titleButtons[nextTitleButtonIndex].focus();
+        },
+        blurTitleButtons: function() {
+            titleButtons.forEach((btn) => { if(btn.isSelected) btn.blur()});
+        }
     };
 
 })();
@@ -9785,7 +9919,7 @@ var preNewGameState = (function() {
         switchState(s,fade);
     };
 
-    var menu = new Menu("",2*tileSize,0,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
+    var menu = new Menu("",2*tileSize,0,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px 'Press Start 2P'", "#EEE");
 
     menu.addSpacer(2);
     menu.addTextButton("PLAY",
@@ -9795,19 +9929,6 @@ var preNewGameState = (function() {
             newGameState.setStartLevel(1);
             exitTo(newGameState, 60);
         });
-    // menu.addTextButton("PLAY TURBO",
-    //     function() { 
-    //         practiceMode = false;
-    //         turboMode = true;
-    //         newGameState.setStartLevel(1);
-    //         exitTo(newGameState, 60);
-    //     });
-    // menu.addTextButton("PRACTICE",
-    //     function() { 
-    //         practiceMode = true;
-    //         turboMode = false;
-    //         exitTo(selectActState);
-    //     });
     menu.addSpacer(0.5);
     menu.addTextButton("CUTSCENES",
         function() { 
@@ -9817,23 +9938,20 @@ var preNewGameState = (function() {
         function() { 
             exitTo(aboutGameState);
         });
-    // menu.addSpacer(0.5);
-    // menu.addTextButton("BACK",
-    //     function() {
-    //         exitTo(homeState);
-    //     });
-    // menu.backButton = menu.buttons[menu.buttonCount-1];
 
     return {
         init: function() {
-            audio.startMusic.play();
+            if(!audio.mainMenuMusic.isPlaying())
+                audio.mainMenuMusic.startLoop();
             menu.enable();
             gameTitleState.init();
             map = undefined;
         },
         draw: function() {
+            setScreenAndMapDimensions();
             renderer.clearMapFrame();
             renderer.renderFunc(menu.draw,menu);
+            menu.setSize(2 * tileSize, 0, mapWidth - 4 * tileSize , 3 * tileSize);
             gameTitleState.draw();
         },
         update: function() {
@@ -9848,211 +9966,6 @@ var preNewGameState = (function() {
 var homeState = preNewGameState;
 
 //////////////////////////////////////////////////////////////////////////////////////
-// Select Act State
-
-var selectActState = (function() {
-
-    // TODO: create ingame menu option to return to this menu (with last act played present)
-
-    var menu;
-    var numActs = 4;
-    var defaultStartAct = 1;
-    var startAct = defaultStartAct;
-
-    var exitTo = function(state,fade) {
-        gameTitleState.shutdown();
-        menu.disable();
-        switchState(state,fade);
-    };
-
-    var chooseLevelFromAct = function(act) {
-        selectLevelState.setAct(act);
-        exitTo(selectLevelState);
-    };
-
-    var scrollToAct = function(act) {
-        // just rebuild the menu
-        selectActState.setStartAct(act);
-        exitTo(selectActState);
-    };
-
-    var drawArrow = function(ctx,x,y,dir) {
-        ctx.save();
-        ctx.translate(x,y);
-        ctx.scale(1,dir);
-        ctx.beginPath();
-        ctx.moveTo(0,-tileSize/2);
-        ctx.lineTo(tileSize,tileSize/2);
-        ctx.lineTo(-tileSize,tileSize/2);
-        ctx.closePath();
-        ctx.fillStyle = "#FFF";
-        ctx.fill();
-        ctx.restore();
-    };
-
-    var buildMenu = function(act) {
-        // set buttons starting at the given act
-        startAct = act;
-
-        menu = new Menu("",2*tileSize,0,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
-        var i;
-        var range;
-        menu.addSpacer(2);
-        menu.addIconButton(
-            function(ctx,x,y) {
-                drawArrow(ctx,x,y,1);
-            },
-            function() {
-                scrollToAct(Math.max(1,act-numActs));
-            });
-        for (i=0; i<numActs; i++) {
-            range = getActRange(act+i);
-            menu.addTextIconButton("LEVELS "+range[0]+"-"+range[1],
-                (function(j){
-                    return function() { 
-                        chooseLevelFromAct(act+j);
-                    };
-                })(i),
-                (function(j){
-                    return function(ctx,x,y) {
-                        var s = tileSize/3*2;
-                        var r = tileSize/6;
-                        ctx.save();
-                        ctx.translate(x,y);
-                        ctx.beginPath();
-                        ctx.moveTo(-s,0);
-                        ctx.lineTo(-s,-r);
-                        ctx.quadraticCurveTo(-s,-s,-r,-s);
-                        ctx.lineTo(r,-s);
-                        ctx.quadraticCurveTo(s,-s,s,-r);
-                        ctx.lineTo(s,r);
-                        ctx.quadraticCurveTo(s,s,r,s);
-                        ctx.lineTo(-r,s);
-                        ctx.quadraticCurveTo(-s,s,-s,r);
-                        ctx.closePath();
-                        var colors = getActColor(act+j);
-                        ctx.fillStyle = colors.wallFillColor;
-                        ctx.strokeStyle = colors.wallStrokeColor;
-                        ctx.fill();
-                        ctx.stroke();
-                        ctx.restore();
-                    };
-                })(i));
-        }
-        menu.addIconButton(
-            function(ctx,x,y) {
-                drawArrow(ctx,x,y,-1);
-            },
-            function() {
-                scrollToAct(act+numActs);
-            });
-        menu.addTextButton("BACK",
-            function() {
-                exitTo(preNewGameState);
-            });
-        menu.backButton = menu.buttons[menu.buttonCount-1];
-        menu.enable();
-    };
-
-    return {
-        init: function() {
-            buildMenu(startAct);
-            gameTitleState.init();
-        },
-        setStartAct: function(act) {
-            startAct = act;
-        },
-        draw: function() {
-            renderer.clearMapFrame();
-            renderer.renderFunc(menu.draw,menu);
-            gameTitleState.draw();
-        },
-        update: function() {
-            gameTitleState.update();
-        },
-        getMenu: function() {
-            return menu;
-        },
-    };
-})();
-
-//////////////////////////////////////////////////////////////////////////////////////
-// Select Level State
-
-var selectLevelState = (function() {
-
-    var menu;
-    var act = 1;
-
-    var exitTo = function(state,fade) {
-        gameTitleState.shutdown();
-        menu.disable();
-        switchState(state,fade);
-    };
-
-    var playLevel = function(i) {
-        // TODO: set level (will have to set up fruit history correctly)
-        newGameState.setStartLevel(i);
-        exitTo(newGameState, 60);
-    };
-
-    var buildMenu = function(act) {
-        var range = getActRange(act);
-
-        menu = new Menu("",2*tileSize,0,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
-        var i;
-        menu.addSpacer(2);
-        if (range[0] < range[1]) {
-            for (i=range[0]; i<=range[1]; i++) {
-                menu.addTextIconButton("LEVEL "+i,
-                    (function(j){
-                        return function() { 
-                            playLevel(j);
-                        };
-                    })(i),
-                    (function(j){
-                        return function(ctx,x,y) {
-                            var f = fruit.getFruitFromLevel(j);
-                            if (f) {
-                                atlas.drawFruitSprite(ctx,x,y,f.name);
-                            }
-                        };
-                    })(i));
-            }
-        }
-        menu.addSpacer(0.5);
-        menu.addTextButton("BACK",
-            function() {
-                exitTo(selectActState);
-            });
-        menu.backButton = menu.buttons[menu.buttonCount-1];
-        menu.enable();
-    };
-
-    return {
-        init: function() {
-            // setFruitFromGameMode();
-            buildMenu(act);
-            gameTitleState.init();
-        },
-        setAct: function(a) {
-            act = a;
-        },
-        draw: function() {
-            renderer.clearMapFrame();
-            renderer.renderFunc(menu.draw,menu);
-            gameTitleState.draw();
-        },
-        update: function() {
-            gameTitleState.update();
-        },
-        getMenu: function() {
-            return menu;
-        },
-    };
-})();
-
-//////////////////////////////////////////////////////////////////////////////////////
 // About Game State
 // (the screen shows some information about the game)
 
@@ -10064,7 +9977,7 @@ var aboutGameState = (function() {
         switchState(s,fade);
     };
 
-    var menu = new Menu("",2*tileSize,0,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
+    var menu = new Menu("",2*tileSize,0,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px 'Press Start 2P'", "#EEE");
 
     menu.addSpacer(8);
     menu.addTextButton("BACK",
@@ -10077,14 +9990,16 @@ var aboutGameState = (function() {
     var numDescLines;
 
     var drawDesc = function(ctx){
-        ctx.font = tileSize+"px ArcadeR";
+        const wsSizeModifier = getIsWidescreen() ? 0.75 : 1;
+
+        ctx.font = wsSizeModifier * tileSize + "px 'Press Start 2P'";
         ctx.fillStyle = "#FFF";
         ctx.textBaseline = "top";
         ctx.textAlign = "center";
-        var y = 12*tileSize;
+        var y = 10 * tileSize;
         var i;
         for (i=0; i<numDescLines; i++) {
-            ctx.fillText(desc[i],14*tileSize,y+i*2*tileSize);
+            ctx.fillText(desc[i], (getIsWidescreen() ? 20 : 14) * tileSize , y + i * 1.8 * wsSizeModifier * tileSize);
         }
     };
 
@@ -10094,7 +10009,9 @@ var aboutGameState = (function() {
             gameTitleState.init();
         },
         draw: function() {
+            setScreenAndMapDimensions();
             renderer.clearMapFrame();
+            menu.setSize(2 * tileSize, 0, mapWidth - 4 * tileSize, 3 * tileSize);
             renderer.renderFunc(menu.draw,menu);
             gameTitleState.draw();
             desc = getGameDescription();
@@ -10103,6 +10020,8 @@ var aboutGameState = (function() {
         },
         update: function() {
             gameTitleState.update();
+            menu.backButton.setDimensions(mapWidth - (getIsWidescreen() ? 18 : 10) * tileSize, 3 * tileSize);
+            menu.backButton.setPosition(menu.x + menu.pad, mapHeight - (4 * tileSize));
         },
         getMenu: function() {
             return menu;
@@ -10130,7 +10049,7 @@ var cutSceneMenuState = (function() {
         }
     };
 
-    var menu = new Menu("",2*tileSize,0,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
+    var menu = new Menu("",2*tileSize,0,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px 'Press Start 2P'", "#EEE");
 
     menu.addSpacer(2);
     menu.addTextButton("CUTSCENE 1",
@@ -10150,6 +10069,8 @@ var cutSceneMenuState = (function() {
         function() {
             exitTo(preNewGameState);
         });
+    menu.cutscene1Btn = menu.buttons[0];
+    menu.cutscene2Btn = menu.buttons[1];
     menu.backButton = menu.buttons[menu.buttonCount-1];
 
     return {
@@ -10160,7 +10081,22 @@ var cutSceneMenuState = (function() {
         },
         draw: function() {
             renderer.clearMapFrame();
-            renderer.renderFunc(menu.draw,menu);
+            setScreenAndMapDimensions();
+
+            menu.setSize(2 * tileSize, 0, mapWidth - 4 * tileSize , 3 * tileSize);
+
+            const btnX = menu.x + menu.pad;
+            const btnWidth = mapWidth - (getIsWidescreen() ? 18 : 10) * tileSize;
+            const btnHeight = 3 * tileSize;
+
+            menu.backButton.setDimensions(btnWidth, btnHeight);
+            menu.cutscene1Btn.setPosition(btnX, mapHeight - (20 * tileSize));
+            menu.backButton.setDimensions(btnWidth, btnHeight);
+            menu.cutscene2Btn.setPosition(btnX, mapHeight - (16 * tileSize));
+            menu.backButton.setDimensions(btnWidth, btnHeight);
+            menu.backButton.setPosition(btnX * (getIsWidescreen() ? 3 : 1.5), mapHeight - (8 * tileSize));
+
+            renderer.renderFunc(menu.draw, menu);
             gameTitleState.draw();
         },
         update: function() {
@@ -10183,7 +10119,7 @@ var scoreState = (function(){
         menu.disable();
     };
 
-    var menu = new Menu("", 2*tileSize,mapHeight-6*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
+    var menu = new Menu("", 2*tileSize,mapHeight-6*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px 'Press Start 2P'", "#EEE");
     menu.addTextButton("BACK",
         function() {
             exitTo(preNewGameState);
@@ -10228,7 +10164,7 @@ var scoreState = (function(){
             ctx.fillRect(b.x, b.y, s, s);
         }
 
-        ctx.font = tileSize+"px ArcadeR";
+        ctx.font = tileSize+"px 'Press Start 2P'";
         ctx.textBaseline = "top";
         ctx.textAlign = "right";
         var scoreColor = "#AAA";
@@ -10258,29 +10194,6 @@ var scoreState = (function(){
             ctx.restore();
 
         };
-
-        ctx.fillStyle = scoreColor; ctx.fillText(highScores[0], x,y);
-        atlas.drawPacmanSprite(ctx,x+2*tileSize,y+tileSize/2,DIR_LEFT,1);
-        y += tileSize*2;
-        ctx.fillStyle = scoreColor; ctx.fillText(highScores[1], x,y);
-        drawContrails(x+2*tileSize,y+tileSize/2);
-        atlas.drawPacmanSprite(ctx,x+2*tileSize,y+tileSize/2,DIR_LEFT,1);
-
-        y += tileSize*3;
-        ctx.fillStyle = scoreColor; ctx.fillText(highScores[2], x,y);
-        atlas.drawMsPacmanSprite(ctx,x+2*tileSize,y+tileSize/2,DIR_LEFT,1);
-        y += tileSize*2;
-        ctx.fillStyle = scoreColor; ctx.fillText(highScores[3], x,y);
-        drawContrails(x+2*tileSize,y+tileSize/2);
-        atlas.drawMsPacmanSprite(ctx,x+2*tileSize,y+tileSize/2,DIR_LEFT,1);
-
-        y += tileSize*3;
-        ctx.fillStyle = scoreColor; ctx.fillText(highScores[6], x,y);
-        atlas.drawOttoSprite(ctx,x+2*tileSize,y+tileSize/2,DIR_LEFT,0);
-        y += tileSize*2;
-        ctx.fillStyle = scoreColor; ctx.fillText(highScores[7], x,y);
-        drawContrails(x+2*tileSize,y+tileSize/2);
-        atlas.drawOttoSprite(ctx,x+2*tileSize,y+tileSize/2,DIR_LEFT,0);
 
         y += tileSize*3;
         ctx.fillStyle = scoreColor; ctx.fillText(highScores[4], x,y);
@@ -10314,70 +10227,53 @@ var scoreState = (function(){
         ctx.fillText("50",x+tileSize,y);
 
         y += 3*tileSize;
-        atlas.drawGhostSprite(ctx,x,y,0,DIR_RIGHT,true);
-        atlas.drawGhostPoints(ctx,x+2*tileSize,y,200);
+        atlas.drawEnemySprite(ctx,x,y,0,DIR_RIGHT,true);
+        atlas.drawEnemyPoints(ctx,x+2*tileSize,y,200);
 
         var alpha = ctx.globalAlpha;
 
         y += 2*tileSize;
         ctx.globalAlpha = alpha*0.5;
-        atlas.drawGhostSprite(ctx,x,y,0,DIR_RIGHT,true);
+        atlas.drawEnemySprite(ctx,x,y,0,DIR_RIGHT,true);
         ctx.globalAlpha = alpha;
-        atlas.drawGhostSprite(ctx,x+2*tileSize,y,0,DIR_RIGHT,true);
-        atlas.drawGhostPoints(ctx,x+4*tileSize,y,400);
+        atlas.drawEnemySprite(ctx,x+2*tileSize,y,0,DIR_RIGHT,true);
+        atlas.drawEnemyPoints(ctx,x+4*tileSize,y,400);
 
         y += 2*tileSize;
         ctx.globalAlpha = alpha*0.5;
-        atlas.drawGhostSprite(ctx,x,y,0,DIR_RIGHT,true);
-        atlas.drawGhostSprite(ctx,x+2*tileSize,y,0,DIR_RIGHT,true);
+        atlas.drawEnemySprite(ctx,x,y,0,DIR_RIGHT,true);
+        atlas.drawEnemySprite(ctx,x+2*tileSize,y,0,DIR_RIGHT,true);
         ctx.globalAlpha = alpha;
-        atlas.drawGhostSprite(ctx,x+4*tileSize,y,0,DIR_RIGHT,true);
-        atlas.drawGhostPoints(ctx,x+6*tileSize,y,800);
+        atlas.drawEnemySprite(ctx,x+4*tileSize,y,0,DIR_RIGHT,true);
+        atlas.drawEnemyPoints(ctx,x+6*tileSize,y,800);
 
         y += 2*tileSize;
         ctx.globalAlpha = alpha*0.5;
-        atlas.drawGhostSprite(ctx,x,y,0,DIR_RIGHT,true);
-        atlas.drawGhostSprite(ctx,x+2*tileSize,y,0,DIR_RIGHT,true);
-        atlas.drawGhostSprite(ctx,x+4*tileSize,y,0,DIR_RIGHT,true);
+        atlas.drawEnemySprite(ctx,x,y,0,DIR_RIGHT,true);
+        atlas.drawEnemySprite(ctx,x+2*tileSize,y,0,DIR_RIGHT,true);
+        atlas.drawEnemySprite(ctx,x+4*tileSize,y,0,DIR_RIGHT,true);
         ctx.globalAlpha = alpha;
-        atlas.drawGhostSprite(ctx,x+6*tileSize,y,0,DIR_RIGHT,true);
-        atlas.drawGhostPoints(ctx,x+8*tileSize,y,1600);
+        atlas.drawEnemySprite(ctx,x+6*tileSize,y,0,DIR_RIGHT,true);
+        atlas.drawEnemyPoints(ctx,x+8*tileSize,y,1600);
 
-        var mspac_fruits = [
-            {name: 'cherry',     points: 100},
-            {name: 'strawberry', points: 200},
-            {name: 'orange',     points: 500},
-            {name: 'pretzel',    points: 700},
-            {name: 'apple',      points: 1000},
-            {name: 'pear',       points: 2000},
-            {name: 'banana',     points: 5000},
-        ];
+        // var tm_fruits = [
+        //     {name: 'cherry',     points: 100},
+        //     {name: 'strawberry', points: 200},
+        //     {name: 'orange',     points: 500},
+        //     {name: 'pretzel',    points: 700},
+        //     {name: 'apple',      points: 1000},
+        //     {name: 'pear',       points: 2000},
+        //     {name: 'banana',     points: 5000},
+        // ];
 
-        var pac_fruits = [
-            {name:'cherry',     points:100},
-            {name:'strawberry', points:300},
-            {name:'orange',     points:500},
-            {name:'apple',      points:700},
-            {name:'melon',      points:1000},
-            {name:'galaxian',   points:2000},
-            {name:'bell',       points:3000},
-            {name:'key',        points:5000},
-        ];
+        const tm_fruits = fruit.fruits;
 
-        var i,f;
-        y += 3*tileSize;
-        for (i=0; i<pac_fruits.length; i++) {
-            f = pac_fruits[i];
-            atlas.drawFruitSprite(ctx,x,y,f.name);
-            atlas.drawPacFruitPoints(ctx,x+2*tileSize,y,f.points);
-            y += 2*tileSize;
-        }
         x += 6*tileSize;
         y = 13.5*tileSize;
-        for (i=0; i<mspac_fruits.length; i++) {
-            f = mspac_fruits[i];
-            atlas.drawFruitSprite(ctx,x,y,f.name);
-            atlas.drawMsPacFruitPoints(ctx,x+2*tileSize,y,f.points);
+        for (i=0; i<tm_fruits.length; i++) {
+            f = tm_fruits[i];
+            atlas.drawBonusSprite(ctx,x,y,f.name);
+            atlas.drawBonusPoints(ctx,x+2*tileSize,y,f.points);
             y += 2*tileSize;
         }
         ctx.globalAlpha = 1;
@@ -10415,7 +10311,7 @@ var aboutState = (function(){
         menu.disable();
     };
 
-    var menu = new Menu("", 2*tileSize,mapHeight-11*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px ArcadeR", "#EEE");
+    var menu = new Menu("", 2*tileSize,mapHeight-11*tileSize,mapWidth-4*tileSize,3*tileSize,tileSize,tileSize+"px 'Press Start 2P'", "#EEE");
     menu.addTextButton("VIEW ON GITHUB",
         function() {
             window.open("https://github.com/tubietech/tubie-man");
@@ -10427,7 +10323,7 @@ var aboutState = (function(){
     menu.backButton = menu.buttons[menu.buttonCount-1];
 
     var drawBody = function(ctx) {
-        ctx.font = tileSize+"px ArcadeR";
+        ctx.font = (getIsWidescreen() ? tileSize * 0.75: tileSize) + "px 'Press Start 2P'";
         ctx.textBaseline = "top";
         ctx.textAlign = "left";
 
@@ -10497,7 +10393,6 @@ var newGameState = (function() {
             level = startLevel-1;
             extraLives = practiceMode ? Infinity : 3;
             setScore(0);
-            // setFruitFromGameMode();
             readyNewState.init();
         },
         setStartLevel: function(i) {
@@ -10508,7 +10403,7 @@ var newGameState = (function() {
                 return;
             renderer.blitMap();
             renderer.drawScore();
-            renderer.drawMessage("PLAYER ONE", "#0FF", 9, 14);
+            renderer.drawMessage("PLAYER ONE", "#0FF", mapDimensions.standard.col / 2, 14);
             renderer.drawReadyMessage();
         },
         update: function() {
@@ -10617,7 +10512,7 @@ var playState = {
         renderer.blitMap();
         renderer.drawScore();
         renderer.beginMapClip();
-        renderer.drawFruit();
+        renderer.drawBonus();
         renderer.drawPaths();
         renderer.drawActors();
         renderer.drawTargets();
@@ -10700,7 +10595,7 @@ var playState = {
                     if (map.allDotsEaten()) {
                         //this.draw(); 
                         switchState(finishState);
-                        audio.extend.play();
+                        audio.win.play();
                         break;
                     }
 
@@ -10835,7 +10730,7 @@ var deadState = (function() {
                 draw: function() {
                     commonDraw();
                     renderer.beginMapClip();
-                    renderer.drawFruit();
+                    renderer.drawBonus();
                     renderer.drawActors();
                     renderer.endMapClip();
                 }
@@ -10910,7 +10805,7 @@ var finishState = (function(){
                     renderer.blitMap();
                     renderer.drawScore();
                     renderer.beginMapClip();
-                    renderer.drawFruit();
+                    renderer.drawBonus();
                     renderer.drawActors();
                     renderer.drawTargets();
                     renderer.endMapClip();
@@ -10947,7 +10842,7 @@ var overState = (function() {
         draw: function() {
             renderer.blitMap();
             renderer.drawScore();
-            renderer.drawMessage("GAME  OVER", "#F00", 9, 20);
+            renderer.drawMessage("GAME  OVER", "#F00", mapDimensions.standard.col / 2, mapRows / 2 + 4);
         },
         update: function() {
             if (frames == 120) {
@@ -11000,7 +10895,7 @@ const InputSources = Object.freeze({
     _typeName: "InputSources", // Used to identify the object 'type' at runtime. Used for typechecking params
     KEYBOARD: "keyboard",
     SWIPE: "swipe",
-    CONTROLLER: "controller"
+    GAMEPAD: "controller"
 });
 
 const Actions = Object.freeze({
@@ -11013,10 +10908,15 @@ const Actions = Object.freeze({
     EXIT: "exit",
     MENU_UP: "menuUp",
     MENU_DOWN: "menuDown",
-    MENU_CLOSE: "menuClose",
+    MENU_LEFT: "menuLeft",
+    MENU_RIGHT: "menuRight",
+    MENU_OPEN: "menuOpen",
     PAUSE: "pause",
     CHEAT: "cheat",
-    UNUSED: "unused"
+    UNUSED: "unused",
+    TOGGLE_MUTE: "toggleMute",
+    VOLUME_UP: "volumeUp",
+    VOLUME_DOWN: "volumeDown"
 });
 
 const Keys = Object.freeze({
@@ -11088,11 +10988,37 @@ const Keys = Object.freeze({
     NUM_7: "Numpad7",
     NUM_8: "Numpad8",
     NUM_9: "Numpad9",
-    NUM_ENTER: "NumpadEnterA"
+    NUM_ENTER: "NumpadEnter",
+    NUM_ADD: "NumpadAdd",
+    NUM_SUBTRACT: "NumpadSubtract",
+
+    //Gamepad 'Left' Joystick
+    JOYSTICK_RIGHT: "JoystickRight",
+    JOYSTICK_LEFT: "JoystickLeft",
+    JOYSTICK_UP: "JoystickUp",
+    JOYSTICK_DOWN: "JoystickDown",
+
+    // Gamepad Buttons
+    GAMEPAD_0: "GamepadButton0",
+    GAMEPAD_1: "GamepadButton1",
+    GAMEPAD_2: "GamepadButton2",
+    GAMEPAD_3: "GamepadButton3",
+    GAMEPAD_4: "GamepadButton4",
+    GAMEPAD_5: "GamepadButton5",
+    GAMEPAD_6: "GamepadButton6",
+    GAMEPAD_7: "GamepadButton7",
+    GAMEPAD_8: "GamepadButton8",
+    GAMEPAD_9: "GamepadButton9",
+    GAMEPAD_10: "GamepadButton10",
+    GAMEPAD_11: "GamepadButton11",
+    GAMEPAD_12: "GamepadButton12",
 });
 
 // Maps Keys to Input Types
 const KeyInputMap = {};
+
+// Map of Active Gamepads. Maps their ID to the GamePad object
+const gamepads = {};
 
 // Immutable representation of an input
 class Input {
@@ -11236,7 +11162,8 @@ class InputQueue {
         if(input.isInstantaneous() === false)
             throw new Error("Only instaneous inputs may be passed to this function");
 
-        if(input.evaluateCondition()) {
+        const res = input.evaluateCondition();
+        if(res) {
             const inputHash = input.getHash();
         
             if(this.#instantaneousInputHandlers.hasOwnProperty(inputHash))
@@ -11244,6 +11171,7 @@ class InputQueue {
             else
                 console.log(`A handler does not exist for the input ${input.getValue()} with hash ${inputHash}`);            
         }
+        return res !== undefined && res !== false && res !== null;
     }
 
     removeInstantaneousInputHandler(input) {
@@ -11258,13 +11186,15 @@ class InputQueue {
         // TODO: Test functionality of removing volatile inputs when enquing instantaneous ones. We may want to only remove volatile for non-instantaneous inptus
         this.#removeVolatileInputs();
         this.#removeExistingInputInstances(input);
-        
+
+        let wasHandled = false;
         if(input.isInstantaneous())
-            this.handleInstaneousInput(input);
+            wasHandled = this.handleInstaneousInput(input);
         else
             this.#queue.push(input);
 
-        this.#updateHistory(input);        
+        this.#updateHistory(input);   
+        return wasHandled;     
     }
 
     dequeue(input) {
@@ -11327,7 +11257,7 @@ const addKeyInputMapentry = (key, input) => {
 }
 
 (function(){
-    var addKeyDownHandler = (key, inputType, isInstantaneous, handler, conditionFunc) => {
+    var addKeyDownHandler = (key, inputType, isGamepadInput, isInstantaneous, handler, conditionFunc) => {
         if(!Object.values(Keys).includes(key))
             throw new Error(`Unable to add Keyhandler for the Key ${key}, as it does not exist in the Keys type`);
         if(!Object.values(Actions).includes(inputType))
@@ -11335,10 +11265,10 @@ const addKeyInputMapentry = (key, input) => {
         if(!(conditionFunc === null || conditionFunc === undefined) && !(typeof conditionFunc === "function"))
             throw new Error("If a condidionFunc is provided, it must be of type 'function'");
 
-        const input = new Input(inputType, InputSources.KEYBOARD, false, isInstantaneous, conditionFunc);
+        const input = new Input(inputType, isGamepadInput ? InputSources.GAMEPAD : InputSources.KEYBOARD, false, isInstantaneous, conditionFunc);
 
         if(isInstantaneous && typeof handler === "function")
-            inputQueue.addInstantaneousInputHandler(input, handler)
+            inputQueue.addInstantaneousInputHandler(input, handler);
 
         addKeyInputMapentry(key, input);
     }
@@ -11349,7 +11279,11 @@ const addKeyInputMapentry = (key, input) => {
         
         if(keyInputMap.hasOwnProperty(keyCode)) {
             const inputs = keyInputMap[keyCode];
-            inputs.forEach((input) => inputQueue.enqueue(input));
+            for(let inpt of inputs) {
+                const res = inputQueue.enqueue(inpt);
+                if(res === true)
+                    break;
+            };
         } else {
             console.log(`No input is mapped to the key ${keyCode}`);
         }
@@ -11365,12 +11299,14 @@ const addKeyInputMapentry = (key, input) => {
 
     // Menu Navigation Keys
     var _INPUT_menu;
+    var _INPUT_state;
     
     var isInMenu = function() {
         _INPUT_menu = (state.getMenu && state.getMenu());
         if (!_INPUT_menu && inGameMenu.isOpen()) {
             _INPUT_menu = inGameMenu.getMenu();
         }
+        
         return _INPUT_menu;
     };
 
@@ -11385,31 +11321,63 @@ const addKeyInputMapentry = (key, input) => {
 
     //addKeyDownHandler(KEY, INPUT_TYPE, IS_INSTANTANEOUS, HANDLER, ?CONDITION_FUNC);
 
+    // Global Keys
+    addKeyDownHandler(Keys.M, Actions.TOGGLE_MUTE, false, true, function(){if(audio.isPlaying()) audio.toggleMute()}, () => true);
+    addKeyDownHandler(Keys.NUM_ADD, Actions.VOLUME_UP, false, true, function(){if(audio.isPlaying()) audio.volumeUp()}, () => true);
+    addKeyDownHandler(Keys.NUM_SUBTRACT, Actions.VOLUME_DOWN, false, true, function(){if(audio.isPlaying()) audio.volumeDown()}, () => true);
+    
+    addKeyDownHandler(Keys.GAMEPAD_3, Actions.TOGGLE_MUTE, true, true, function(){if(audio.isPlaying()) audio.toggleMute()}, () => true);
+    addKeyDownHandler(Keys.GAMEPAD_7, Actions.VOLUME_UP, true, true, function(){if(audio.isPlaying()) audio.volumeUp()}, () => true);
+    addKeyDownHandler(Keys.GAMEPAD_6, Actions.VOLUME_DOWN, true, true, function(){if(audio.isPlaying()) audio.volumeDown()}, () => true);
+
     // Menu Navigation & Interaction Keys
-    addKeyDownHandler(Keys.ESC, Actions.EXIT, true, function(){_INPUT_menu.backButton ? _INPUT_menu.backButton.onclick():0; return true}, isInMenu);
-    addKeyDownHandler(Keys.ENTER, Actions.ENTER, true, function(){_INPUT_menu.clickCurrentOption()}, isInMenu);
-    addKeyDownHandler(Keys.NUM_ENTER, Actions.ENTER, true, function(){_INPUT_menu.clickCurrentOption()}, isInMenu);
-    addKeyDownHandler(Keys.UP, Actions.MENU_UP, true, function(){_INPUT_menu.selectPrevOption()}, isMenuKeysAllowed);
-    addKeyDownHandler(Keys.DOWN, Actions.MENU_DOWN, true, function(){_INPUT_menu.selectNextOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.ESC, Actions.EXIT, false, true, function(){_INPUT_menu.backButton ? _INPUT_menu.backButton.onclick():0; return true}, isInMenu);
+    addKeyDownHandler(Keys.GAMEPAD_2, Actions.EXIT, true, true, function(){_INPUT_menu.backButton ? _INPUT_menu.backButton.onclick():0; return true}, isInMenu);
+    
+    addKeyDownHandler(Keys.ENTER, Actions.ENTER, false, true, function(){_INPUT_menu.clickCurrentOption()}, isInMenu);
+    addKeyDownHandler(Keys.NUM_ENTER, Actions.ENTER, false, true, function(){_INPUT_menu.clickCurrentOption()}, isInMenu);
+    addKeyDownHandler(Keys.GAMEPAD_5, Actions.ENTER, true, true, function(){_INPUT_menu.clickCurrentOption()}, isInMenu);
+   
+    addKeyDownHandler(Keys.UP, Actions.MENU_UP, false, true, function(){_INPUT_menu.selectPrevOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.DOWN, Actions.MENU_DOWN, false, true, function(){_INPUT_menu.selectNextOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.RIGHT, Actions.MENU_RIGHT, false, true, function(){_INPUT_menu.selectNextTitleOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.LEFT, Actions.MENU_LEFT, false, true, function(){_INPUT_menu.selectPrevTitleOption()}, isMenuKeysAllowed);
+   
+    addKeyDownHandler(Keys.W, Actions.MENU_UP, false, true, function(){_INPUT_menu.selectPrevOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.A, Actions.MENU_LEFT, false, true, function(){_INPUT_menu.selectPrevTitleOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.S, Actions.MENU_DOWN, false, true, function(){_INPUT_menu.selectNextOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.D, Actions.MENU_RIGHT, false, true, function(){_INPUT_menu.selectNextTitleOption()}, isMenuKeysAllowed);
+
+    addKeyDownHandler(Keys.JOYSTICK_UP, Actions.MENU_UP, true, true, function(){_INPUT_menu.selectPrevOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.JOYSTICK_LEFT, Actions.MENU_LEFT, true, true, function(){_INPUT_menu.selectPrevTitleOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.JOYSTICK_DOWN, Actions.MENU_DOWN, true, true, function(){_INPUT_menu.selectNextOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.JOYSTICK_RIGHT, Actions.MENU_RIGHT, true, true, function(){_INPUT_menu.selectNextTitleOption()}, isMenuKeysAllowed);
 
     // Open In-Game Menu
-    addKeyDownHandler(Keys.ESC, Actions.MENU_CLOSE, true, function(){inGameMenu.getMenuButton().onclick(); return true}, isInGameMenuButtonClickable);
-    addKeyDownHandler(Keys.SPACE, Actions.MENU_CLOSE, true, function(){inGameMenu.getMenuButton().onclick(); return true}, isInGameMenuButtonClickable);
+    addKeyDownHandler(Keys.ESC, Actions.MENU_OPEN, false, true, function(){inGameMenu.getMenuButton().onclick(); return true}, isInGameMenuButtonClickable);
+    addKeyDownHandler(Keys.SPACE, Actions.MENU_OPEN, false, true, function(){inGameMenu.getMenuButton().onclick(); return true}, isInGameMenuButtonClickable);
+    addKeyDownHandler(Keys.GAMEPAD_2, Actions.MENU_OPEN, true, true, function(){inGameMenu.getMenuButton().onclick(); return true}, isInGameMenuButtonClickable);
 
     // Move Player
     var isPlayState = function() { return state == learnState || state == newGameState || state == playState || state == readyNewState || state == readyRestartState; };
    
     // Arrow Key Movement
-    addKeyDownHandler(Keys.LEFT, Actions.LEFT, false, function(){player.setInputDir(DIR_LEFT)}, isPlayState);
-    addKeyDownHandler(Keys.RIGHT, Actions.RIGHT, false, function(){player.setInputDir(DIR_RIGHT)}, isPlayState);
-    addKeyDownHandler(Keys.UP, Actions.UP, false, function(){player.setInputDir(DIR_UP)}, isPlayState);
-    addKeyDownHandler(Keys.DOWN, Actions.DOWN, false, function(){player.setInputDir(DIR_DOWN)}, isPlayState);
+    addKeyDownHandler(Keys.LEFT, Actions.LEFT,false, false, function(){player.setInputDir(DIR_LEFT)}, isPlayState);
+    addKeyDownHandler(Keys.RIGHT, Actions.RIGHT, false, false, function(){player.setInputDir(DIR_RIGHT)}, isPlayState);
+    addKeyDownHandler(Keys.UP, Actions.UP, false, false, function(){player.setInputDir(DIR_UP)}, isPlayState);
+    addKeyDownHandler(Keys.DOWN, Actions.DOWN, false, false, function(){player.setInputDir(DIR_DOWN)}, isPlayState);
 
     // WASD Movement
-    addKeyDownHandler(Keys.A, Actions.LEFT, false, function(){player.setInputDir(DIR_LEFT)}, isPlayState);
-    addKeyDownHandler(Keys.D, Actions.RIGHT, false, function(){player.setInputDir(DIR_RIGHT)}, isPlayState);
-    addKeyDownHandler(Keys.W, Actions.UP, false, function(){player.setInputDir(DIR_UP)}, isPlayState);
-    addKeyDownHandler(Keys.S, Actions.DOWN, false, function(){player.setInputDir(DIR_DOWN)}, isPlayState);
+    addKeyDownHandler(Keys.W, Actions.UP, false, false, function(){player.setInputDir(DIR_UP)}, isPlayState);
+    addKeyDownHandler(Keys.A, Actions.LEFT, false, false, function(){player.setInputDir(DIR_LEFT)}, isPlayState);
+    addKeyDownHandler(Keys.S, Actions.DOWN, false, false, function(){player.setInputDir(DIR_DOWN)}, isPlayState);
+    addKeyDownHandler(Keys.D, Actions.RIGHT, false, false, function(){player.setInputDir(DIR_RIGHT)}, isPlayState);
+
+    // Joystick Player Movement
+    addKeyDownHandler(Keys.JOYSTICK_UP, Actions.UP, true, false, function(){player.setInputDir(DIR_UP)}, isPlayState);
+    addKeyDownHandler(Keys.JOYSTICK_LEFT, Actions.LEFT, true, false, function(){player.setInputDir(DIR_LEFT)}, isPlayState);
+    addKeyDownHandler(Keys.JOYSTICK_DOWN, Actions.DOWN, true, false, function(){player.setInputDir(DIR_DOWN)}, isPlayState);
+    addKeyDownHandler(Keys.JOYSTICK_RIGHT, Actions.RIGHT, true, false, function(){player.setInputDir(DIR_RIGHT)}, isPlayState);
 })();
 
 var initSwipe = function() {
@@ -11458,18 +11426,16 @@ var initSwipe = function() {
 
                 // register direction
                 if (Math.abs(dx) >= Math.abs(dy)) {
-                    //player.setInputDir(dx>0 ? DIR_RIGHT : DIR_LEFT);
                     const rightInput = new Input(Actions.RIGHT, InputSources.SWIPE, true, false);
                     const leftInput = new Input(Actions.LEFT, InputSources.SWIPE, true, false);
 
                     inputQueue.enqueue(dx > 0 ? rightInput : leftInput);
                 }
                 else {
-                    //player.setInputDir(dy>0 ? DIR_DOWN : DIR_UP);
                     const upInput = new Input(Actions.UP, InputSources.SWIPE, true, false);
                     const downInput = new Input(Actions.DOWN, InputSources.SWIPE, true, false);
 
-                    inputQueue.enqueue(dx > 0 ? downInput : upInput);
+                    inputQueue.enqueue(dy > 0 ? downInput : upInput);
                 }
             }
         }
@@ -11500,31 +11466,151 @@ var initSwipe = function() {
     document.ontouchcancel = touchCancel;
 };
 
-const gamepads = {};
-
 const gamepadConnectionHandler = (event, connected) => {
     // Code from MDN: https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API/Using_the_Gamepad_API
     const gamepad = event.gamepad;
-  
+
     if (connected) {
-      gamepads[gamepad.index] = gamepad;
+        gamepads[gamepad.index] = gamepad;
+        console.log("Gamepad connected from index %d: %s", gamepad.index, gamepad.id);
     } else {
       delete gamepads[gamepad.index];
+        console.log("Gamepad disconnnected from index %d: %s", gamepad.index, gamepad.id);
     }
 }
 
 const initGamepad = () => {
-    window.addEventListener("gamepadconnected", (e) => gamepadHandler(e, true), false);
-    window.addEventListener("gamepaddisconnected", (e) => gamepadHandler(e, true), false); 
+    window.addEventListener("gamepadconnected", (e) => gamepadConnectionHandler(e, true), false);
+    window.addEventListener("gamepaddisconnected", (e) => gamepadConnectionHandler(e, false), false); 
+}
+
+// Defines the 'size' of a deadzone for analog axis. If the absolute value of the axis
+// is less than the deadzone, the input is ignored
+const AXIS_DEADZONE = 0.75;
+
+// If an axis is above this, it will be ignored.
+const AXIS_MAX = 1;
+
+
+// Buttons
+/// (top console)
+/// 0, 1, 2
+/// 3, 4, 5
+/// (front panel)
+/// 6, 7, 8, 9 (inside case)
+
+// Axis
+// Up : axes[1] = -1
+// Down: axes[1] = 1
+// Left: axes[0] = -1
+// Right: axes[0] = 1
+
+// Tracks previous state of controller axis and buttons, allowing for 'keyup' and 'keydown' like functionality 
+const currentGamepadInputState = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    0: false,
+    1: false,
+    2: false,
+    3: false,
+    4: false,
+    5: false,
+    6: false,
+    7: false,
+    8: false,
+    9: false
+}
+
+const debounceControllerInput = (key, input) => {
+    if(currentGamepadInputState[key] !== input) {
+        currentGamepadInputState[key] = input;
+        return true;
+    }
+    return false;
 }
 
 const checkGamepad = (gamepad) => {
+    if(typeof gamepad === "object" && Array.isArray(gamepad.buttons)) {
+        gamepad.buttons.forEach((button, index) => { 
+            if(debounceControllerInput(index, button.pressed)) {
+                window.dispatchEvent(new KeyboardEvent(button.pressed ?  "keydown" : "keyup", {
+                        key: `gamepad_${index}`,
+                        code: `GamepadButton${index}`,
+                        keyCode: `gamepad_${index}`
+                    }
+                ));
+            }
+        });
+        
+        gamepad.axes.forEach((axis, index) => {
+        let up,down,left,right;
+            if(index === 0) {
+                // X
+                if(axis >= AXIS_DEADZONE && axis <= AXIS_MAX) {
+                    right = true;
+                    left = false;
+                } else if(axis <= -AXIS_DEADZONE && axis >= -AXIS_MAX) {
+                    left = true;
+                    right = false;
+                } else {
+                    left = false;
+                    right = false;
+                }
 
+                if(debounceControllerInput("right", right))
+                    window.dispatchEvent(new KeyboardEvent(right ?  "keydown" : "keyup", {
+                        key: "right",
+                        code: Keys.JOYSTICK_RIGHT,
+                        keyCode: "right"
+                    }
+                ));
+
+                if(debounceControllerInput("left", left))
+                    window.dispatchEvent(new KeyboardEvent(left ?  "keydown" : "keyup", {
+                    key: "left",
+                    code: Keys.JOYSTICK_LEFT,
+                    keyCode: "left"
+                    }
+                ));
+            } 
+            else if(index === 1) {
+                // Y
+                if(axis >= AXIS_DEADZONE && axis <= AXIS_MAX) {
+                    down = true;
+                    up = false;
+                } else if(axis <= -AXIS_DEADZONE && axis >= -AXIS_MAX) {
+                    up = true;
+                    down = false;
+                } else {
+                    up = false;
+                    down = false;
+                }
+
+                if(debounceControllerInput("down", down))
+                    window.dispatchEvent(new KeyboardEvent(down ?  "keydown" : "keyup", {
+                    key: "down",
+                    code: Keys.JOYSTICK_DOWN,
+                    keyCode: "down"
+                    }
+                ));
+
+                if(debounceControllerInput("up", up))
+                    window.dispatchEvent(new KeyboardEvent(up ?  "keydown" : "keyup", {
+                    key: "up",
+                    code: Keys.JOYSTICK_UP,
+                    keyCode: "up"
+                    }
+                ));
+            }
+        })
+    }
 }
 
-const checkGamepads = (gamepads) => {
+const checkGamepads = () => {
     if(gamepads && Object.keys(gamepads).length > 0) {
-        gamepads.array.forEach((gamepad) => checkGamepad(gamepad));
+        Object.values(gamepads).forEach((gamepad) => checkGamepad(gamepad));
     }
 }
 //@line 1 "src/cutscenes.js"
@@ -11596,7 +11682,7 @@ var tubieManCutscene1 = newChildObject(scriptState, {
                 renderer.blitMap();
                 renderer.beginMapClip();
                 renderer.drawPlayer();
-                renderer.drawGhost(enemy1);
+                renderer.drawEnemy(enemy1);
                 renderer.endMapClip();
             },
         },
@@ -11643,7 +11729,7 @@ var tubieManCutscene1 = newChildObject(scriptState, {
                     ctx.translate(x,y);
                     var s = 16/6;
                     ctx.scale(s,s);
-                    drawCookie(ctx,0,0);
+                    renderer.drawEnemy(enemy1);
                     ctx.restore();
                 });
                 renderer.endMapClip();
@@ -11679,7 +11765,7 @@ var tubieManCutscene2 = (function() {
     */
 
     // create new players pac and mspac for this scene
-    var pac = new Ghost();
+    var pac = new Enemy();
     pac.scared = true;
     pac.mode = GHOST_OUTSIDE;
     var mspac = new Player();
@@ -11705,8 +11791,8 @@ var tubieManCutscene2 = (function() {
             drawPlayer(ctx,pac);
             drawPlayer(ctx,mspac);
         });
-        renderer.drawGhost(enemy3);
-        renderer.drawGhost(enemy2);
+        renderer.drawEnemy(enemy3);
+        renderer.drawEnemy(enemy2);
         renderer.endMapClip();
     };
 
@@ -11983,10 +12069,10 @@ var tubieManCutscene2 = (function() {
                             drawPlayer(ctx,mspac);
                         });
                         if (enemy3BounceFrame < enemy3BounceFrameLen) {
-                            renderer.drawGhost(enemy3);
+                            renderer.drawEnemy(enemy3);
                         }
                         if (enemy2BounceFrame < enemy2BounceFrameLen) {
-                            renderer.drawGhost(enemy2);
+                            renderer.drawEnemy(enemy2);
                         }
                         if (playerMode == PLAYER_MEET) {
                             renderer.renderFunc(function(ctx) {
@@ -12094,102 +12180,6 @@ player.startPixel = {
     y: 26*tileSize + midTile.y,
 };
 
-// Learning Map
-var mapLearn = new Map(28, 36, (
-    "____________________________" +
-    "____________________________" +
-    "____________________________" +
-    "____________________________" +
-    "____________________________" +
-    "____________________________" +
-    "____________________________" +
-    "____________________________" +
-    "____________________________" +
-    "__||||||||||||||||||||||||__" +
-    "__|                      |__" +
-    "__| ||||| |||||||| ||||| |__" +
-    "__| ||||| |||||||| ||||| |__" +
-    "__| ||    ||    ||    || |__" +
-    "__| || || || || || || || |__" +
-    "||| || || || || || || || |||" +
-    "       ||    ||    ||       " +
-    "||| ||||| |||||||| ||||| |||" +
-    "__| ||||| |||||||| ||||| |__" +
-    "__|    ||          ||    |__" +
-    "__| || || |||||||| || || |__" +
-    "__| || || |||||||| || || |__" +
-    "__| ||    ||    ||    || |__" +
-    "__| || || || || || || || |__" +
-    "||| || || || || || || || |||" +
-    "       ||    ||    ||       " +
-    "||| |||||||| || |||||||| |||" +
-    "__| |||||||| || |||||||| |__" +
-    "__|                      |__" +
-    "__||||||||||||||||||||||||__" +
-    "____________________________" +
-    "____________________________" +
-    "____________________________" +
-    "____________________________" +
-    "____________________________" +
-    "____________________________"));
-
-mapLearn.name = "Pac-Man";
-mapLearn.wallStrokeColor = "#47b897"; // from Pac-Man Plus
-mapLearn.wallFillColor = "#000";
-mapLearn.pelletColor = "#ffb8ae";
-mapLearn.shouldDrawMapOnly = true;
-
-// Original Pac-Man map
-var mapPacman = new Map(28, 36, (
-    "____________________________" +
-    "____________________________" +
-    "____________________________" +
-    "||||||||||||||||||||||||||||" +
-    "|............||............|" +
-    "|.||||.|||||.||.|||||.||||.|" +
-    "|o||||.|||||.||.|||||.||||o|" +
-    "|.||||.|||||.||.|||||.||||.|" +
-    "|..........................|" +
-    "|.||||.||.||||||||.||.||||.|" +
-    "|.||||.||.||||||||.||.||||.|" +
-    "|......||....||....||......|" +
-    "||||||.||||| || |||||.||||||" +
-    "_____|.||||| || |||||.|_____" +
-    "_____|.||          ||.|_____" +
-    "_____|.|| |||--||| ||.|_____" +
-    "||||||.|| |______| ||.||||||" +
-    "      .   |______|   .      " +
-    "||||||.|| |______| ||.||||||" +
-    "_____|.|| |||||||| ||.|_____" +
-    "_____|.||          ||.|_____" +
-    "_____|.|| |||||||| ||.|_____" +
-    "||||||.|| |||||||| ||.||||||" +
-    "|............||............|" +
-    "|.||||.|||||.||.|||||.||||.|" +
-    "|.||||.|||||.||.|||||.||||.|" +
-    "|o..||.......  .......||..o|" +
-    "|||.||.||.||||||||.||.||.|||" +
-    "|||.||.||.||||||||.||.||.|||" +
-    "|......||....||....||......|" +
-    "|.||||||||||.||.||||||||||.|" +
-    "|.||||||||||.||.||||||||||.|" +
-    "|..........................|" +
-    "||||||||||||||||||||||||||||" +
-    "____________________________" +
-    "____________________________"));
-
-mapPacman.name = "Pac-Man";
-//mapPacman.wallStrokeColor = "#47b897"; // from Pac-Man Plus
-mapPacman.wallStrokeColor = "#2121ff"; // from original
-mapPacman.wallFillColor = "#000";
-mapPacman.pelletColor = "#ffb8ae";
-mapPacman.constrainGhostTurns = function(tile,openTiles) {
-    // prevent ghost from turning up at these tiles
-    if ((tile.x == 12 || tile.x == 15) && (tile.y == 14 || tile.y == 26)) {
-        openTiles[DIR_UP] = false;
-    }
-};
-
 // Levels are grouped into "acts."
 // In Ms. Pac-Man (and Cookie-Man) a map only changes after the end of an act.
 // The levels within an act progress in difficulty.
@@ -12232,21 +12222,21 @@ var getActRange = function(act) {
 
 var getCookieActColor = function(act) {
     var colors = [
-        "#359c9c", "#80d8fc", // turqoise
-        "#c2b853", "#e6f1e7", // yellow
-        "#86669c", "#f2c1db", // purple
-        "#ed0a04", "#e8b4cd", // red
-        "#2067c1", "#63e0b6", // blue
-        "#c55994", "#fd61c3", // pink
-        "#12bc76", "#b4e671", // green
-        "#5036d9", "#618dd4", // violet
-        "#939473", "#fdfdf4", // grey
+        "#359C9C", "#71D6D6", // turqoise
+        "#FFBC38", "#FFEECE", // orange
+        "#9529C6", "#B591C6", // purple
+        "#48CE57", "#A7E8AE", // green
+        "#F407B5", "#F473D2", // magenta
+        "#DAD600", "#E9FF70", // yellow
+        "#2FC2EF", "#AEE2F2", // light blue
+        "#404040", "#C0C0C0", // gray
+        "#911712", "#CE8E8C", // sad red
     ];
     var i = ((act-1)*2) % colors.length;
     return {
         wallFillColor: colors[i],
         wallStrokeColor: colors[i+1],
-        pelletColor: "#ffb8ae",
+        pelletColor: "#FFB800",
     };
 };
 
@@ -12261,306 +12251,7 @@ var setNextTubieManMap = function() {
         map.wallStrokeColor = colors.wallStrokeColor;
         map.pelletColor = colors.pelletColor;
     }
-};
-
-// Ms. Pac-Man map 1
-
-var getMsPacActColor = function(act) {
-    act -= 1;
-    var mapIndex = (act <= 1) ? act : (act%2)+2;
-    var maps = [mapMsPacman1, mapMsPacman2, mapMsPacman3, mapMsPacman4];
-    var map = maps[mapIndex];
-    if (act >= 4) {
-        return [
-            {
-                wallFillColor: "#ffb8ff",
-                wallStrokeColor: "#FFFF00",
-                pelletColor: "#00ffff",
-            },
-            {
-                wallFillColor: "#FFB8AE",
-                wallStrokeColor: "#FF0000",
-                pelletColor: "#dedeff",
-            },
-            {
-                wallFillColor: "#de9751",
-                wallStrokeColor: "#dedeff",
-                pelletColor: "#ff0000",
-            },
-            {
-                wallFillColor: "#2121ff",
-                wallStrokeColor: "#ffb851",
-                pelletColor: "#dedeff",
-            },
-        ][act%4];
-    }
-    else {
-        return {
-            wallFillColor: map.wallFillColor,
-            wallStrokeColor: map.wallStrokeColor,
-            pelletColor: map.pelletColor,
-        };
-    }
-};
-
-var setNextMsPacMap = function() {
-    var maps = [mapMsPacman1, mapMsPacman2, mapMsPacman3, mapMsPacman4];
-
-    // The third and fourth maps repeat indefinitely after the second map.
-    // (i.e. act1=map1, act2=map2, act3=map3, act4=map4, act5=map3, act6=map4, ...)
-    var act = getLevelAct(level)-1;
-    var mapIndex = (act <= 1) ? act : (act%2)+2;
-    map = maps[mapIndex];
-    if (act >= 4) {
-        var colors = getMsPacActColor(act+1);
-        map.wallFillColor = colors.wallFillColor;
-        map.wallStrokeColor = colors.wallStrokeColor;
-        map.pelletColor = colors.pelletColor;
-    }
-};
-
-var mapMsPacman1 = new Map(28, 36, (
-    "____________________________" +
-    "____________________________" +
-    "____________________________" +
-    "||||||||||||||||||||||||||||" +
-    "|......||..........||......|" +
-    "|o||||.||.||||||||.||.||||o|" +
-    "|.||||.||.||||||||.||.||||.|" +
-    "|..........................|" +
-    "|||.||.|||||.||.|||||.||.|||" +
-    "__|.||.|||||.||.|||||.||.|__" +
-    "|||.||.|||||.||.|||||.||.|||" +
-    "   .||.......||.......||.   " +
-    "|||.||||| |||||||| |||||.|||" +
-    "__|.||||| |||||||| |||||.|__" +
-    "__|.                    .|__" +
-    "__|.||||| |||--||| |||||.|__" +
-    "__|.||||| |______| |||||.|__" +
-    "__|.||    |______|    ||.|__" +
-    "__|.|| || |______| || ||.|__" +
-    "|||.|| || |||||||| || ||.|||" +
-    "   .   ||          ||   .   " +
-    "|||.|||||||| || ||||||||.|||" +
-    "__|.|||||||| || ||||||||.|__" +
-    "__|.......   ||   .......|__" +
-    "__|.|||||.||||||||.|||||.|__" +
-    "|||.|||||.||||||||.|||||.|||" +
-    "|............  ............|" +
-    "|.||||.|||||.||.|||||.||||.|" +
-    "|.||||.|||||.||.|||||.||||.|" +
-    "|.||||.||....||....||.||||.|" +
-    "|o||||.||.||||||||.||.||||o|" +
-    "|.||||.||.||||||||.||.||||.|" +
-    "|..........................|" +
-    "||||||||||||||||||||||||||||" +
-    "____________________________" +
-    "____________________________"));
-
-mapMsPacman1.name = "Ms. Pac-Man 1";
-mapMsPacman1.wallFillColor = "#FFB8AE";
-mapMsPacman1.wallStrokeColor = "#FF0000";
-mapMsPacman1.pelletColor = "#dedeff";
-mapMsPacman1.fruitPaths = {
-             "entrances": [
-                 { "start": { "y": 164, "x": 228 }, "path": "<<<<vvv<<<<<<<<<^^^" }, 
-                 { "start": { "y": 164, "x": -4 }, "path": ">>>>vvvvvv>>>>>>>>>>>>>>>^^^<<<^^^" }, 
-                 { "start": { "y": 92, "x": -4 }, "path": ">>>>^^^^>>>vvvv>>>vvv>>>>>>>>>vvvvvv<<<" }, 
-                 { "start": { "y": 92, "x": 228 }, "path": "<<<<vvvvvvvvv<<<^^^<<<vvv<<<" }
-             ], 
-             "exits": [
-                 { "path": "<vvv>>>>>>>>>^^^>>>>" }, 
-                 { "path": "<<<<vvv<<<<<<<<<^^^<<<<" }, 
-                 { "path": "<<<<<<<^^^^^^<<<<<<^^^<<<<" }, 
-                 { "path": "<vvv>>>>>>>>>^^^^^^^^^^^^>>>>" }
-             ]
-         };
-
-// Ms. Pac-Man map 2
-
-var mapMsPacman2 = new Map(28, 36, (
-    "____________________________" +
-    "____________________________" +
-    "____________________________" +
-    "||||||||||||||||||||||||||||" +
-    "       ||..........||       " +
-    "|||||| ||.||||||||.|| ||||||" +
-    "|||||| ||.||||||||.|| ||||||" +
-    "|o...........||...........o|" +
-    "|.|||||||.||.||.||.|||||||.|" +
-    "|.|||||||.||.||.||.|||||||.|" +
-    "|.||......||.||.||......||.|" +
-    "|.||.|||| ||....|| ||||.||.|" +
-    "|.||.|||| |||||||| ||||.||.|" +
-    "|......|| |||||||| ||......|" +
-    "||||||.||          ||.||||||" +
-    "||||||.|| |||--||| ||.||||||" +
-    "|......|| |______| ||......|" +
-    "|.||||.|| |______| ||.||||.|" +
-    "|.||||.   |______|   .||||.|" +
-    "|...||.|| |||||||| ||.||...|" +
-    "|||.||.||          ||.||.|||" +
-    "__|.||.|||| |||| ||||.||.|__" +
-    "__|.||.|||| |||| ||||.||.|__" +
-    "__|.........||||.........|__" +
-    "__|.|||||||.||||.|||||||.|__" +
-    "|||.|||||||.||||.|||||||.|||" +
-    "   ....||...    ...||....   " +
-    "|||.||.||.||||||||.||.||.|||" +
-    "|||.||.||.||||||||.||.||.|||" +
-    "|o..||.......||.......||..o|" +
-    "|.||||.|||||.||.|||||.||||.|" +
-    "|.||||.|||||.||.|||||.||||.|" +
-    "|..........................|" +
-    "||||||||||||||||||||||||||||" +
-    "____________________________" +
-    "____________________________"));
-
-mapMsPacman2.name = "Ms. Pac-Man 2";
-mapMsPacman2.wallFillColor = "#47b8ff";
-mapMsPacman2.wallStrokeColor = "#dedeff";
-mapMsPacman2.pelletColor = "#ffff00";
-mapMsPacman2.fruitPaths = {
-             "entrances": [
-                 { "start": { "y": 212, "x": 228 }, "path": "<<<<^^^<<<<<<<<^^^<" }, 
-                 { "start": { "y": 212, "x": -4 }, "path": ">>>>^^^>>>>>>>>vvv>>>>>^^^^^^<" }, 
-                 { "start": { "y": 36, "x": -4 }, "path": ">>>>>>>vvv>>>vvvvvvv>>>>>>>>>vvvvvv<<<" }, 
-                 { "start": { "y": 36, "x": 228 }, "path": "<<<<<<<vvv<<<vvvvvvvvvvvvv<<<" }
-             ], 
-             "exits": [
-                 { "path": "vvv>>>>>>>>vvv>>>>" }, 
-                 { "path": "vvvvvv<<<<<^^^<<<<<<<<vvv<<<<" }, 
-                 { "path": "<<<<<<<^^^^^^^^^^^^^<<<^^^<<<<<<<" }, 
-                 { "path": "vvv>>>>>^^^^^^^^^^>>>>>^^^^^^<<<<<^^^>>>>>>>" }
-             ]
-         };
-
-// Ms. Pac-Man map 3
-
-var mapMsPacman3 = new Map(28, 36, (
-    "____________________________" +
-    "____________________________" +
-    "____________________________" +
-    "||||||||||||||||||||||||||||" +
-    "|.........||....||.........|" +
-    "|.|||||||.||.||.||.|||||||.|" +
-    "|o|||||||.||.||.||.|||||||o|" +
-    "|.||.........||.........||.|" +
-    "|.||.||.||||.||.||||.||.||.|" +
-    "|....||.||||.||.||||.||....|" +
-    "||||.||.||||.||.||||.||.||||" +
-    "||||.||..............||.||||" +
-    " ....|||| |||||||| ||||.... " +
-    "|.|| |||| |||||||| |||| ||.|" +
-    "|.||                    ||.|" +
-    "|.|||| || |||--||| || ||||.|" +
-    "|.|||| || |______| || ||||.|" +
-    "|.     || |______| ||     .|" +
-    "|.|| |||| |______| |||| ||.|" +
-    "|.|| |||| |||||||| |||| ||.|" +
-    "|.||                    ||.|" +
-    "|.|||| ||||| || ||||| ||||.|" +
-    "|.|||| ||||| || ||||| ||||.|" +
-    "|......||....||....||......|" +
-    "|||.||.||.||||||||.||.||.|||" +
-    "|||.||.||.||||||||.||.||.|||" +
-    "|o..||.......  .......||..o|" +
-    "|.||||.|||||.||.|||||.||||.|" +
-    "|.||||.|||||.||.|||||.||||.|" +
-    "|......||....||....||......|" +
-    "|.||||.||.||||||||.||.||||.|" +
-    "|.||||.||.||||||||.||.||||.|" +
-    "|......||..........||......|" +
-    "||||||||||||||||||||||||||||" +
-    "____________________________" +
-    "____________________________"));
-
-mapMsPacman3.name = "Ms. Pac-Man 3";
-mapMsPacman3.wallFillColor = "#de9751";
-mapMsPacman3.wallStrokeColor = "#dedeff";
-mapMsPacman3.pelletColor = "#ff0000";
-mapMsPacman3.fruitPaths = {
-             "entrances": [
-                 { "start": { "y": 100, "x": 228 }, "path": "<<<<<vv<<<<<vvvvvv<<<" }, 
-                 { "start": { "y": 100, "x": -4 }, "path": ">>>>>vv>>>>>>>>>>>>>>vvvvvv<<<" }, 
-                 { "start": { "y": 100, "x": -4 }, "path": ">>>>>vv>>>>>>>>>>>>>>vvvvvv<<<" }, 
-                 { "start": { "y": 100, "x": 228 }, "path": "<<vvvvv<<<vvv<<<<<<<<" }
-             ], 
-             "exits": [
-                 { "path": "<vvv>>>vvv>>>^^^>>>>>^^^^^^^^^^^>>" }, 
-                 { "path": "<<<<vvv<<<vvv<<<^^^<<<<<^^^^^^^^^^^<<" }, 
-                 { "path": "<<<<vvv<<<vvv<<<^^^<<<<<^^^^^^^^^^^<<" }, 
-                 { "path": "<vvv>>>vvv>>>^^^^^^<<<^^^^^^>>>>>^^>>>>>" }
-             ]
-         };
-mapMsPacman3.constrainGhostTurns = function(tile,openTiles,dirEnum) {
-    // prevent ghost from turning down when exiting tunnels
-    if (tile.y == 12) {
-        if ((tile.x == 1 && dirEnum == DIR_RIGHT) || (tile.x == 26 && dirEnum == DIR_LEFT)) {
-            openTiles[DIR_DOWN] = false;
-        }
-    }
-};
-
-// Ms. Pac-Man map 4
-
-var mapMsPacman4 = new Map(28, 36, (
-    "____________________________" +
-    "____________________________" +
-    "____________________________" +
-    "||||||||||||||||||||||||||||" +
-    "|..........................|" +
-    "|.||.||||.||||||||.||||.||.|" +
-    "|o||.||||.||||||||.||||.||o|" +
-    "|.||.||||.||....||.||||.||.|" +
-    "|.||......||.||.||......||.|" +
-    "|.||||.||.||.||.||.||.||||.|" +
-    "|.||||.||.||.||.||.||.||||.|" +
-    "|......||....||....||......|" +
-    "|||.|||||||| || ||||||||.|||" +
-    "__|.|||||||| || ||||||||.|__" +
-    "__|....||          ||....|__" +
-    "||| ||.|| |||--||| ||.|| |||" +
-    "    ||.|| |______| ||.||    " +
-    "||||||.   |______|   .||||||" +
-    "||||||.|| |______| ||.||||||" +
-    "    ||.|| |||||||| ||.||    " +
-    "||| ||.||          ||.|| |||" +
-    "__|....||||| || |||||....|__" +
-    "__|.||.||||| || |||||.||.|__" +
-    "__|.||....   ||   ....||.|__" +
-    "__|.|||||.|| || ||.|||||.|__" +
-    "|||.|||||.|| || ||.|||||.|||" +
-    "|.........||    ||.........|" +
-    "|.||||.||.||||||||.||.||||.|" +
-    "|.||||.||.||||||||.||.||||.|" +
-    "|.||...||..........||...||.|" +
-    "|o||.|||||||.||.|||||||.||o|" +
-    "|.||.|||||||.||.|||||||.||.|" +
-    "|............||............|" +
-    "||||||||||||||||||||||||||||" +
-    "____________________________" +
-    "____________________________"));
-
-mapMsPacman4.name = "Ms. Pac-Man 4";
-mapMsPacman4.wallFillColor = "#2121ff";
-mapMsPacman4.wallStrokeColor = "#ffb851";
-mapMsPacman4.pelletColor = "#dedeff";
-mapMsPacman4.fruitPaths = {
-             "entrances": [
-                 { "start": { "y": 156, "x": 228 }, "path": "<<<<vv<<<vv<<<<<<^^^" }, 
-                 { "start": { "y": 156, "x": -4 }, "path": ">>>>vv>>>vv>>>>>>vvv>>>^^^^^^" }, 
-                 { "start": { "y": 132, "x": -4 }, "path": ">>>>^^^^^>>>^^^>>>vvv>>>vvv>>>>>>vvvvvv<<<" }, 
-                 { "start": { "y": 132, "x": 228 }, "path": "<<<<^^<<<vvv<<<vvv<<<" }
-             ], 
-             "exits": [
-                 { "path": "<vvv>>>>>>^^>>>^^>>>>" }, 
-                 { "path": "<<<<vvv<<<<<<^^<<<^^<<<<" }, 
-                 { "path": "<<<<<<<^^^<<<^^^<<<vv<<<<" }, 
-                 { "path": "<vvv>>>>>>^^^^^^^^^>>>vv>>>>" }
-             ]
-         };
-//@line 1 "src/vcr.js"
+};//@line 1 "src/vcr.js"
 //////////////////////////////////////////////////////////////////////////////////////
 // VCR
 // This coordinates the recording, rewinding, and replaying of the game state.
@@ -12763,7 +12454,7 @@ var vcr = (function() {
         seekUpBtn.disable();
         seekDownBtn.disable();
         seekToggleBtn.setIcon(function(ctx,x,y,frame) {
-            drawRewindSymbol(ctx,x,y,"#FFF");
+            drawStraightenPump(ctx,x,y,"#FFF");
         });
         seekToggleBtn.setText();
     };
@@ -12800,14 +12491,14 @@ var vcr = (function() {
             nextSpeed(1);
         });
     seekUpBtn.setIcon(function(ctx,x,y,frame) {
-        drawUpSymbol(ctx,x,y,"#FFF");
+        drawStraightenPump(ctx,x,y,"#FFF");
     });
     var seekDownBtn = new Button(x,y+h+pad,w,h,
         function() {
             nextSpeed(-1);
         });
     seekDownBtn.setIcon(function(ctx,x,y,frame) {
-        drawDownSymbol(ctx,x,y,"#FFF");
+        drawStraightenPumpmbol(ctx,x,y,"#FFF");
     });
     var seekToggleBtn = new ToggleButton(x,y,w,h,
         function() {
@@ -12817,9 +12508,9 @@ var vcr = (function() {
             on ? startSeeking() : startRecording();
         });
     seekToggleBtn.setIcon(function(ctx,x,y,frame) {
-        drawRewindSymbol(ctx,x,y,"#FFF");
+        drawStraightenPump(ctx,x,y,"#FFF");
     });
-    seekToggleBtn.setFont((tileSize-1)+"px ArcadeR", "#FFF");
+    seekToggleBtn.setFont((tileSize-1)+"px 'Press Start 2P'", "#FFF");
     var slowBtn = new ToggleButton(-w-pad-1,y,w,h,
         function() {
             return executive.getFramePeriod() == 1000/15;
@@ -12978,23 +12669,9 @@ window.addEventListener("load", function() {
     initRenderer();
     atlas.create();
     initSwipe();
+	initGamepad();
 	var anchor = window.location.hash.substring(1);
-	if (anchor == "learn") {
-		switchState(learnState);
-	}
-	else if (anchor == "cheat_pac" || anchor == "cheat_mspac") {
-		//gameMode = (anchor == "cheat_pac") ? GAME_PACMAN : GAME_MSPACMAN;
-		gameMode = GAME_TUBIE_MAN;
-		practiceMode = true;
-        switchState(newGameState);
-		for (var i=0; i<4; i++) {
-			ghosts[i].isDrawTarget = true;
-			ghosts[i].isDrawPath = true;
-		}
-	}
-	else {
-		switchState(preNewGameState);
-	}
+	switchState(preNewGameState)
     executive.init();
 });
 })();

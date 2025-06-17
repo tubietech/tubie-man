@@ -4,25 +4,55 @@
 // Draws everything in the game using swappable renderers
 // to enable to different front-end displays for Pac-Man.
 
-// list of available renderers
-var renderer_list;
-
 // current renderer
-var renderer;
+let renderer;
 
 var renderScale;
 
-var mapMargin = 4*tileSize; // margin between the map and the screen
-var mapPad = tileSize/8; // padding between the map and its clipping
+const getIsWidescreen = () => window.matchMedia("(orientation: landscape)").matches;
 
-var mapWidth = 28*tileSize+mapPad*2;
-var mapHeight = 36*tileSize+mapPad*2;
+const mapDimensions = {
+    standard: {
+        row: 36,
+        col: 28
+    },
+    widescreen: {
+        row: 31,
+        col: 38
+    }
+}
 
-var screenWidth = mapWidth+mapMargin*2;
-var screenHeight = mapHeight+mapMargin*2;
+const setScreenAndMapDimensions = () => {
+    isWidescreen = getIsWidescreen();
+    
+    mapMargin = (getIsWidescreen() ? 1 : 4) * tileSize; // margin between the map and the screen
+
+    // padding between the map and its clipping
+    mapPadX = tileSize / (getIsWidescreen() ? 10 : 8);
+    mapPadY = getIsWidescreen() ? mapPadX : mapPadX;
+
+    mapYOffset = (getIsWidescreen() ? -2 : 0) * tileSize;
+
+    mapCols = (isWidescreen ? mapDimensions.widescreen: mapDimensions.standard).col;
+    mapRows = (isWidescreen ? mapDimensions.widescreen: mapDimensions.standard).row;
+
+    mapWidth = mapCols * tileSize + mapPadX * 2;
+    mapHeight = mapRows * tileSize + mapPadY * 2 + 5;
+
+    screenWidth = mapWidth + mapMargin * 2;
+    screenHeight = mapHeight + mapMargin * (isWidescreen ? 1 : 2);
+}
+
+let isWidescreen, mapMargin, mapPadX, mapPadY, mapYOffset, mapcols, mapRows, mapWidth, mapHeight, screenWidth, screenheight;
+setScreenAndMapDimensions();
 
 // all rendering will be shown on this canvas
 var canvas;
+
+const backgroundColor = "#000";
+const marginColor = "#000";
+
+let initialRender = true;
 
 // switch to the given renderer index
 var switchRenderer = function(i) {
@@ -35,19 +65,18 @@ var getDevicePixelRatio = function() {
     // This is necessary for the iPhone4's retina display; otherwise the game would be blurry.
     // The iPad3's retina display @ 2048x1536 starts slowing the game down.
     return 1;
-    if (window.innerWidth <= 320) {
-        return window.devicePixelRatio || 1;
-    }
-    return 1;
+    // if (window.innerWidth <= 320) {
+    //     return window.devicePixelRatio || 1;
+    // }
+    // return 1;
 };
 
 var initRenderer = function(){
-
     var bgCanvas;
     var ctx, bgCtx;
 
     // drawing scale
-    var scale = 2;        // scale everything by this amount
+    var scale = 2;// scale everything by this amount
 
     // (temporary global version of scale just to get things quickly working)
     renderScale = scale; 
@@ -57,7 +86,8 @@ var initRenderer = function(){
     // rescale the canvases
     var resetCanvasSizes = function() {
 
-        // set the size of the canvas in actual pixels
+        setScreenAndMapDimensions();
+
         canvas.width = screenWidth * scale;
         canvas.height = screenHeight * scale;
 
@@ -65,6 +95,8 @@ var initRenderer = function(){
         var ratio = getDevicePixelRatio();
         canvas.style.width = canvas.width / ratio;
         canvas.style.height = canvas.height / ratio;
+
+        ctx.translate(0, (isWidescreen ? -2 : 0) * tileSize);
 
         if (resets > 0) {
             ctx.restore();
@@ -74,12 +106,13 @@ var initRenderer = function(){
 
         bgCanvas.width = mapWidth * scale;
         bgCanvas.height = mapHeight * scale;
+        bgCtx.translate(0, (isWidescreen ? -2 : 0) * tileSize);
+
         if (resets > 0) {
             bgCtx.restore();
         }
         bgCtx.save();
         bgCtx.scale(scale,scale);
-
         resets++;
     };
 
@@ -94,13 +127,22 @@ var initRenderer = function(){
 
     // maximize the scale to fit the window
     var fullscreen = function() {
+        
+        setScreenAndMapDimensions();
         // NOTE: css-scaling alternative at https://gist.github.com/1184900
-        renderScale = scale = getTargetScale();
+        scale = getTargetScale();
+        renderScale = scale;
+
         resetCanvasSizes();
         atlas.create();
+        
+        if(inGameMenu)
+            inGameMenu.draw(ctx, true);
+
         if (renderer) {
             renderer.drawMap();
         }
+
         center();
     };
 
@@ -108,15 +150,8 @@ var initRenderer = function(){
     var center = function() {
         var s = getTargetScale()/getDevicePixelRatio();
         var w = screenWidth*s;
-        var x = Math.max(0,(window.innerWidth-10)/2 - w/2);
-        var y = 0;
-        /*
-        canvas.style.position = "absolute";
-        canvas.style.left = x;
-        canvas.style.top = y;
-        console.log(canvas.style.left);
-        */
-        document.body.style.marginLeft = (window.innerWidth - w)/2 + "px";
+
+        document.body.style.marginLeft = (window.innerWidth - w ) / 2 + "px";
     };
 
     // create foreground and background canvases
@@ -130,22 +165,29 @@ var initRenderer = function(){
 
     // adapt placement and size to window resizes
     var resizeTimeout;
-    window.addEventListener('resize', function () {
+    
+    const changeHandler = (event) => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(fullscreen, 100);
-    }, false);
+    }
+
+    window.addEventListener('resize', changeHandler, false);
+    screen.orientation.addEventListener("change", changeHandler, false);
 
     //////////////////////
 
     var beginMapFrame = function() {
-        bgCtx.fillStyle = "#000";
-        bgCtx.fillRect(0,0,mapWidth,mapHeight);
-        bgCtx.translate(mapPad, mapPad);
+        bgCtx.save();
+        if(getIsWidescreen() && initialRender) {
+            bgCtx.translate(0,-5 * tileSize); // Translate up to compensate for the HUD movign to the side
+            initialRender = false;
+        }
+        bgCtx.fillStyle = backgroundColor;
+        bgCtx.fillRect(-5, -5, mapWidth + 5, mapHeight + 5);
+        bgCtx.restore();
     };
 
-    var endMapFrame = function() {
-        bgCtx.translate(-mapPad, -mapPad);
-    };
+    var endMapFrame = function() {};
 
     //////////////////////////////////////////////////////////////
     // Common Renderer
@@ -175,8 +217,8 @@ var initRenderer = function(){
 
             // subtract one from size due to shift done for sprite realignment?
             // (this fixes a bug that leaves unerased artifacts after actors use right-side tunnel
-            ctx.rect(-mapPad,-mapPad,mapWidth-1,mapHeight-1); 
-
+            ctx.fillStyle = "red";
+            ctx.rect(-mapPadX, -mapPadY ,mapWidth - 1, mapHeight - 1);
             ctx.clip();
         },
 
@@ -185,21 +227,24 @@ var initRenderer = function(){
         },
 
         beginFrame: function() {
+            
+            checkGamepads();
+            
             this.setOverlayColor(undefined);
             ctx.save();
 
             // clear margin area
-            ctx.fillStyle = "#000";
+            ctx.fillStyle = marginColor;
             (function(w,h,p){
-                ctx.fillRect(0,0,w,p+1);
-                ctx.fillRect(0,p,p,h-2*p);
-                ctx.fillRect(w-p-2,p,p+2,h-2*p);
-                ctx.fillRect(0,h-p-2,w,p+2);
+                ctx.fillRect(0, 0, w, p + 1); //top
+                ctx.fillRect(0, p, p + 2, h - 2 * p); //left
+                ctx.fillRect(w-p-2,p,p+2,h-2*p); //right
+                ctx.fillRect(0,h-p-2,w,p+2); // bottom
             })(screenWidth, screenHeight, mapMargin);
 
             // draw fps
             if (DEBUG) {
-                ctx.font = (tileSize-2) + "px ArcadeR";
+                ctx.font = (tileSize-2) + "px 'Press Start 2P'";
                 ctx.textBaseline = "bottom";
                 ctx.textAlign = "right";
                 ctx.fillStyle = "#333";
@@ -207,7 +252,7 @@ var initRenderer = function(){
             }
 
             // translate to map space
-            ctx.translate(mapMargin+mapPad, mapMargin+mapPad);
+            ctx.translate(mapMargin + mapPadX, mapMargin + mapPadY);
         },
 
         endFrame: function() {
@@ -219,8 +264,8 @@ var initRenderer = function(){
         },
 
         clearMapFrame: function() {
-            ctx.fillStyle = "#000";
-            ctx.fillRect(-1,-1,mapWidth+1,mapHeight+1);
+            ctx.fillStyle = backgroundColor;
+            ctx.fillRect(-5, -5, mapWidth + 5, mapHeight + 5);
         },
 
         renderFunc: function(f,that) {
@@ -345,7 +390,6 @@ var initRenderer = function(){
                 distLeft = actor.getPathDistLeft(pixel, dirEnum);
             }
             else while (true) {
-
                 // predict next turn from current tile
                 openTiles = getOpenTiles(tile, dirEnum);
                 if (actor != player && map.constrainGhostTurns)
@@ -406,7 +450,6 @@ var initRenderer = function(){
 
         // erase pellet from background
         erasePellet: function(x,y) {
-            bgCtx.translate(mapPad,mapPad);
             bgCtx.fillStyle = this.floorColor;
             this.drawNoGroutTile(bgCtx,x,y,tileSize);
 
@@ -415,30 +458,29 @@ var initRenderer = function(){
             if (map.getTile(x-1,y)==' ') this.drawNoGroutTile(bgCtx,x-1,y,tileSize);
             if (map.getTile(x,y+1)==' ') this.drawNoGroutTile(bgCtx,x,y+1,tileSize);
             if (map.getTile(x,y-1)==' ') this.drawNoGroutTile(bgCtx,x,y-1,tileSize);
-
-            // TODO: fill in adjacent wall tiles?
-
-            bgCtx.translate(-mapPad,-mapPad);
         },
 
         // draw a center screen message (e.g. "start", "ready", "game over")
-        drawMessage: function(text, color, x,y) {
-            ctx.font = tileSize + "px ArcadeR";
+        drawMessage: function(text, color, x, y) {
+            ctx.save()
+            ctx.translate(0, mapYOffset);
+
+            ctx.font = 1.75 * tileSize + "px 'Press Start 2P'";
             ctx.textBaseline = "top";
-            ctx.textAlign = "right";
+            ctx.textAlign = "center";
             ctx.fillStyle = color;
-            x += text.length;
             ctx.fillText(text, x*tileSize, y*tileSize);
+
+            ctx.restore();
         },
 
         drawReadyMessage: function() {
-            this.drawMessage("READY ","#FF0",11,20);
-            drawExclamationPoint(ctx,16*tileSize+3, 20*tileSize+3);
+            this.drawMessage("READY!", "#FF0", mapDimensions.standard.col / 2, mapRows / 2 + 4);
         },
 
         // draw the points earned from the most recently eaten ghost
         drawEatenPoints: function() {
-            atlas.drawGhostPoints(ctx, player.pixel.x, player.pixel.y, energizer.getPoints());
+            atlas.drawEnemyPoints(ctx, player.pixel.x, player.pixel.y, energizer.getPoints());
         },
 
         // draw each actor (ghosts and player)
@@ -447,7 +489,7 @@ var initRenderer = function(){
             // draw such that player appears on top
             if (energizer.isActive()) {
                 for (i=0; i<4; i++) {
-                    this.drawGhost(ghosts[i]);
+                    this.drawEnemy(ghosts[i]);
                 }
                 if (!energizer.showingPoints())
                     this.drawPlayer();
@@ -459,180 +501,16 @@ var initRenderer = function(){
                 this.drawPlayer();
                 for (i=3; i>=0; i--) {
                     if (ghosts[i].isVisible) {
-                        this.drawGhost(ghosts[i]);
+                        this.drawEnemy(ghosts[i]);
                     }
                 }
                 if (enemy3.isVisible && !enemy1.isVisible) {
-                    this.drawGhost(enemy1,0.5);
+                    this.drawEnemy(enemy1,0.5);
                 }
             }
         },
 
     };
-
-    //////////////////////////////////////////////////////////////
-    // Simple Renderer
-    // (render a minimal Pac-Man display using nothing but squares)
-
-    // constructor
-    var SimpleRenderer = function() {
-
-        // inherit attributes from Common Renderer
-        CommonRenderer.call(this,ctx,bgCtx);
-
-        this.messageRow = 21.7;
-        this.pointsEarnedTextSize = 1.5*tileSize;
-
-        this.backColor = "#222";
-        this.floorColor = "#444";
-        this.flashFloorColor = "#999";
-
-        this.name = "Minimal";
-    };
-
-    SimpleRenderer.prototype = newChildObject(CommonRenderer.prototype, {
-
-        drawMap: function() {
-
-            beginMapFrame();
-
-            var x,y;
-            var i;
-            var tile;
-
-            // draw floor tiles
-            bgCtx.fillStyle = (this.flashLevel ? this.flashFloorColor : this.floorColor);
-            i=0;
-            for (y=0; y<map.numRows; y++)
-            for (x=0; x<map.numCols; x++) {
-                tile = map.currentTiles[i++];
-                if (tile == ' ')
-                    this.drawNoGroutTile(bgCtx,x,y,tileSize);
-            }
-
-            // draw pellet tiles
-            bgCtx.fillStyle = this.pelletColor;
-            i=0;
-            for (y=0; y<map.numRows; y++)
-            for (x=0; x<map.numCols; x++) {
-                tile = map.currentTiles[i++];
-                if (tile == '.')
-                    this.drawNoGroutTile(bgCtx,x,y,tileSize);
-            }
-
-            endMapFrame();
-        },
-
-        refreshPellet: function(x,y) {
-            var i = map.posToIndex(x,y);
-            var tile = map.currentTiles[i];
-            if (tile == ' ') {
-                this.erasePellet(x,y);
-            }
-            else if (tile == '.') {
-                bgCtx.fillStyle = this.pelletColor;
-                this.drawNoGroutTile(bgCtx,x,y,tileSize);
-            }
-        },
-
-
-        // draw the current score and high score
-        drawScore: function() {
-            ctx.font = 1.5*tileSize + "px sans-serif";
-            ctx.textBaseline = "top";
-            ctx.textAlign = "left";
-            ctx.fillStyle = "#FFF";
-            ctx.fillText(getScore(), tileSize, tileSize*2);
-
-            ctx.font = "bold " + 1.5*tileSize + "px sans-serif";
-            ctx.textBaseline = "top";
-            ctx.textAlign = "center";
-            ctx.fillText("high score", tileSize*map.numCols/2, 3);
-            ctx.fillText(getHighScore(), tileSize*map.numCols/2, tileSize*2);
-        },
-
-        // draw the extra lives indicator
-        drawExtraLives: function() {
-            var i;
-            ctx.fillStyle = "rgba(255,255,0,0.6)";
-            var lives = extraLives == Infinity ? 1 : extraLives;
-            for (i=0; i<extraLives; i++)
-                this.drawCenterPixelSq(ctx, (2*i+3)*tileSize, (map.numRows-2)*tileSize+midTile.y,this.actorSize);
-        },
-
-        // draw the current level indicator
-        drawLevelIcons: function() {
-            var i;
-            ctx.fillStyle = "rgba(255,255,255,0.5)";
-            var w = 2;
-            var h = this.actorSize;
-            for (i=0; i<level; i++)
-                ctx.fillRect((map.numCols-2)*tileSize - i*2*w, (map.numRows-2)*tileSize+midTile.y-h/2, w, h);
-        },
-
-        // draw energizer items on foreground
-        drawEnergizers: function() {
-            ctx.fillStyle = this.energizerColor;
-            var e;
-            var i;
-            for (i=0; i<map.numEnergizers; i++) {
-                e = map.energizers[i];
-                if (map.currentTiles[e.x+e.y*map.numCols] == 'o')
-                    this.drawCenterTileSq(ctx,e.x,e.y,this.energizerSize);
-            }
-        },
-
-        // draw player
-        drawPlayer: function(scale, opacity) {
-            if (scale == undefined) scale = 1;
-            if (opacity == undefined) opacity = 1;
-            ctx.fillStyle = "rgba(255,255,0,"+opacity+")";
-            this.drawCenterPixelSq(ctx, player.pixel.x, player.pixel.y, this.actorSize*scale);
-        },
-
-        // draw dying player animation (with 0<=t<=1)
-        drawDyingPlayer: function(t) {
-            var f = t*85;
-            if (f <= 60) {
-                t = f/60;
-                this.drawPlayer(1-t);
-            }
-            else {
-                f -= 60;
-                t = f/15;
-                this.drawPlayer(t,1-t);
-            }
-        },
-
-        // draw ghost
-        drawGhost: function(g) {
-            if (g.mode == GHOST_EATEN)
-                return;
-            var color = g.color;
-            if (g.scared)
-                color = energizer.isFlash() ? "#FFF" : "#2121ff";
-            else if (g.mode == GHOST_GOING_HOME || g.mode == GHOST_ENTERING_HOME)
-                color = "rgba(255,255,255,0.3)";
-            ctx.fillStyle = color;
-            this.drawCenterPixelSq(ctx, g.pixel.x, g.pixel.y, this.actorSize);
-        },
-
-        drawFruit: function() {
-            if (fruit.isPresent()) {
-                ctx.fillStyle = "#0F0";
-                this.drawCenterPixelSq(ctx, fruit.pixel.x, fruit.pixel.y, tileSize+2);
-            }
-            else if (fruit.isScorePresent()) {
-                ctx.font = this.pointsEarnedTextSize + "px sans-serif";
-                ctx.textBaseline = "middle";
-                ctx.textAlign = "center";
-                ctx.fillStyle = "#FFF";
-                ctx.fillText(fruit.getPoints(), fruit.pixel.x, fruit.pixel.y);
-            }
-        },
-
-    });
-
 
     //////////////////////////////////////////////////////////////
     // Arcade Renderer
@@ -648,30 +526,32 @@ var initRenderer = function(){
         this.pelletSize = 2;
         this.energizerSize = tileSize;
 
-        this.backColor = "#000";
-        this.floorColor = "#000";
+        this.backColor = backgroundColor;
+        this.floorColor = "backgroundColor";
         this.flashWallColor = "#FFF";
 
         this.name = "Arcade";
     };
 
     ArcadeRenderer.prototype = newChildObject(CommonRenderer.prototype, {
-
         // copy background canvas to the foreground canvas
         blitMap: function() {
             ctx.scale(1/scale,1/scale);
-            ctx.drawImage(bgCanvas,-1-mapPad*scale,-1-mapPad*scale); // offset map to compenstate for misalignment
+            ctx.translate(2 * mapPadX, 3 * mapPadY);
+            ctx.drawImage(bgCanvas, 0, 0);
             ctx.scale(scale,scale);
-            //ctx.clearRect(-mapPad,-mapPad,mapWidth,mapHeight);
         },
 
         drawMap: function(isCutscene) {
-
             // fill background
             beginMapFrame();
 
             if (map) {
+                bgCtx.save();
 
+                if(!isCutscene)
+                    bgCtx.translate(0, mapYOffset);
+                
                 // Sometimes pressing escape during a flash can cause flash to be permanently enabled on maps.
                 // so just turn it off when not in the finish state.
                 if (state != finishState) {
@@ -701,7 +581,8 @@ var initRenderer = function(){
                     bgCtx.fillStyle = map.wallFillColor;
                     bgCtx.strokeStyle = map.wallStrokeColor;
                 }
-                for (i=0; i<map.paths.length; i++) {
+
+                for (i = 0; i < map.paths.length; i++) {
                     var path = map.paths[i];
                     bgCtx.beginPath();
                     bgCtx.moveTo(path[0].x, path[0].y);
@@ -724,49 +605,39 @@ var initRenderer = function(){
                     this.refreshPellet(x,y,true);
                 }
 
-                if (map.onDraw) {
-                    map.onDraw(bgCtx);
-                }
-
                 if (map.shouldDrawMapOnly) {
                     endMapFrame();
                     return;
                 }
+                bgCtx.restore();
             }
+
             if (level > 0) {
-
-                var numRows = 36;
-                var numCols = 28;
-
                 if (!isCutscene) {
+                    // Hide the right edge of the map in widescreen mode
+                    if(isWidescreen && !isCutscene) {
+                        bgCtx.save();
+                        bgCtx.translate((mapCols - 10) * tileSize + 1, 0); //+1 offsets for the map outline pixel
+                        bgCtx.fillStyle = backgroundColor;
+                        bgCtx.fillRect(0, 0, 3 * tileSize, (mapRows + 1) * tileSize);
+                        bgCtx.restore();
+                    }
+
                     // draw extra lives
                     var i;
                     bgCtx.fillStyle = player.color;
 
                     bgCtx.save();
-                    bgCtx.translate(3*tileSize, (numRows-1)*tileSize);
-                    bgCtx.scale(0.85, 0.85);
+                    bgCtx.translate(isWidescreen ? (mapCols - 6) * tileSize : 3 * tileSize, isWidescreen ? (mapRows - 5) * tileSize : (mapRows-1) * tileSize);
+                    bgCtx.scale(0.9, 0.9);
+                    
                     var lives = extraLives == Infinity ? 1 : extraLives;
-                    for (i=0; i<lives; i++) {
-                        drawTubieManSprite(bgCtx, 0,0, DIR_RIGHT, 1, false);
-                        bgCtx.translate(2*tileSize,0);
+                    for(i=0; i < lives; i++) {
+                        drawTubieManSprite(bgCtx, 0, 0, DIR_RIGHT, 1, false);
+                        bgCtx.translate(2 * tileSize, 0);
                     }
-                    if (extraLives == Infinity) {
-                        bgCtx.translate(-4*tileSize,0);
-
-                        // draw X
-                        /*
-                        bgCtx.translate(-s*2,0);
-                        var s = 2; // radius of each stroke
-                        bgCtx.beginPath();
-                        bgCtx.moveTo(-s,-s);
-                        bgCtx.lineTo(s,s);
-                        bgCtx.moveTo(-s,s);
-                        bgCtx.lineTo(s,-s);
-                        bgCtx.lineWidth = 1;
-                        bgCtx.strokeStyle = "#777";
-                        bgCtx.stroke();
-                        */
+                    if(extraLives == Infinity) {
+                        bgCtx.translate(-4 * tileSize, 0);
 
                         // draw Infinity symbol
                         var r = 2; // radius of each half-circle
@@ -783,61 +654,82 @@ var initRenderer = function(){
                         bgCtx.strokeStyle = "#FFF";
                         bgCtx.stroke();
                     }
+
                     bgCtx.restore();
                 }
 
                 // draw level fruit
                 var fruits = fruit.fruitHistory;
-                var i,j;
                 var f,drawFunc;
-                var numFruit = 7;
-                var startLevel = Math.min(numFruit,startLevel);
+                var numFruit = fruit.getNumFruit();
+                // stop after the 11th fruit
+                var startLevel = Math.min(numFruit, Math.max(numFruit, level));
                 var scale = 0.85;
-                for (i=0, j=startLevel-numFruit+1; i<numFruit && j<=level; j++, i++) {
+                
+                const DEBUG_LEVEL_FRUIT = false;
+
+                for (let i = 0, j = startLevel - numFruit + 1; i < numFruit && j <= (DEBUG_LEVEL_FRUIT ? numFruit: level); j++, i++) {
                     f = fruits[j];
                     if (f) {
-                        drawFunc = getSpriteFuncFromFruitName(f.name);
-                        if (drawFunc) {
+                        drawFunc = getSpriteFuncFromBonusName(f.name);
+                        if (!isCutscene && drawFunc) {
                             bgCtx.save();
-                            bgCtx.translate((numCols-3)*tileSize - i*16*scale, (numRows-1)*tileSize);
+                            // For 'traditional' layout, all fruit are in a single row
+                            // For 'widescreen' layout, fruit are stacked in 2 rows of 4
+                            const fruitX = isWidescreen ? (mapCols - (i > 7 ? 5.25 : 6)) * tileSize + ((i % 4) * 1.65 * tileSize): (mapCols - 3.5) * tileSize - i * 16 * scale;
+                            const fruitY = isWidescreen ? (mapRows - (i > 3 ? i > 7 ? 7.5 : 9.25 : 11)) * tileSize : (mapRows - 1) * tileSize;
+
+                            bgCtx.translate(fruitX, fruitY);
                             bgCtx.scale(scale,scale);
                             drawFunc(bgCtx,0,0);
                             bgCtx.restore();
                         }
                     }
                 }
+                
                 if (!isCutscene) {
                     if (level >= 100) {
-                        bgCtx.font = (tileSize-3) + "px ArcadeR";
+                        bgCtx.font = (tileSize-3) + "px 'Press Start 2P'";
                     }
                     else {
-                        bgCtx.font = (tileSize-1) + "px ArcadeR";
+                        bgCtx.font = (tileSize-1) + "px 'Press Start 2P'";
                     }
-                    bgCtx.textBaseline = "middle";
-                    bgCtx.fillStyle = "#777";
                     bgCtx.textAlign = "left";
-                    bgCtx.fillText(level,(numCols-2)*tileSize, (numRows-1)*tileSize);
+                    
+                    if(isWidescreen) {
+                        bgCtx.textBaseline = "bottom";
+                        bgCtx.textAlign = "right";
+                        bgCtx.fillStyle = "orange";
+                        bgCtx.fillText(level, (mapCols - 6) * tileSize, (mapRows - 1) * tileSize);
+                    } else {
+                        bgCtx.textBaseline = "middle";
+                        bgCtx.fillStyle = "#777";
+                        bgCtx.fillText(level,(mapCols - 2) * tileSize, (mapRows - 1) * tileSize);
+                    }
                 }
             }
             endMapFrame();
         },
 
         erasePellet: function(x,y,isTranslated) {
+            bgCtx.save();
+
             if (!isTranslated) {
-                bgCtx.translate(mapPad,mapPad);
+                bgCtx.translate(mapPadX, mapYOffset + mapPadY);
             }
-            bgCtx.fillStyle = "#000";
+
+            bgCtx.fillStyle = backgroundColor;
+            bgCtx.fillStyle = backgroundColor;
             var i = map.posToIndex(x,y);
             var size = map.tiles[i] == 'o' ? this.energizerSize : this.pelletSize;
             this.drawCenterTileSq(bgCtx,x,y,size+2);
-            if (!isTranslated) {
-                bgCtx.translate(-mapPad,-mapPad);
-            }
+
+            bgCtx.restore();
         },
 
         refreshPellet: function(x,y,isTranslated) {
             if (!isTranslated) {
-                bgCtx.translate(mapPad,mapPad);
+                bgCtx.translate(mapPadX, mapPadY);
             }
             var i = map.posToIndex(x,y);
             var tile = map.currentTiles[i];
@@ -851,84 +743,99 @@ var initRenderer = function(){
                 bgCtx.translate(-0.5, -0.5);
             }
             else if (tile == 'o') {
-                bgCtx.fillStyle = map.pelletColor;
-                bgCtx.beginPath();
-                bgCtx.arc(x*tileSize+midTile.x+0.5,y*tileSize+midTile.y,this.energizerSize/2,0,Math.PI*2);
-                bgCtx.fill();
+                bgCtx.save();
+                bgCtx.scale(0.5, 0.5);
+                drawCrossedBandaids(bgCtx, 2*x*tileSize+midTile.x+3.5, 2*y*tileSize+midTile.y+5);
+                bgCtx.restore();
             }
             if (!isTranslated) {
-                bgCtx.translate(-mapPad,-mapPad);
+                bgCtx.translate(-mapPadX, -mapPadY);
             }
         },
 
         // draw the current score and high score
         drawScore: function() {
-            ctx.font = tileSize + "px ArcadeR";
+            ctx.font = tileSize + "px 'Press Start 2P'";
             ctx.textBaseline = "top";
             ctx.fillStyle = "#FFF";
 
-            ctx.textAlign = "right";
-            ctx.fillText("1UP", 6*tileSize, 0);
-            ctx.fillText(practiceMode ? "PRACTICE" : "HIGH SCORE", 19*tileSize, 0);
+            const wsScoreBlockX = (mapCols - 3) * tileSize;
+            const wsScoreBlockY = 4 * tileSize;
+            const ws1UpScoreY = 10 * tileSize;
+            const scoreTopMargin = 2;
+
+            if(isWidescreen) {
+                ctx.textAlign = "center";
+                ctx.fillText("HIGH", wsScoreBlockX, wsScoreBlockY);
+                ctx.fillText("SCORE",wsScoreBlockX, wsScoreBlockY + tileSize);
+                ctx.fillText("1UP", wsScoreBlockX, ws1UpScoreY);
+            } else { 
+                ctx.textAlign = "right";
+                ctx.fillText("HIGH SCORE", 19 * tileSize, 0);
+                ctx.fillText("1UP", 6 * tileSize, 0);
+            }
             //ctx.fillText("2UP", 25*tileSize, 0);
 
             // TODO: player two score
             var score = getScore();
-            if (score == 0) {
+            if (score === 0) {
                 score = "00";
             }
-            var y = tileSize+1;
-            ctx.fillText(score, 7*tileSize, y);
+            const y = tileSize + 1;
 
-            if (!practiceMode) {
-                var highScore = getHighScore();
-                if (highScore == 0) {
-                    highScore = "00";
-                }
-                ctx.fillText(highScore, 17*tileSize, y);
+            var highScore = getHighScore();
+            if (highScore === 0) {
+                highScore = "00";
+            }
+            
+            if(isWidescreen) {
+                ctx.fillStyle = "orange";
+                ctx.textAlign = "center";
+                ctx.fillText(highScore, wsScoreBlockX, wsScoreBlockY + (2 * tileSize) + scoreTopMargin);
+                ctx.fillText(score, wsScoreBlockX, ws1UpScoreY + tileSize + scoreTopMargin);
+            } else {
+                ctx.fillText(highScore, 17 * tileSize, y);
+                ctx.fillText(score, 7 * tileSize, y);
             }
         },
 
         // draw ghost
-        drawGhost: function(g,alpha) {
+        drawEnemy: function(g,alpha) {
+            ctx.save()
+            ctx.translate(0, isWidescreen ? 1.25 * mapYOffset : 0);
+
             var backupAlpha;
             if (alpha) {
                 backupAlpha = ctx.globalAlpha;
                 ctx.globalAlpha = alpha;
             }
 
-            var draw = function(mode, pixel, frames, faceDirEnum, scared, isFlash,color, dirEnum) {
+            var draw = function(mode, pixel, frames, faceDirEnum, scared, isFlash ,color, dirEnum) {
                 if (mode == GHOST_EATEN)
                     return;
                 var frame = g.getAnimFrame(frames);
                 var eyes = (mode == GHOST_GOING_HOME || mode == GHOST_ENTERING_HOME);
-                var func = getGhostDrawFunc();
+                var func = getEnemyDrawFunc();
                 var y = g.getBounceY(pixel.x, pixel.y, dirEnum);
                 var x = (g == enemy1 && scared) ? pixel.x+1 : pixel.x; // blinky's sprite is shifted right when scared
 
                 func(ctx,x,y,frame,faceDirEnum,scared,isFlash,eyes,color);
             };
-            vcr.drawHistory(ctx, function(t) {
-                draw(
-                    g.savedMode[t],
-                    g.savedPixel[t],
-                    g.savedFrames[t],
-                    g.savedFaceDirEnum[t],
-                    g.savedScared[t],
-                    energizer.isFlash(),
-                    g.color,
-                    g.savedDirEnum[t]);
-            });
+
             draw(g.mode, g.pixel, g.frames, g.faceDirEnum, g.scared, energizer.isFlash(), g.color, g.dirEnum);
             if (alpha) {
                 ctx.globalAlpha = backupAlpha;
             }
+            ctx.restore();
         },
 
         // draw player
         drawPlayer: function() {
+            ctx.save()
+            ctx.translate(0, isWidescreen ? 1.25 * mapYOffset : 0);
+
             // Query the InptuQueue for the most recent input direction of the player
-            //TODO: Remove Debug Statement
+            // TODO: Possibly add gamepad input update here
             const input = inputQueue.getActiveInput();
             if(input instanceof Input) {
                 const action = input.getAction();
@@ -964,20 +871,29 @@ var initRenderer = function(){
                 func(ctx, pixel.x, pixel.y, dirEnum, frame, true);
             };
 
-            vcr.drawHistory(ctx, function(t) {
-                draw(
-                    player.savedPixel[t],
-                    player.savedDirEnum[t],
-                    player.savedSteps[t]);
-            });
+            
             draw(player.pixel, player.dirEnum, player.steps);
             if (player.invincible) {
                 ctx.globalAlpha = 1;
             }
+
+            if(isWidescreen) {
+                ctx.save();
+                ctx.translate((mapCols - 10) * tileSize + 1, 0); //+1 offsets for the map outline pixel
+                ctx.fillStyle = backgroundColor;
+                ctx.fillRect(0, 0, 3 * tileSize, (mapRows + 1) * tileSize);
+                ctx.restore();
+            }
+
+            ctx.restore();
         },
 
         // draw dying player animation (with 0<=t<=1)
         drawDyingPlayer: function(t) {
+            ctx.save();
+            
+            ctx.translate(0, isWidescreen ? 1.25 * mapYOffset : 0);
+
             var frame = player.getAnimFrame();
 
             // spin 540 degrees
@@ -985,47 +901,41 @@ var initRenderer = function(){
             var step = (Math.PI/4) / maxAngle; // 45 degree steps
             var angle = Math.floor(t/step)*step*maxAngle;
             drawTubieManSprite(ctx, player.pixel.x, player.pixel.y, player.dirEnum, frame, false, angle);
+            
+            ctx.restore();
         },
 
         // draw exploding player animation (with 0<=t<=1)
-        drawExplodingPlayer: function(t) {
+        drawExplodingPlayer: function(t) {            
+            ctx.save();
+            
+            ctx.translate(0, mapYOffset - tileSize / 1.5);
+
             var frame = player.getAnimFrame();
             drawPacmanSprite(ctx, player.pixel.x, player.pixel.y, player.dirEnum, 0, 0, t,-3,1-t);
+
+            ctx.restore();
         },
 
         // draw fruit
-        drawFruit: function() {
+        drawBonus: function() {
+            ctx.save();
+            ctx.translate(0, isWidescreen ? 1.25 * mapYOffset : 0);
 
             if (fruit.getCurrentFruit()) {
                 var name = fruit.getCurrentFruit().name;
 
-                // draw history trails of the fruit if applicable
-                if (fruit.savedPixel) {
-                    vcr.drawHistory(ctx, function(t) {
-                        var pixel = fruit.savedPixel[t];
-                        if (pixel) {
-                            atlas.drawFruitSprite(ctx, pixel.x, pixel.y, name);
-                        }
-                    });
-                }
-
                 if (fruit.isPresent()) {
-                    atlas.drawFruitSprite(ctx, fruit.pixel.x, fruit.pixel.y, name);
+                    atlas.drawBonusSprite(ctx, fruit.pixel.x, fruit.pixel.y, name);
                 }
                 else if (fruit.isScorePresent()) {
-                    atlas.drawMsPacFruitPoints(ctx, fruit.pixel.x, fruit.pixel.y, fruit.getPoints());
+                    atlas.drawBonusPoints(ctx, fruit.pixel.x, fruit.pixel.y, fruit.getPoints());
                 }
             }
+            ctx.restore();
         },
 
     });
 
-    //
-    // Create list of available renderers
-    //
-    renderer_list = [
-        new SimpleRenderer(), // Currently Broken
-        new ArcadeRenderer(),
-    ];
-    renderer = renderer_list[1];
+    renderer = new ArcadeRenderer();
 };

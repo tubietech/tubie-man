@@ -34,8 +34,6 @@ var Button = function(x,y,w,h,onclick) {
     // text and icon padding
     this.pad = tileSize;
 
-
-
     // icon attributes
     this.frame = 0;
 
@@ -131,6 +129,16 @@ var Button = function(x,y,w,h,onclick) {
 };
 
 Button.prototype = {
+    
+    setPosition: function(x, y) {
+        this.x = x;
+        this.y = y;
+    },
+
+    setDimensions: function(w, h) {
+        this.w = w;
+        this.h = h;
+    },
 
     contains: function(x,y) {
         return x >= this.x && x <= this.x+this.w &&

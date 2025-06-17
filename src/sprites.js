@@ -18,7 +18,7 @@ var drawLine = function(ctx, x, y, dx, dy, lineWidth, color) {
 }
 var drawPixel = function(ctx, x, y, scale, color) { drawLine(ctx, x, y, scl(scale, 1), 0, scl(scale, 1), color) };
 
-var drawGhostSprite = (function(){
+var drawEnemySprite = (function(){
     var drawSyringe = function(ctx, dirEnum, flash, color, eyesOnly) {
         var s = 0.6; // scale factor
 
@@ -259,7 +259,6 @@ var drawGhostSprite = (function(){
             ctx.fillRect(scl(s, 15), scl(s, 9), scl(s, 18), scl(s, 3));
         }
 
-
         ctx.save();
         ctx.translate(-3, -3);
 
@@ -276,7 +275,6 @@ var drawGhostSprite = (function(){
 
         ctx.restore();
     }
-
 
     return function(ctx, x, y, frame, dirEnum, scared, flash, eyesOnly, color) {
         ctx.save();
@@ -581,7 +579,7 @@ var drawPacPoints = (function(){
 })();
 
 // draw points displayed when ms. pac-man eats a fruit
-var drawMsPacPoints = (function(){
+var drawBonusPoints = (function(){
     var ctx;
     var color = "#fff";
 
@@ -1113,359 +1111,6 @@ var drawMonsterSprite = (function(){
     };
 })();
 
-var drawColoredOttoSprite = function(color,eyeColor) {
-    var ctx;
-
-    var plotLine = function(points,color) {
-        var len = points.length;
-        var i;
-        ctx.beginPath();
-        ctx.moveTo(points[0],points[1]);
-        for (i=2; i<len; i+=2) {
-            ctx.lineTo(points[i],points[i+1]);
-        }
-        ctx.lineWidth = 1.0;
-        ctx.lineCap = ctx.lineJoin = "round";
-        ctx.strokeStyle = color;
-        ctx.stroke();
-    };
-
-    var plotSolid = function(points,color) {
-        var len = points.length;
-        var i;
-        ctx.beginPath();
-        ctx.moveTo(points[0],points[1]);
-        for (i=2; i<len; i+=2) {
-            ctx.lineTo(points[i],points[i+1]);
-        }
-        ctx.closePath();
-        ctx.lineWidth = 1.0;
-        ctx.lineJoin = "round";
-        ctx.fillStyle = ctx.strokeStyle = color;
-        ctx.fill();
-        ctx.stroke();
-    };
-
-    var drawRightEye = function() {
-        plotSolid([
-            -4,-5,
-            -3,-6,
-            -2,-6,
-            -2,-5,
-            -3,-4,
-            -4,-4,
-        ],eyeColor);
-    };
-
-    var drawRight0 = function() {
-        plotSolid([
-            -5,-4,
-            -3,-6,
-            2,-6,
-            3,-5,
-            -1,-3,
-            3,-1,
-            1,1,
-            1,3,
-            3,6,
-            5,4,
-            6,4,
-            6,5,
-            4,7,
-            2,7,
-            -1,1,
-            -4,4,
-            -3,6,
-            -3,7,
-            -4,7,
-            -6,5,
-            -6,4,
-            -3,1,
-            -5,-1,
-        ],color);
-        drawRightEye();
-    };
-    var drawRight1 = function() {
-        plotSolid([
-            -5,-4,
-            -3,-6,
-            1,-6,
-            3,-4,
-            3,-1,
-            1,1,
-            1,6,
-            4,6,
-            4,7,
-            0,7,
-            0,1,
-            -2,1,
-            -4,3,
-            -4,4,
-            -3,5,
-            -3,6,
-            -4,6,
-            -5,4,
-            -5,3,
-            -3,1,
-            -5,-1,
-        ],color);
-        drawRightEye();
-    };
-    var drawRight2 = function() {
-        plotSolid([
-            -5,-4,
-            -3,-6,
-            2,-6,
-            3,-5,
-            -1,-3,
-            3,-1,
-            1,1,
-            1,3,
-            4,3,
-            4,4,
-            0,4,
-            0,1,
-            -2,1,
-            -2,6,
-            1,6,
-            1,7,
-            -3,7,
-            -3,1,
-            -5,-1,
-        ],color);
-        drawRightEye();
-    };
-    var drawRight3 = function() {
-        plotSolid([
-            -5,-4,
-            -3,-6,
-            2,-6,
-            -2,-3,
-            2,0,
-            1,1,
-            3,5,
-            5,3,
-            6,3,
-            6,4,
-            4,6,
-            2,6,
-            -1,1,
-            -3,1,
-            -3,6,
-            0,6,
-            0,7,
-            -4,7,
-            -4,2,
-            -3,1,
-            -5,-1,
-        ],color);
-        drawRightEye();
-    };
-
-    var drawUpDownEyes = function() {
-        plotSolid([
-            -5,-5,
-            -4,-6,
-            -3,-6,
-            -3,-5,
-            -4,-4,
-            -5,-4,
-        ],eyeColor);
-        plotSolid([
-            3,-6,
-            4,-6,
-            5,-5,
-            5,-4,
-            4,-4,
-            3,-5,
-        ],eyeColor);
-    };
-
-    var drawUpDownHead = function() {
-        plotSolid([
-            -4,-4,
-            -2,-6,
-            2,-6,
-            4,-4,
-            4,-1,
-            2,1,
-            -2,1,
-            -4,-1,
-        ],color);
-    };
-
-    var drawUpDownLeg0 = function(y,xs) {
-        ctx.save();
-        ctx.translate(0,y);
-        ctx.scale(xs,1);
-
-        plotSolid([
-            1,0,
-            2,0,
-            2,6,
-            4,6,
-            4,7,
-            1,7,
-        ],color);
-
-        ctx.restore();
-    };
-
-    var drawUpDownLeg1 = function(y,xs) {
-        ctx.save();
-        ctx.translate(0,y);
-        ctx.scale(xs,1);
-
-        plotSolid([
-            1,0,
-            2,0,
-            2,4,
-            3,5,
-            4,4,
-            5,4,
-            5,5,
-            3,7,
-            2,7,
-            1,6,
-        ],color);
-
-        ctx.restore();
-    };
-    var drawUpDownLegs0 = function() {
-        drawUpDownLeg0(0,-1);
-        drawUpDownLeg1(-2,1);
-    };
-
-    var drawUpDownLegs1 = function() {
-        drawUpDownLeg0(-2,-1);
-        drawUpDownLeg1(-2,1);
-    };
-
-    var drawUpDownLegs2 = function() {
-        drawUpDownLeg1(-2,-1);
-        drawUpDownLeg0(0,1);
-    };
-
-    var drawUpDownLegs3 = function() {
-        drawUpDownLeg1(0,-1);
-        drawUpDownLeg0(0,1);
-    };
-
-    var drawDown0 = function() {
-        drawUpDownHead();
-        drawUpDownEyes();
-        drawUpDownLegs0();
-        plotLine([-2,-3,2,-3],"#000");
-    };
-    var drawDown1 = function() {
-        drawUpDownHead();
-        drawUpDownEyes();
-        drawUpDownLegs1();
-    };
-    var drawDown2 = function() {
-        drawUpDownHead();
-        drawUpDownEyes();
-        drawUpDownLegs2();
-        plotLine([-2,-3,2,-3],"#000");
-    };
-    var drawDown3 = function() {
-        drawUpDownHead();
-        drawUpDownEyes();
-        drawUpDownLegs3();
-        plotSolid([
-            -2,-3,
-            0,-5,
-            2,-3,
-            0,-1,
-        ],"#000");
-    };
-
-    var drawUp0 = function() {
-        drawUpDownEyes();
-        drawUpDownHead();
-        drawUpDownLegs0();
-    };
-    var drawUp1 = function() {
-        drawUpDownEyes();
-        drawUpDownHead();
-        drawUpDownLegs1();
-    };
-    var drawUp2 = function() {
-        drawUpDownEyes();
-        drawUpDownHead();
-        drawUpDownLegs2();
-    };
-    var drawUp3 = function() {
-        drawUpDownEyes();
-        drawUpDownHead();
-        drawUpDownLegs3();
-    };
-
-    return function(_ctx,x,y,dirEnum,frame,rotate) {
-        ctx = _ctx;
-
-        ctx.save();
-        ctx.translate(x+0.5,y+0.5);
-        if (rotate) {
-            ctx.rotate(rotate);
-        }
-
-        if (dirEnum == DIR_RIGHT) {
-            ctx.translate(0,-1); // correct my coordinate system
-            [drawRight0, drawRight1, drawRight2, drawRight3][frame]();
-        }
-        else if (dirEnum == DIR_LEFT) {
-            ctx.translate(0,-1); // correct my coordinate system
-            ctx.scale(-1,1);
-            [drawRight0, drawRight1, drawRight2, drawRight3][frame]();
-        }
-        else if (dirEnum == DIR_DOWN) {
-            ctx.translate(0,-1); // correct my coordinate system
-            [drawDown0, drawDown1, drawDown2, drawDown3][frame]();
-        }
-        else if (dirEnum == DIR_UP) {
-            ctx.translate(0,-1); // correct my coordinate system
-            [drawUp0, drawUp1, drawUp2, drawUp3][frame]();
-        }
-
-        ctx.restore();
-    };
-};
-
-var drawOttoSprite = drawColoredOttoSprite("#FF0","#00F");
-var drawMsOttoSprite = drawColoredOttoSprite("#F00","#FFF");
-
-var drawDeadOttoSprite = function(ctx,x,y) {
-    var plotOutline = function(points,color) {
-        var len = points.length;
-        var i;
-        ctx.beginPath();
-        ctx.moveTo(points[0],points[1]);
-        for (i=2; i<len; i+=2) {
-            ctx.lineTo(points[i],points[i+1]);
-        }
-        ctx.closePath();
-        ctx.lineWidth = 1.0;
-        ctx.lineCap = ctx.lineJoin = "round";
-        ctx.strokeStyle = color;
-        ctx.stroke();
-    };
-    ctx.save();
-    ctx.translate(x+2,y);
-    plotOutline([
-        3,-5,
-        -1,-5,
-        -2,-6,
-        -2,-7,
-        -1,-8,
-        3,-8,
-        4,-7,
-        4,-6,
-    ],"#F00");
-    ctx.restore();
-    drawOttoSprite(ctx,x,y,DIR_LEFT,2,Math.PI/2);
-};
-
 // draw player body
 var drawPacmanSprite = function(ctx,x,y,dirEnum,angle,mouthShift,scale,centerShift,alpha,color,rot_angle) {
 
@@ -1547,109 +1192,9 @@ var drawGiantPacmanSprite = function(ctx,x,y,dirEnum,frame) {
     ctx.restore();
 };
 
-var drawMsPacmanSprite = function(ctx,x,y,dirEnum,frame,rot_angle) {
-    var angle = 0;
-
-    // draw body
-    if (frame == 0) {
-        // closed
-        drawPacmanSprite(ctx,x,y,dirEnum,0,undefined,undefined,undefined,undefined,undefined,rot_angle);
-    }
-    else if (frame == 1) {
-        // open
-        angle = Math.atan(4/5);
-        drawPacmanSprite(ctx,x,y,dirEnum,angle,undefined,undefined,undefined,undefined,undefined,rot_angle);
-        angle = Math.atan(4/8); // angle for drawing eye
-    }
-    else if (frame == 2) {
-        // wide
-        angle = Math.atan(6/3);
-        drawPacmanSprite(ctx,x,y,dirEnum,angle,undefined,undefined,undefined,undefined,undefined,rot_angle);
-        angle = Math.atan(6/6); // angle for drawing eye
-    }
-
-    ctx.save();
-    ctx.translate(x,y);
-    if (rot_angle) {
-        ctx.rotate(rot_angle);
-    }
-
-    // reflect or rotate sprite according to current direction
-    var d90 = Math.PI/2;
-    if (dirEnum == DIR_UP)
-        ctx.rotate(-d90);
-    else if (dirEnum == DIR_DOWN)
-        ctx.rotate(d90);
-    else if (dirEnum == DIR_LEFT)
-        ctx.scale(-1,1);
-
-    // bow
-    var x=-7.5,y=-7.5;
-    ctx.fillStyle = "#F00";
-    ctx.beginPath(); ctx.arc(x+1,y+4,1.25,0,Math.PI*2); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.arc(x+2,y+5,1.25,0,Math.PI*2); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.arc(x+3,y+3,1.25,0,Math.PI*2); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.arc(x+4,y+1,1.25,0,Math.PI*2); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.arc(x+5,y+2,1.25,0,Math.PI*2); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = "#0031FF";
-    ctx.beginPath(); ctx.arc(x+2.5,y+3.5,0.5,0,Math.PI*2); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.arc(x+3.5,y+2.5,0.5,0,Math.PI*2); ctx.closePath(); ctx.fill();
-
-    // lips
-    ctx.strokeStyle = "#F00";
-    ctx.lineWidth = 1.25;
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    if (frame == 0) {
-        ctx.moveTo(5,0);
-        ctx.lineTo(6.5,0);
-        ctx.moveTo(6.5,-1.5);
-        ctx.lineTo(6.5,1.5);
-    }
-    else {
-        var r1 = 7.5;
-        var r2 = 8.5;
-        var c = Math.cos(angle);
-        var s = Math.sin(angle);
-        ctx.moveTo(-3+r1*c,r1*s);
-        ctx.lineTo(-3+r2*c,r2*s);
-        ctx.moveTo(-3+r1*c,-r1*s);
-        ctx.lineTo(-3+r2*c,-r2*s);
-    }
-    ctx.stroke();
-
-    // mole
-    ctx.beginPath();
-    ctx.arc(-3,2,0.5,0,Math.PI*2);
-    ctx.fillStyle = "#000";
-    ctx.fill();
-
-    // eye
-    ctx.strokeStyle = "#000";
-    ctx.lineCap = "round";
-    ctx.beginPath();
-    if (frame == 0) {
-        ctx.moveTo(-2.5,-2);
-        ctx.lineTo(-0.5,-2);
-    }
-    else {
-        var r1 = 0.5;
-        var r2 = 2.5;
-        var c = Math.cos(angle);
-        var s = Math.sin(angle);
-        ctx.moveTo(-3+r1*c,-2-r1*s);
-        ctx.lineTo(-3+r2*c,-2-r2*s);
-    }
-    ctx.stroke();
-
-    ctx.restore();
-};
-
 var drawTubieManSprite = (function(){
-
     // TODO: draw pupils separately in atlas
-    //      composite the body frame and a random pupil frame when drawing tubie-man
-
+    //       composite the body frame and a random pupil frame when drawing tubie-man
     var prevFrame = undefined;
     var sx1 = 0; // shift x for first pupil
     var sy1 = 0; // shift y for first pupil
@@ -1658,7 +1203,7 @@ var drawTubieManSprite = (function(){
 
     var er = 2.1; // eye radius
     var pr = 1; // pupil radius
-    var tr = 0.7 // tube circle radius
+    var tr = 1; // tube circle radius
 
     var movePupils = function() {
         var a1 = Math.random()*Math.PI*2;
@@ -1673,13 +1218,14 @@ var drawTubieManSprite = (function(){
     };
 
     return function(ctx,x,y,dirEnum,frame,shake,rot_angle) {
-        var angle = 0;
+        let angle = 0;
 
         // draw body
-        var draw = function(angle) {
+        const draw = function(angle) {
             //angle = Math.PI/6*frame;
             drawPacmanSprite(ctx,x,y,dirEnum,angle,undefined,undefined,undefined,undefined,"#FF6E31",rot_angle);
         };
+
         if (frame == 0) {
             // closed
             draw(0);
@@ -1712,13 +1258,16 @@ var drawTubieManSprite = (function(){
         else if (dirEnum == DIR_LEFT)
             ctx.scale(-1,1);
 
-        var x = -4; // pivot point
-        var y = -3.5;
-        var tx = -4;
-        var ty = 2;
+        const ex = -4; // pivot point
+        const ey = -3.5;
+        const tx = -3.5;
+        const ty = 2;
+        const ngx = -4.75;
+        const ngy = -0.75;
         var r1 = 3; // distance from pivot of first eye
         var r2 = 6.5; // distance from pivot of second eye
         var r3 = 0; // distance from pivot of tube
+        var r4 = 4.5; // distance from pivot of ng tube;
         angle /= 3; // angle from pivot point
         angle += Math.PI/8;
         var c = Math.cos(angle);
@@ -1733,30 +1282,30 @@ var drawTubieManSprite = (function(){
 
         // second eyeball
         ctx.beginPath();
-        ctx.arc(x+r2*c, y-r2*s, er, 0, Math.PI*2);
+        ctx.arc(ex+r2*c, ey-r2*s, er, 0, Math.PI*2);
         ctx.fillStyle = "#FFF";
         ctx.fill();
         // second pupil
         ctx.beginPath();
-        ctx.arc(x+r2*c+sx2, y-r2*s+sy2, pr, 0, Math.PI*2);
+        ctx.arc(ex+r2*c+sx2, ey-r2*s+sy2, pr, 0, Math.PI*2);
         ctx.fillStyle = "#000";
         ctx.fill();
 
         // first eyeball
         ctx.beginPath();
-        ctx.arc(x+r1*c, y-r1*1.8*s, er, 0, Math.PI*2);
+        ctx.arc(ex+r1*c, ey-r1*1.8*s, er, 0, Math.PI*2);
         ctx.fillStyle = "#FFF";
         ctx.fill();
         // first pupil
         ctx.beginPath();
-        ctx.arc(x+r1*c+sx1, y-r1*1.8*s+sy1, pr, 0, Math.PI*2);
+        ctx.arc(ex+r1*c+sx1, ey-r1*1.8*s+sy1, pr, 0, Math.PI*2);
         ctx.fillStyle = "#000";
         ctx.fill();
 
-        var tubeColor = "#FFF";
-        var tubeAccentColor = "#808080";
-        var tubeLength = 2.2;
-        var tubeThickness = 0.65
+        const tubeColor = "#FFF";
+        const tubeAccentColor = "#808080";
+        const tubeLength = 3;
+        const tubeThickness = 1.125
 
         //tube
         //tube-line
@@ -1778,587 +1327,1647 @@ var drawTubieManSprite = (function(){
         ctx.fillStyle = tubeAccentColor;
         ctx.fill();
 
-        ctx.restore();
+        //ng-tube
+        const centerX = 0;
+        const centerY = 0;
 
+        const ngTubeLength = 5.25;
+        const ngTubeThickness = 0.5;
+        const tubieManRadius = 7.65;
+
+        const ngStartX = ngx - 0.75 + r4 * c + ngTubeLength / 3;
+        const ngStartY = ngy - r4 * s;
+
+        const distFromStartToCenter = Math.sqrt(Math.pow(ngStartX - centerX, 2) + Math.pow(ngStartY - centerY, 2));
+        const distanceToEdge = tubieManRadius - distFromStartToCenter;
+
+        const ngEndX = (ngx + r4 * c - distanceToEdge);
+        const ngEndY = (ngy - r4 * s);
+
+        const cp1X = (ngx - 1.5 + r4 - 1.2 * c + tubeLength / 2);
+        const cp1Y = (ngy - r4/2 * s);
+        const cp2X = (ngx - 1.5 + r4 - 2 * c + tubeLength / 2.5);
+        const cp2Y = (ngy - r4/2 * s);
+
+        const ngTubeColor = "#FFE9AC";
+ 
+        ctx.beginPath();
+        ctx.moveTo(ngStartX, ngStartY);
+        ctx.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, ngEndX, ngEndY);
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = ngTubeColor;
+        ctx.lineWidth = ngTubeThickness;
+        ctx.stroke();
+
+        const DEBUG_NG_TUBE = false;
+
+        if(DEBUG_NG_TUBE) {
+            ctx.fillStyle = "#0F0";
+            ctx.beginPath();
+            ctx.arc(cp1X, cp1Y, 0.25, 0, 2 * Math.PI); // Control point one
+            ctx.arc(cp2X, cp2Y, 0.25, 0, 2 * Math.PI); // Control point two
+            ctx.fill();
+
+            ctx.fillStyle = "#00F";
+            ctx.beginPath();
+            ctx.arc(0, 0, 0.25, 0, 2 * Math.PI); // Tubie-Man center
+            ctx.fill();
+        }
+
+        ctx.restore();
     };
 })();
 
 ////////////////////////////////////////////////////////////////////
 // FRUIT SPRITES
 
-// G-Tube
-var drawGTube = function(ctx,x,y) {
-
-    // cherry
-    var cherry = function(x,y) {
-        ctx.save();
-        ctx.translate(x,y);
-
-        // red fruit
-        ctx.beginPath();
-        ctx.arc(2.5,2.5,3,0,Math.PI*2);
-        ctx.lineWidth = 1.0;
-        ctx.strokeStyle = "#000";
-        ctx.stroke();
-        ctx.fillStyle = "#ff0000";
-        ctx.fill();
-
-        // white shine
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(1,3);
-        ctx.lineTo(2,4);
-        ctx.strokeStyle = "#fff";
-        ctx.stroke();
-        ctx.restore();
-    };
-
+// GTube
+var drawGTube = function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 8, y - 8);
 
-    // draw both cherries
-    cherry(-6,-1);
-    cherry(-1,1);
+    // Path generated from SVG w/ Inkscape
+	ctx.fillStyle = 'rgb(227, 222, 219)';
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
 
-    // draw stems
-    ctx.beginPath();
-    ctx.moveTo(-3,0);
-    ctx.bezierCurveTo(-1,-2, 2,-4, 5,-5);
-    ctx.lineTo(5,-4);
-    ctx.bezierCurveTo(3,-4, 1,0, 1,2);
-    ctx.strokeStyle = "#ff9900";
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.stroke();
+	ctx.beginPath();
+	ctx.moveTo(6, 14);
+	ctx.lineTo(6, 15);
+	ctx.quadraticCurveTo(6, 15, 6, 15);
+	ctx.lineTo(10, 15);
+	ctx.quadraticCurveTo(10, 15, 10, 15);
+	ctx.lineTo(10, 14);
+	ctx.quadraticCurveTo(10, 14, 10, 14);
+	ctx.lineTo(6, 14);
+	ctx.quadraticCurveTo(6, 14, 6, 14);
+	ctx.fill();
+	
+    // #rect3
+	ctx.beginPath();
+	ctx.rect(5, 13, 6, 1);
+	ctx.fill();
+	
+    // #rect4
+	ctx.beginPath();
+	ctx.rect(4, 12, 8, 1);
+	ctx.fill();
+	
+    // #rect5
+	ctx.beginPath();
+	ctx.rect(5, 11, 6, 1);
+	ctx.fill();
+	
+    // #rect6
+	ctx.beginPath();
+	ctx.rect(6, 10, 4, 1);
+	ctx.fill();
+	
+    // #rect8
+	ctx.beginPath();
+	ctx.moveTo(3, 3);
+	ctx.lineTo(3, 5);
+	ctx.quadraticCurveTo(3, 5, 3, 5);
+	ctx.lineTo(11, 5);
+	ctx.quadraticCurveTo(11, 5, 11, 5);
+	ctx.lineTo(11, 3);
+	ctx.quadraticCurveTo(11, 3, 11, 3);
+	ctx.lineTo(3, 3);
+	ctx.quadraticCurveTo(3, 3, 3, 3);
+	ctx.fill();
+	
+    // #rect9
+	ctx.beginPath();
+	ctx.moveTo(10, 4);
+	ctx.lineTo(10, 5);
+	ctx.quadraticCurveTo(10, 5, 10, 5);
+	ctx.lineTo(14, 5);
+	ctx.quadraticCurveTo(14, 5, 14, 5);
+	ctx.lineTo(14, 4);
+	ctx.quadraticCurveTo(14, 4, 14, 4);
+	ctx.lineTo(10, 4);
+	ctx.quadraticCurveTo(10, 4, 10, 4);
+	ctx.fill();
+	
+    // #rect10
+	ctx.beginPath();
+	ctx.moveTo(14, 2);
+	ctx.lineTo(14, 4);
+	ctx.quadraticCurveTo(14, 4, 14, 4);
+	ctx.lineTo(15, 4);
+	ctx.quadraticCurveTo(15, 4, 15, 4);
+	ctx.lineTo(15, 2);
+	ctx.quadraticCurveTo(15, 2, 15, 2);
+	ctx.lineTo(14, 2);
+	ctx.quadraticCurveTo(14, 2, 14, 2);
+	ctx.fill();
+	
+    // #rect11
+	ctx.beginPath();
+	ctx.moveTo(5, 1);
+	ctx.lineTo(5, 2);
+	ctx.quadraticCurveTo(5, 2, 5, 2);
+	ctx.lineTo(14, 2);
+	ctx.quadraticCurveTo(14, 2, 14, 2);
+	ctx.lineTo(14, 1);
+	ctx.quadraticCurveTo(14, 1, 14, 1);
+	ctx.lineTo(5, 1);
+	ctx.quadraticCurveTo(5, 1, 5, 1);
+	ctx.fill();
+	
+    // #rect12
+	ctx.beginPath();
+	ctx.moveTo(1, 2);
+	ctx.lineTo(1, 5);
+	ctx.quadraticCurveTo(1, 5, 1, 5);
+	ctx.lineTo(4, 5);
+	ctx.quadraticCurveTo(4, 5, 4, 5);
+	ctx.lineTo(4, 2);
+	ctx.quadraticCurveTo(4, 2, 4, 2);
+	ctx.lineTo(1, 2);
+	ctx.quadraticCurveTo(1, 2, 1, 2);
+	ctx.fill();
+	
+
+	ctx.fillStyle = 'rgb(183, 190, 200)';
+
+    // #rect13
+	ctx.beginPath();
+	ctx.moveTo(6, 2);
+	ctx.lineTo(6, 3);
+	ctx.quadraticCurveTo(6, 3, 6, 3);
+	ctx.lineTo(10, 3);
+	ctx.quadraticCurveTo(10, 3, 10, 3);
+	ctx.lineTo(10, 2);
+	ctx.quadraticCurveTo(10, 2, 10, 2);
+	ctx.lineTo(6, 2);
+	ctx.quadraticCurveTo(6, 2, 6, 2);
+	ctx.fill();
+	
+    // #rect7
+	ctx.beginPath();
+	ctx.rect(7, 3, 2, 12);
+	ctx.fill();
+	
+
+	ctx.fillStyle = 'rgb(170, 204, 255)';
+
+    // #rect15
+	ctx.beginPath();
+	ctx.moveTo(2, 3);
+	ctx.lineTo(2, 4);
+	ctx.quadraticCurveTo(2, 4, 2, 4);
+	ctx.lineTo(3, 4);
+	ctx.quadraticCurveTo(3, 4, 3, 4);
+	ctx.lineTo(3, 3);
+	ctx.quadraticCurveTo(3, 3, 3, 3);
+	ctx.lineTo(2, 3);
+	ctx.quadraticCurveTo(2, 3, 2, 3);
+	ctx.fill();
+
+    ctx.restore();
+}
+
+// Endless Pump
+var drawEndlessPump = function(ctx, x, y) {
+    ctx.save();
+    ctx.translate(x - 8, y - 8);
+
+    // Path generated from SVG w/ Inkscape
+	ctx.fillStyle = 'rgb(16, 164, 179)';
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
+
+    // #rect2
+	ctx.beginPath();
+	ctx.moveTo(2, 5);
+	ctx.lineTo(2, 4);
+	ctx.lineTo(14, 4);
+	ctx.lineTo(14, 5);
+	ctx.lineTo(15, 5);
+	ctx.lineTo(15, 13);
+	ctx.lineTo(1, 13);
+	ctx.lineTo(1, 5);
+	ctx.closePath();
+	ctx.fill();
+	
+    // #rect14
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(214, 217, 224)';
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
+	ctx.moveTo(2, 4);
+	ctx.lineTo(2, 3);
+	ctx.lineTo(14, 3);
+	ctx.lineTo(14, 4);
+	ctx.lineTo(15, 4);
+	ctx.lineTo(15, 7);
+	ctx.lineTo(14, 7);
+	ctx.lineTo(14, 8);
+	ctx.lineTo(2, 8);
+	ctx.lineTo(2, 7);
+	ctx.lineTo(1, 7);
+	ctx.lineTo(1, 4);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(214, 217, 224)';
+
+    // #rect4
+	ctx.beginPath();
+	ctx.rect(2, 9, 6, 3);
+	ctx.fill();
+    
+	
+	ctx.fillStyle = 'rgb(34, 149, 161)';
+
+    // #rect5
+	ctx.beginPath();
+	ctx.rect(9, 9, 1, 1);
+	ctx.fill();
+
+    // #rect6
+	ctx.beginPath();
+	ctx.rect(9, 11, 1, 1);
+	ctx.fill();
+	
+    // #rect7
+	ctx.beginPath();
+	ctx.rect(11, 9, 1, 1);
+	ctx.fill();
+	
+    // #rect8
+	ctx.beginPath();
+	ctx.rect(11, 11, 1, 1);
+	ctx.fill();
+	
+    // #rect9
+	ctx.beginPath();
+	ctx.rect(13, 9, 1, 1);
+	ctx.fill();
+	
+    // #rect10
+	ctx.beginPath();
+	ctx.rect(13, 11, 1, 1);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(119, 119, 126)';
+	ctx.lineWidth = 0.5;
+
+    // #path12
+	ctx.beginPath();
+	ctx.moveTo(2, 4);
+	ctx.lineTo(2, 6);
+	ctx.lineTo(9, 6);
+	ctx.lineTo(9, 4);
+	ctx.closePath();
+	ctx.fill();
+    
+	ctx.fillStyle = 'rgb(34, 149, 161)';
+	
+    // #rect12
+	ctx.beginPath();
+	ctx.rect(13, 4, 1, 1);
+	ctx.fill();
+	
+    // #rect13
+	ctx.beginPath();
+	ctx.rect(13, 6, 1, 1);
+	ctx.fill();
+    
+	ctx.fillStyle = 'rgb(171, 65, 33)';
+	ctx.lineWidth = 2;
+	
+    // #rect13-2
+	ctx.beginPath();
+	ctx.rect(5, 6, 4, 1);
+	ctx.fill();
+
+    ctx.fillStyle = 'rgb(119, 119, 126)';
+
+    // #rect5-4
+	ctx.beginPath();
+	ctx.rect(3, 10, 4, 1);
+	ctx.fill();
 
     ctx.restore();
 };
 
-// Infinity Pump
-var drawInfinityPump = function(ctx,x,y) {
+// Marsupial Pump
+var drawMarsupialPump = function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 8, y - 8);
 
-    // red body
+    // Path generated from SVG w/ Inkscape
+	ctx.fillStyle = 'rgb(230, 230, 230)';
+	ctx.lineWidth = 0.5;
+	ctx.lineJoin = 'round';
+
     ctx.beginPath();
-    ctx.moveTo(-1,-4);
-    ctx.bezierCurveTo(-3,-4,-5,-3, -5,-1);
-    ctx.bezierCurveTo(-5,3,-2,5, 0,6);
-    ctx.bezierCurveTo(3,5, 5,2, 5,0);
-    ctx.bezierCurveTo(5,-3, 3,-4, 0,-4);
-    ctx.fillStyle = "#f00";
-    ctx.fill();
-    ctx.strokeStyle = "#f00";
-    ctx.stroke();
+	ctx.moveTo(2, 4);
+	ctx.lineTo(3, 4);
+	ctx.lineTo(3, 3);
+	ctx.lineTo(13, 3);
+	ctx.lineTo(13, 4);
+	ctx.lineTo(14, 4);
+	ctx.lineTo(14, 5);
+	ctx.lineTo(15, 5);
+	ctx.lineTo(15, 12);
+	ctx.lineTo(14, 12);
+	ctx.lineTo(14, 13);
+	ctx.lineTo(2, 13);
+	ctx.lineTo(2, 12);
+	ctx.lineTo(1, 12);
+	ctx.lineTo(1, 5);
+	ctx.lineTo(2, 5);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(96, 96, 107)';
+	ctx.lineWidth = 1;
 
-    // white spots
-    var spots = [
-        {x:-4,y:-1},
-        {x:-3,y:2 },
-        {x:-2,y:0 },
-        {x:-1,y:4 },
-        {x:0, y:2 },
-        {x:0, y:0 },
-        {x:2, y:4 },
-        {x:2, y:-1 },
-        {x:3, y:1 },
-        {x:4, y:-2 } ];
+    // #rect6-5
+	ctx.beginPath();
+	ctx.rect(2, 7, 1, 1);
+	ctx.fill();
+	
+    // #rect6-5-8
+	ctx.beginPath();
+	ctx.rect(2, 9, 1, 1);
+	ctx.fill();
+	
+    // #rect6-5-1
+	ctx.beginPath();
+	ctx.rect(2, 11, 1, 1);
+	ctx.fill();
 
-    ctx.fillStyle = "#fff";
-    var i,len;
-    for (i=0, len=spots.length; i<len; i++) {
-        var s = spots[i];
-        ctx.beginPath();
-        ctx.arc(s.x,s.y,0.75,0,2*Math.PI);
-        ctx.fill();
-    }
+    // #rect6-5-4
+	ctx.beginPath();
+	ctx.rect(9, 6, 1, 1);
+	ctx.fill();
+    
+	ctx.fillStyle = 'rgb(120, 55, 181)';
 
-    // green leaf
-    ctx.beginPath();
-    ctx.moveTo(0,-4);
-    ctx.lineTo(-3,-4);
-    ctx.lineTo(0,-4);
-    ctx.lineTo(-2,-3);
-    ctx.lineTo(-1,-3);
-    ctx.lineTo(0,-4);
-    ctx.lineTo(0,-2);
-    ctx.lineTo(0,-4);
-    ctx.lineTo(1,-3);
-    ctx.lineTo(2,-3);
-    ctx.lineTo(0,-4);
-    ctx.lineTo(3,-4);
-    ctx.closePath();
-    ctx.strokeStyle = "#00ff00";
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
+    // #rect2
+	ctx.beginPath();
+	ctx.moveTo(3, 3);
+	ctx.lineTo(10, 3);
+	ctx.lineTo(10, 4);
+	ctx.lineTo(4, 4);
+	ctx.lineTo(4, 5);
+	ctx.lineTo(3, 5);
+	ctx.lineTo(3, 6);
+	ctx.lineTo(1, 6);
+	ctx.lineTo(1, 5);
+	ctx.lineTo(2, 5);
+	ctx.lineTo(2, 4);
+	ctx.lineTo(3, 4);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(0, 0, 0)';
 
-    // stem
-    ctx.beginPath();
-    ctx.moveTo(0,-4);
-    ctx.lineTo(0,-5);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = "#fff";
-    ctx.stroke();
-    ctx.restore();
-};
+    // #rect3
+	ctx.beginPath();
+	ctx.moveTo(4, 4);
+	ctx.lineTo(10, 4);
+	ctx.lineTo(10, 5);
+	ctx.lineTo(9, 5);
+	ctx.lineTo(9, 6);
+	ctx.lineTo(3, 6);
+	ctx.lineTo(3, 5);
+	ctx.lineTo(4, 5);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(0, 0, 128)';
 
-// Omni Pump
-var drawOmniPump = function(ctx,x,y) {
-    ctx.save();
-    ctx.translate(x,y);
+    // #rect4
+	ctx.beginPath();
+	ctx.moveTo(12, 6);
+	ctx.lineTo(12, 5);
+	ctx.lineTo(13, 5);
+	ctx.lineTo(13, 6);
+	ctx.lineTo(14, 6);
+	ctx.lineTo(14, 12);
+	ctx.lineTo(11, 12);
+	ctx.lineTo(11, 6);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(194, 194, 200)';
 
-    // orange body
-    ctx.beginPath();
-    ctx.moveTo(-2,-2);
-    ctx.bezierCurveTo(-3,-2, -5,-1, -5,1);
-    ctx.bezierCurveTo(-5,4, -3,6, 0,6);
-    ctx.bezierCurveTo(3,6, 5,4, 5,1);
-    ctx.bezierCurveTo(5,-1, 3,-2, 2,-2);
-    ctx.closePath();
-    ctx.fillStyle="#ffcc33";
-    ctx.fill();
-    ctx.strokeStyle = "#ffcc33";
-    ctx.stroke();
-
-    // stem
-    ctx.beginPath();
-    ctx.moveTo(-1,-1);
-    ctx.quadraticCurveTo(-1,-2,-2,-2);
-    ctx.quadraticCurveTo(-1,-2,-1,-4);
-    ctx.quadraticCurveTo(-1,-2,0,-2);
-    ctx.quadraticCurveTo(-1,-2,-1,-1);
-    ctx.strokeStyle = "#ff9900";
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-
-    // green leaf
-    ctx.beginPath();
-    ctx.moveTo(-0.5,-4);
-    ctx.quadraticCurveTo(0,-5,1,-5);
-    ctx.bezierCurveTo(2,-5, 3,-4,4,-4);
-    ctx.bezierCurveTo(3,-4, 3,-3, 2,-3);
-    ctx.bezierCurveTo(1,-3,1,-4,-0.5,-4);
-    ctx.strokeStyle = "#00ff00";
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-    ctx.fillStyle = "#00ff00";
-    ctx.fill();
-
-    ctx.restore();
-};
-
-// Joey Pump
-var drawJoeyPump = function(ctx,x,y) {
-    ctx.save();
-    ctx.translate(x,y);
-
-    // red fruit
-    ctx.beginPath();
-    ctx.moveTo(-2,-3);
-    ctx.bezierCurveTo(-2,-4,-3,-4,-4,-4);
-    ctx.bezierCurveTo(-5,-4,-6,-3,-6,0);
-    ctx.bezierCurveTo(-6,3,-4,6,-2.5,6);
-    ctx.quadraticCurveTo(-1,6,-1,5);
-    ctx.bezierCurveTo(-1,6,0,6,1,6);
-    ctx.bezierCurveTo(3,6, 5,3, 5,0);
-    ctx.bezierCurveTo(5,-3, 3,-4, 2,-4);
-    ctx.quadraticCurveTo(0,-4,0,-3);
-    ctx.closePath();
-    ctx.fillStyle = "#ff0000";
-    ctx.fill();
-
-    // stem
-    ctx.beginPath();
-    ctx.moveTo(-1,-3);
-    ctx.quadraticCurveTo(-1,-5, 0,-5);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#ff9900';
-    ctx.stroke();
-
-    // shine
-    ctx.beginPath();
-    ctx.moveTo(2,3);
-    ctx.quadraticCurveTo(3,3, 3,1);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = "#fff";
-    ctx.stroke();
+    // #rect5
+	ctx.beginPath();
+	ctx.rect(14, 7, 1, 1);
+	ctx.fill();
+	
+    // #rect7
+	ctx.beginPath();
+	ctx.rect(3, 7, 6, 5);
+	ctx.fill();
 
     ctx.restore();
 };
 
-// Infinity Charger
-var drawInfinityCharger = function(ctx,x,y) {
+// Jamie Pump
+var drawJamiePump = function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 8, y - 8);
 
-    // draw body
-    ctx.beginPath();
-    ctx.arc(0,2,5.5,0,Math.PI*2);
-    ctx.fillStyle = "#7bf331";
-    ctx.fill();
+    // Path generated from SVG w/ Inkscape
+    // #rect1
+	ctx.fillStyle = 'rgb(236, 236, 236)';
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
 
-    // draw stem
-    ctx.beginPath();
-    ctx.moveTo(0,-4);
-    ctx.lineTo(0,-5);
-    ctx.moveTo(2,-5);
-    ctx.quadraticCurveTo(-3,-5,-3,-6);
-    ctx.strokeStyle="#69b4af";
-    ctx.lineCap = "round";
-    ctx.stroke();
+	ctx.beginPath();
+	ctx.moveTo(2, 3);
+	ctx.lineTo(5, 3);
+	ctx.lineTo(5, 2);
+	ctx.lineTo(11, 2);
+	ctx.lineTo(11, 3);
+	ctx.lineTo(14, 3);
+	ctx.lineTo(14, 4);
+	ctx.lineTo(15, 4);
+	ctx.lineTo(15, 11);
+	ctx.lineTo(14, 11);
+	ctx.lineTo(14, 12);
+	ctx.lineTo(11, 12);
+	ctx.lineTo(11, 13);
+	ctx.lineTo(5, 13);
+	ctx.lineTo(5, 12);
+	ctx.lineTo(2, 12);
+	ctx.lineTo(2, 11);
+	ctx.lineTo(1, 11);
+	ctx.lineTo(1, 4);
+	ctx.lineTo(2, 4);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(0, 0, 128)';
 
-    // dark lines
-    /*
-    ctx.beginPath();
-    ctx.moveTo(0,-2);
-    ctx.lineTo(-4,2);
-    ctx.lineTo(-1,5);
-    ctx.moveTo(-3,-1);
-    ctx.lineTo(-2,0);
-    ctx.moveTo(-2,6);
-    ctx.lineTo(1,3);
-    ctx.moveTo(1,7);
-    ctx.lineTo(3,5);
-    ctx.lineTo(0,2);
-    ctx.lineTo(3,-1);
-    ctx.moveTo(2,0);
-    ctx.lineTo(4,2);
-    ctx.strokeStyle="#69b4af";
-    ctx.lineCap = "round";
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-    */
-    // dark spots
-    var spots = [
-        0,-2,
-        -1,-1,
-        -2,0,
-        -3,1,
-        -4,2,
-        -3,3,
-        -2,4,
-        -1,5,
-        -2,6,
-        -3,-1,
-        1,7,
-        2,6,
-        3,5,
-        2,4,
-        1,3,
-        0,2,
-        1,1,
-        2,0,
-        3,-1,
-        3,1,
-        4,2,
-         ];
+    // #rect2
+	ctx.beginPath();
+	ctx.moveTo(3, 4);
+	ctx.lineTo(6, 4);
+	ctx.lineTo(6, 3);
+	ctx.lineTo(10, 3);
+	ctx.lineTo(10, 4);
+	ctx.lineTo(13, 4);
+	ctx.lineTo(13, 5);
+	ctx.lineTo(14, 5);
+	ctx.lineTo(14, 10);
+	ctx.lineTo(13, 10);
+	ctx.lineTo(13, 11);
+	ctx.lineTo(10, 11);
+	ctx.lineTo(10, 12);
+	ctx.lineTo(6, 12);
+	ctx.lineTo(6, 11);
+	ctx.lineTo(3, 11);
+	ctx.lineTo(3, 10);
+	ctx.lineTo(2, 10);
+	ctx.lineTo(2, 5);
+	ctx.lineTo(3, 5);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(160, 160, 160)';
 
-    ctx.fillStyle="#69b4af";
-    var i,len;
-    for (i=0, len=spots.length; i<len; i+=2) {
-        var x = spots[i];
-        var y = spots[i+1];
-        ctx.beginPath();
-        ctx.arc(x,y,0.65,0,2*Math.PI);
-        ctx.fill();
-    }
+    // #rect3
+	ctx.beginPath();
+	ctx.rect(4, 5, 8, 5);
+	ctx.fill();
+	
+    
+	ctx.fillStyle = 'rgb(113, 180, 208)';
 
-    // white spots
-    var spots = [
-        {x: 0,y:-3},
-        {x:-2,y:-1},
-        {x:-4,y: 1},
-        {x:-3,y: 3},
-        {x: 1,y: 0},
-        {x:-1,y: 2},
-        {x:-1,y: 4},
-        {x: 3,y: 2},
-        {x: 1,y: 4},
-         ];
+    // #rect4
+	ctx.beginPath();
+	ctx.rect(3, 5, 1, 1);
+	ctx.fill();
+	
+    // #rect4-8
+	ctx.beginPath();
+	ctx.rect(3, 7, 1, 1);
+	ctx.fill();
+	
+    // #rect4-5
+	ctx.beginPath();
+	ctx.rect(3, 9, 1, 1);
+	ctx.fill();
+	
+    // #rect4-1
+	ctx.beginPath();
+	ctx.rect(12, 9, 1, 1);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(255, 255, 255)';
 
-    ctx.fillStyle = "#fff";
-    var i,len;
-    for (i=0, len=spots.length; i<len; i++) {
-        var s = spots[i];
-        ctx.beginPath();
-        ctx.arc(s.x,s.y,0.65,0,2*Math.PI);
-        ctx.fill();
-    }
+    // #rect4-7
+	ctx.beginPath();
+	ctx.rect(12, 5, 1, 1);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(0, 0, 128)';
+
+    // #rect5
+	ctx.beginPath();
+	ctx.rect(2, 2, 3, 1);
+	ctx.fill();
+	
+    // #rect5-2
+	ctx.beginPath();
+	ctx.rect(11, 2, 3, 1);
+	ctx.fill();
+	
+    // #rect5-2-1
+	ctx.beginPath();
+	ctx.rect(11, 12, 3, 1);
+	ctx.fill();
+	
+    // #rect5-2-7
+	ctx.beginPath();
+	ctx.rect(2, 12, 3, 1);
+	ctx.fill();
+    
+    ctx.restore();
+};
+
+// USB-C Charger
+var drawUsbCharger = function(ctx, x, y) {
+    ctx.save();
+    ctx.translate(x - 8, y - 8);
+
+    // Path generated from SVG w/ Inkscape	
+	ctx.fillStyle = 'rgb(255, 102, 0)';
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
+
+    // #rect1
+	ctx.beginPath();
+	ctx.moveTo(1, 3);
+	ctx.lineTo(1, 13);
+	ctx.lineTo(7, 13);
+	ctx.lineTo(7, 11);
+	ctx.lineTo(15, 11);
+	ctx.lineTo(15, 5);
+	ctx.lineTo(7, 5);
+	ctx.lineTo(7, 3);
+	ctx.lineTo(1, 3);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(212, 85, 0)';
+	ctx.lineWidth = 0.75;
+
+    // #rect3-5
+	ctx.beginPath();
+	ctx.rect(7, 7.5, 8, 1);
+	ctx.fill();
+	
+    // #rect3-2
+	ctx.beginPath();
+	ctx.rect(7, 9.25, 8, 0.75);
+	ctx.fill();
+	
+    // #rect3
+	ctx.beginPath();
+	ctx.rect(7, 6, 8, 0.75);
+	ctx.fill();
+	
+	ctx.lineWidth = 1;
+
+    // #rect4
+	ctx.beginPath();
+	ctx.moveTo(2.5, 6.25);
+	ctx.bezierCurveTo(2, 6.25, 2, 6.5, 2, 6.5);
+	ctx.lineTo(2, 10.5);
+	ctx.bezierCurveTo(2, 10.5, 2.25, 11, 2.5, 11);
+	ctx.lineTo(2.5, 11);
+	ctx.bezierCurveTo(2.75, 10.75, 3, 10.75, 3, 10.5);
+	ctx.lineTo(3, 8.5);
+	ctx.lineTo(6, 8.5);
+	ctx.lineTo(6, 7.5);
+	ctx.lineTo(3, 7.5);
+	ctx.lineTo(3, 6.5);
+	ctx.bezierCurveTo(3, 6.25, 3, 6.25, 2.5, 6.25);
+	ctx.lineTo(2.5, 6.25);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(170, 68, 0)';
+
+    // #rect6
+	ctx.beginPath();
+	ctx.rect(3, 8.5, 2, 1);
+	ctx.fill();
 
     ctx.restore();
 };
 
-// Infinity Bag
-var drawInfinityBag = function(ctx,x,y) {
+// Feeding Bag
+var drawFeedingBag = function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 8, y - 8);
 
-    // draw yellow body
-    ctx.beginPath();
-    ctx.moveTo(-4,-2);
-    ctx.lineTo(4,-2);
-    ctx.lineTo(4,-1);
-    ctx.lineTo(2,1);
-    ctx.lineTo(1,0);
-    ctx.lineTo(0,0);
-    ctx.lineTo(0,5);
-    ctx.lineTo(0,0);
-    ctx.lineTo(-1,0);
-    ctx.lineTo(-2,1);
-    ctx.lineTo(-4,-1);
-    ctx.closePath();
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = ctx.fillStyle = '#fffa36';
-    ctx.fill();
-    ctx.stroke();
+    // Path generated from SVG w/ Inkscape
+	ctx.fillStyle = 'rgb(233, 221, 175)';
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
 
-    // draw red arrow head
     ctx.beginPath();
-    ctx.moveTo(0,-5);
-    ctx.lineTo(-3,-2);
-    ctx.lineTo(-2,-2);
-    ctx.lineTo(-1,-3);
-    ctx.lineTo(0,-3);
-    ctx.lineTo(0,-1);
-    ctx.lineTo(0,-3);
-    ctx.lineTo(1,-3);
-    ctx.lineTo(2,-2);
-    ctx.lineTo(3,-2);
-    ctx.closePath();
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = ctx.fillStyle = "#f00";
-    ctx.fill();
-    ctx.stroke();
+	ctx.moveTo(1, 3);
+	ctx.lineTo(1, 13);
+	ctx.lineTo(4, 13);
+	ctx.lineTo(4, 14);
+	ctx.lineTo(5, 14);
+	ctx.lineTo(5, 15);
+	ctx.lineTo(11, 15);
+	ctx.lineTo(11, 14);
+	ctx.lineTo(12, 14);
+	ctx.lineTo(12, 13);
+	ctx.lineTo(15, 13);
+	ctx.lineTo(15, 3);
+	ctx.lineTo(1, 3);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(16, 164, 179)';
+	ctx.lineWidth = 3;
 
-    // draw blue wings
-    ctx.beginPath();
-    ctx.moveTo(-5,-4);
-    ctx.lineTo(-5,-1);
-    ctx.lineTo(-2,2);
-    ctx.moveTo(5,-4);
-    ctx.lineTo(5,-1);
-    ctx.lineTo(2,2);
-    ctx.strokeStyle = "#00f";
-    ctx.lineJoin = 'round';
-    ctx.stroke();
+    // #rect2-9
+	ctx.beginPath();
+	ctx.rect(5, 1, 6, 5);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(233, 221, 175)';
+	ctx.lineWidth = 1;
+
+    // #rect5
+	ctx.beginPath();
+	ctx.rect(5, 5, 1, 1);
+	ctx.fill();
+	
+    // #rect6
+	ctx.beginPath();
+	ctx.rect(10, 5, 1, 1);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(43, 136, 143)';
+
+    // #rect9
+	ctx.beginPath();
+	ctx.rect(6, 2, 4, 3);
+	ctx.fill();
+
+	ctx.fillStyle = 'rgb(16, 164, 179)';
+
+    // #rect10
+	ctx.beginPath();
+	ctx.rect(6, 2, 1, 1);
+	ctx.fill();
+	
+    // #rect11
+	ctx.beginPath();
+	ctx.rect(9, 2, 1, 1);
+	ctx.fill();
+	
+    // #rect12
+	ctx.beginPath();
+	ctx.rect(9, 4, 1, 1);
+	ctx.fill();
+	
+    // #rect13
+	ctx.beginPath();
+	ctx.rect(6, 4, 1, 1);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(0, 0, 0)';
+    // #rect7
+	ctx.beginPath();
+	ctx.rect(5, 1, 1, 1);
+	ctx.fill();
+	
+    // #rect8
+	ctx.beginPath();
+	ctx.rect(10, 1, 1, 1);
+	ctx.fill();
+
+    // #rect14
+	ctx.beginPath();
+	ctx.rect(1, 3, 1, 1);
+	ctx.fill();
+	
+    // #rect15
+	ctx.beginPath();
+	ctx.rect(14, 3, 1, 1);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(150, 150, 150)';
+
+    // #rect16
+	ctx.beginPath();
+	ctx.rect(2, 6, 1, 6);
+	ctx.fill();
+	
+    // #rect17
+	ctx.beginPath();
+	ctx.rect(11, 6, 3, 2);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(217, 203, 161)';
+
+    // #rect18
+	ctx.beginPath();
+	ctx.rect(5, 8, 6, 1);
+	ctx.fill();
+	
+    // #rect19
+	ctx.beginPath();
+	ctx.rect(5, 10, 6, 1);
+	ctx.fill();
+	
+    // #rect20
+	ctx.beginPath();
+	ctx.rect(5, 12, 6, 1);
+	ctx.fill();
 
     ctx.restore();
 };
 
 // Formula Bottle
-var drawFormulaBottle = function(ctx,x,y) {
+var drawFormulaBottle = function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 8, y - 8);
 
-    // bell body
-    ctx.beginPath();
-    ctx.moveTo(-1,-5);
-    ctx.bezierCurveTo(-4,-5,-6,1,-6,6);
-    ctx.lineTo(5,6);
-    ctx.bezierCurveTo(5,1,3,-5,0,-5);
-    ctx.closePath();
-    ctx.fillStyle = ctx.strokeStyle = "#fffa37";
-    ctx.stroke();
-    ctx.fill();
+    // Path generated from SVG w/ Inkscape
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
 
-    // marks
-    ctx.beginPath();
-    ctx.moveTo(-4,4);
-    ctx.lineTo(-4,3);
-    ctx.moveTo(-3,1);
-    ctx.quadraticCurveTo(-3,-2,-2,-2);
-    ctx.moveTo(-1,-4);
-    ctx.lineTo(0,-4);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#000';
-    ctx.stroke();
+    // #rect2
+	ctx.fillStyle = 'rgb(190, 215, 255)';
+	ctx.beginPath();
+	ctx.rect(3, 2, 9, 14);
+	ctx.fill();
+	
+    // #rect3
+	ctx.fillStyle = 'rgb(226, 237, 255)';
+	ctx.beginPath();
+	ctx.moveTo(5, 4);
+	ctx.lineTo(5, 5);
+	ctx.lineTo(5, 6);
+	ctx.lineTo(4, 6);
+	ctx.lineTo(4, 7);
+	ctx.lineTo(3, 7);
+	ctx.lineTo(3, 11);
+	ctx.lineTo(4, 11);
+	ctx.lineTo(4, 12);
+	ctx.lineTo(5, 12);
+	ctx.lineTo(5, 13);
+	ctx.lineTo(10, 13);
+	ctx.lineTo(10, 12);
+	ctx.lineTo(11, 12);
+	ctx.lineTo(11, 11);
+	ctx.lineTo(12, 11);
+	ctx.lineTo(12, 7);
+	ctx.lineTo(11, 7);
+	ctx.lineTo(11, 6);
+	ctx.lineTo(10, 6);
+	ctx.lineTo(10, 5);
+	ctx.lineTo(10, 4);
+	ctx.lineTo(5, 4);
+	ctx.closePath();
+	ctx.fill();
+	
+    // #rect12
+	ctx.fillStyle = 'rgb(226, 237, 255)';
+	ctx.beginPath();
+	ctx.rect(5, 13, 5, 1);
+	ctx.fill();
 
-    // bell bottom
+    // #rect13
+	ctx.fillStyle = 'rgb(85, 85, 255)';
+	ctx.beginPath();
+	ctx.rect(7, 12, 1, 1);
+	ctx.fill();
+
+    // #rect14
+	ctx.fillStyle = 'rgb(243, 159, 55)';
+	ctx.beginPath();
+	ctx.rect(9, 3, 2, 2);
+	ctx.fill();
+	
+    // #rect15
+	ctx.fillStyle = 'rgb(170, 0, 0)';
+	ctx.beginPath();
+	ctx.rect(4, 4, 2, 1);
+	ctx.fill();
+	
+    // #rect16
+	ctx.fillStyle = 'rgb(255, 42, 42)';
+	ctx.beginPath();
+	ctx.rect(10, 12, 2, 2);
+	ctx.fill();
+	
+    // #rect17
+	ctx.fillStyle = 'rgb(85, 153, 255)';
+	ctx.beginPath();
+	ctx.rect(5, 8, 5, 1);
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(44, 90, 160)';
+
+    // #rect6
     ctx.beginPath();
-    ctx.rect(-5.5,6,10,2);
-    ctx.fillStyle = "#68b9fc";
-    ctx.fill();
-    ctx.beginPath();
-    ctx.rect(-0.5,6,2,2);
-    ctx.fillStyle = '#fff';
-    ctx.fill();
+	ctx.rect(6, 6, 3, 1);
+	ctx.fill();
+
+    // #rect18
+	ctx.beginPath();
+	ctx.rect(6, 9, 3, 1);
+	ctx.fill();
+	
+    // #rect19
+	ctx.beginPath();
+	ctx.rect(6, 13, 3, 1);
+	ctx.fill();
+	
+    // #rect20
+	ctx.fillStyle = 'rgb(255, 153, 85)';
+	ctx.beginPath();
+	ctx.rect(4, 12, 1, 1);
+	ctx.fill();
+	
+    // #rect1
+	ctx.fillStyle = 'rgb(255, 255, 255)';
+	ctx.beginPath();
+	ctx.moveTo(5, 0);
+	ctx.lineTo(5, 2);
+	ctx.lineTo(6, 2);
+	ctx.lineTo(6, 3);
+	ctx.lineTo(9, 3);
+	ctx.lineTo(9, 2);
+	ctx.lineTo(10, 2);
+	ctx.lineTo(10, 0);
+	ctx.lineTo(5, 0);
+	ctx.closePath();
+	ctx.fill();
 
     ctx.restore();
 };
 
 // Y-Port Extension
-var drawExtension = function(ctx,x,y) {
+var drawExtension = function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 10, y - 10);
 
-    // draw key metal
-    ctx.beginPath();
-    ctx.moveTo(-1,-2);
-    ctx.lineTo(-1,5);
-    ctx.moveTo(0,6);
-    ctx.quadraticCurveTo(1,6,1,3);
-    ctx.moveTo(1,4);
-    ctx.lineTo(2,4);
-    ctx.moveTo(1,1);
-    ctx.lineTo(1,-2);
-    ctx.moveTo(1,0);
-    ctx.lineTo(2,0);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = '#fff';
-    ctx.stroke();
+    const s = 0.6;
+    ctx.scale(s, s);
 
-    // draw key top
-    ctx.beginPath();
-    ctx.moveTo(0,-6);
-    ctx.quadraticCurveTo(-3,-6,-3,-4);
-    ctx.lineTo(-3,-2);
-    ctx.lineTo(3,-2);
-    ctx.lineTo(3,-4);
-    ctx.quadraticCurveTo(3,-6, 0,-6);
-    ctx.strokeStyle = ctx.fillStyle = "#68b9fc";
-    ctx.fill();
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(1,-5);
-    ctx.lineTo(-1,-5);
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = "#000";
-    ctx.stroke();
+    // Path generated from SVG w/ Inkscape
+    // #rect2
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(200, 190, 183)';
+	ctx.moveTo(6, 5);
+	ctx.lineTo(6, 6);
+	ctx.lineTo(12, 6);
+	ctx.lineTo(12, 5);
+	ctx.lineTo(6, 5);
+	ctx.closePath();
+	ctx.moveTo(12, 6);
+	ctx.lineTo(12, 7);
+	ctx.lineTo(14, 7);
+	ctx.lineTo(14, 6);
+	ctx.lineTo(12, 6);
+	ctx.closePath();
+	ctx.moveTo(14, 7);
+	ctx.lineTo(14, 8);
+	ctx.lineTo(15, 8);
+	ctx.lineTo(15, 7);
+	ctx.lineTo(14, 7);
+	ctx.closePath();
+	ctx.moveTo(15, 8);
+	ctx.lineTo(15, 18);
+	ctx.lineTo(16, 18);
+	ctx.lineTo(16, 8);
+	ctx.lineTo(15, 8);
+	ctx.closePath();
+	ctx.moveTo(15, 18);
+	ctx.lineTo(14, 18);
+	ctx.lineTo(14, 19);
+	ctx.lineTo(15, 19);
+	ctx.lineTo(15, 18);
+	ctx.closePath();
+	ctx.moveTo(14, 19);
+	ctx.lineTo(12, 19);
+	ctx.lineTo(12, 20);
+	ctx.lineTo(7, 20);
+	ctx.lineTo(7, 21);
+	ctx.lineTo(13, 21);
+	ctx.lineTo(13, 20);
+	ctx.lineTo(14, 20);
+	ctx.lineTo(14, 19);
+	ctx.closePath();
+	ctx.moveTo(5, 6);
+	ctx.lineTo(5, 7);
+	ctx.lineTo(6, 7);
+	ctx.lineTo(6, 6);
+	ctx.lineTo(5, 6);
+	ctx.closePath();
+	ctx.moveTo(5, 7);
+	ctx.lineTo(3, 7);
+	ctx.lineTo(3, 8);
+	ctx.lineTo(5, 8);
+	ctx.lineTo(5, 7);
+	ctx.closePath();
+	ctx.moveTo(3, 8);
+	ctx.lineTo(2, 8);
+	ctx.lineTo(2, 24);
+	ctx.lineTo(3, 24);
+	ctx.lineTo(3, 24);
+	ctx.lineTo(3, 25);
+	ctx.lineTo(5, 25);
+	ctx.lineTo(5, 24);
+	ctx.lineTo(4, 24);
+	ctx.lineTo(4, 23);
+	ctx.lineTo(3, 23);
+	ctx.lineTo(3, 8);
+	ctx.closePath();
+	ctx.moveTo(5, 25);
+	ctx.lineTo(5, 26);
+	ctx.lineTo(7, 26);
+	ctx.lineTo(7, 27);
+	ctx.lineTo(25, 27);
+	ctx.lineTo(25, 26);
+	ctx.lineTo(8, 26);
+	ctx.lineTo(8, 25);
+	ctx.lineTo(5, 25);
+	ctx.closePath();
+	ctx.moveTo(25, 26);
+	ctx.lineTo(27, 26);
+	ctx.lineTo(27, 25);
+	ctx.lineTo(25, 25);
+	ctx.lineTo(25, 26);
+	ctx.closePath();
+	ctx.moveTo(27, 25);
+	ctx.lineTo(28, 25);
+	ctx.lineTo(28, 24);
+	ctx.lineTo(27, 24);
+	ctx.lineTo(27, 25);
+	ctx.closePath();
+	ctx.moveTo(28, 24);
+	ctx.lineTo(29, 24);
+	ctx.lineTo(29, 19);
+	ctx.lineTo(30, 19);
+	ctx.lineTo(30, 18);
+	ctx.lineTo(31, 18);
+	ctx.lineTo(31, 17);
+	ctx.lineTo(31, 16);
+	ctx.lineTo(31, 14);
+	ctx.lineTo(31, 12);
+	ctx.lineTo(31, 8);
+	ctx.lineTo(26, 8);
+	ctx.lineTo(26, 10);
+	ctx.lineTo(25, 10);
+	ctx.lineTo(25, 9);
+	ctx.lineTo(24, 9);
+	ctx.lineTo(24, 8);
+	ctx.lineTo(20, 8);
+	ctx.lineTo(20, 10);
+	ctx.lineTo(21, 10);
+	ctx.lineTo(21, 11);
+	ctx.lineTo(20, 11);
+	ctx.lineTo(20, 12);
+	ctx.lineTo(21, 12);
+	ctx.lineTo(21, 13);
+	ctx.lineTo(22, 13);
+	ctx.lineTo(22, 14);
+	ctx.lineTo(23, 14);
+	ctx.lineTo(23, 15);
+	ctx.lineTo(24, 15);
+	ctx.lineTo(24, 16);
+	ctx.lineTo(25, 16);
+	ctx.lineTo(25, 17);
+	ctx.lineTo(26, 17);
+	ctx.lineTo(26, 18);
+	ctx.lineTo(27, 18);
+	ctx.lineTo(27, 19);
+	ctx.lineTo(28, 19);
+	ctx.lineTo(28, 24);
+	ctx.closePath();
+	ctx.fill();
+
+	ctx.fillStyle = 'rgb(128, 0, 128)';
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
+
+    // #rect1
+	ctx.beginPath();
+	ctx.rect(26, 5, 5, 3);
+	ctx.fill();
+
+    // #rect8
+	ctx.beginPath();
+	ctx.moveTo(21, 5);
+	ctx.lineTo(21, 6);
+	ctx.lineTo(20, 6);
+	ctx.lineTo(20, 7);
+	ctx.lineTo(19, 7);
+	ctx.lineTo(19, 8);
+	ctx.lineTo(18, 8);
+	ctx.lineTo(18, 10);
+	ctx.lineTo(19, 10);
+	ctx.lineTo(19, 11);
+	ctx.lineTo(21, 11);
+	ctx.lineTo(21, 10);
+	ctx.lineTo(22, 10);
+	ctx.lineTo(22, 9);
+	ctx.lineTo(23, 9);
+	ctx.lineTo(23, 8);
+	ctx.lineTo(24, 8);
+	ctx.lineTo(24, 7);
+	ctx.lineTo(23, 7);
+	ctx.lineTo(23, 6);
+	ctx.lineTo(22, 6);
+	ctx.lineTo(22, 5);
+	ctx.closePath();
+	ctx.fill();
+	
+	
+    // #rect21-7-7
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(255, 255, 255)';
+	ctx.moveTo(7, 21);
+	ctx.lineTo(7, 22);
+	ctx.lineTo(7, 23);
+	ctx.lineTo(8, 23);
+	ctx.lineTo(8, 22);
+	ctx.lineTo(10, 22);
+	ctx.lineTo(10, 21);
+	ctx.lineTo(7, 21);
+	ctx.closePath();
+	ctx.fill();
 
     ctx.restore();
 };
 
 // EnFIT Wrench
-var drawEnFitWrench = function(ctx,x,y) {
+var drawEnFitWrench = function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 0, y - 15);
 
-    // bread
+    const s = 0.65;
+    ctx.scale(s, s);
+    
+    ctx.rotate(45 * Math.PI / 180);
+
+    // Path generated from SVG w/ Inkscape    
+	ctx.fillStyle = 'rgb(44, 150, 213)';
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
+
     ctx.beginPath();
-    ctx.moveTo(-2,-5);
-    ctx.quadraticCurveTo(-4,-6,-6,-4);
-    ctx.quadraticCurveTo(-7,-2,-5,1);
-    ctx.quadraticCurveTo(-3,4,0,5);
-    ctx.quadraticCurveTo(5,5,5,-1);
-    ctx.quadraticCurveTo(6,-5,3,-5);
-    ctx.quadraticCurveTo(1,-5,0,-2);
-    ctx.quadraticCurveTo(-2,3,-5,5);
-    ctx.moveTo(1,1);
-    ctx.quadraticCurveTo(3,4,4,6);
-    ctx.lineWidth = 2.0;
-    ctx.lineCap = 'round';
-    ctx.strokeStyle = "#ffcc33";
-    ctx.stroke();
-
-    // salt
-    var spots = [
-        -5,-6,
-        1,-6,
-        4,-4,
-        -5,0,
-        -2,0,
-        6,1,
-        -4,6,
-        5,5,
-         ];
-
-    ctx.fillStyle = "#fff";
-    var i,len;
-    for (i=0, len=spots.length; i<len; i+=2) {
-        var x = spots[i];
-        var y = spots[i+1];
-        ctx.beginPath();
-        ctx.arc(x,y,0.65,0,2*Math.PI);
-        ctx.fill();
-    }
-
+	ctx.moveTo(3, 10);
+	ctx.lineTo(3, 11);
+	ctx.lineTo(2, 11);
+	ctx.lineTo(2, 12);
+	ctx.lineTo(1, 12);
+	ctx.lineTo(1, 13);
+	ctx.lineTo(0, 13);
+	ctx.lineTo(0, 18);
+	ctx.lineTo(1, 18);
+	ctx.lineTo(1, 19);
+	ctx.lineTo(2, 19);
+	ctx.lineTo(2, 20);
+	ctx.lineTo(3, 20);
+	ctx.lineTo(3, 21);
+	ctx.lineTo(5, 21);
+	ctx.lineTo(5, 17);
+	ctx.lineTo(4, 17);
+	ctx.lineTo(4, 16);
+	ctx.lineTo(2, 16);
+	ctx.lineTo(2, 15);
+	ctx.lineTo(4, 15);
+	ctx.lineTo(4, 13);
+	ctx.lineTo(9, 13);
+	ctx.lineTo(9, 15);
+	ctx.lineTo(11, 15);
+	ctx.lineTo(11, 16);
+	ctx.lineTo(9, 16);
+	ctx.lineTo(9, 17);
+	ctx.lineTo(8, 17);
+	ctx.lineTo(8, 21);
+	ctx.lineTo(10, 21);
+	ctx.lineTo(10, 20);
+	ctx.lineTo(11, 20);
+	ctx.lineTo(11, 19);
+	ctx.lineTo(13, 19);
+	ctx.lineTo(13, 18);
+	ctx.lineTo(24, 18);
+	ctx.lineTo(24, 19);
+	ctx.lineTo(26, 19);
+	ctx.lineTo(26, 20);
+	ctx.lineTo(31, 20);
+	ctx.lineTo(31, 19);
+	ctx.lineTo(32, 19);
+	ctx.lineTo(32, 14);
+	ctx.lineTo(32, 13);
+	ctx.lineTo(32, 12);
+	ctx.lineTo(31, 12);
+	ctx.lineTo(31, 11);
+	ctx.lineTo(26, 11);
+	ctx.lineTo(26, 12);
+	ctx.lineTo(24, 12);
+	ctx.lineTo(24, 13);
+	ctx.lineTo(13, 13);
+	ctx.lineTo(13, 12);
+	ctx.lineTo(11, 12);
+	ctx.lineTo(11, 11);
+	ctx.lineTo(10, 11);
+	ctx.lineTo(10, 10);
+	ctx.lineTo(3, 10);
+	ctx.closePath();
+	ctx.moveTo(27, 14);
+	ctx.lineTo(30, 14);
+	ctx.lineTo(30, 17);
+	ctx.lineTo(27, 17);
+	ctx.lineTo(27, 14);
+	ctx.closePath();
+	ctx.fill();
+    
     ctx.restore();
 };
 
 // Flying Squirrel
-var drawFlyingSquirrel = function(ctx,x,y) {
+var drawFlyingSquirrel = function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 8, y - 8);
 
-    // body
-    ctx.beginPath();
-    ctx.moveTo(0,-4);
-    ctx.bezierCurveTo(-1,-4,-2,-3,-2,-1);
-    ctx.bezierCurveTo(-2,1,-4,2,-4,4);
-    ctx.bezierCurveTo(-4,6,-2,7,0,7);
-    ctx.bezierCurveTo(2,7,4,6,4,4);
-    ctx.bezierCurveTo(4,2,2,1,2,-1);
-    ctx.bezierCurveTo(2,-3,1,-4,0,-4);
-    ctx.fillStyle = ctx.strokeStyle = "#00ff00";
-    ctx.stroke();
-    ctx.fill();
+    // Path generated from SVG w/ Inkscape
+	ctx.lineWidth = 1;
+	ctx.lineJoin = 'round';
+    
+    // #rect2
+	ctx.fillStyle = 'rgb(95, 141, 211)';
+	ctx.beginPath();
+	ctx.rect(3, 3, 3, 4);
+	ctx.fill();
+	
+    // #rect3
+	ctx.fillStyle = 'rgb(55, 113, 200)';
+	ctx.beginPath();
+	ctx.moveTo(5, 1);
+	ctx.lineTo(5, 2);
+	ctx.lineTo(4, 2);
+	ctx.lineTo(4, 3);
+	ctx.lineTo(7, 3);
+	ctx.lineTo(7, 2);
+	ctx.lineTo(10, 2);
+	ctx.lineTo(10, 3);
+	ctx.lineTo(11, 3);
+	ctx.lineTo(11, 4);
+	ctx.lineTo(13, 4);
+	ctx.lineTo(13, 3);
+	ctx.lineTo(13, 2);
+	ctx.lineTo(12, 2);
+	ctx.lineTo(12, 1);
+	ctx.lineTo(5, 1);
+	ctx.closePath();
+	ctx.fill();
+	
+    // #rect5
+	ctx.fillStyle = 'rgb(44, 90, 160)';
+	ctx.beginPath();
+	ctx.rect(6, 0, 5, 1);
+	ctx.fill();
+	
+    // #rect14
+	ctx.fillStyle = 'rgb(85, 153, 255)';
+	ctx.beginPath();
+	ctx.moveTo(4, 4);
+	ctx.lineTo(4, 5);
+	ctx.lineTo(3, 5);
+	ctx.lineTo(3, 7);
+	ctx.lineTo(6, 7);
+	ctx.lineTo(6, 5);
+	ctx.lineTo(5, 5);
+	ctx.lineTo(5, 4);
+	ctx.lineTo(4, 4);
+	ctx.closePath();
+	ctx.fill();
+	
+	ctx.fillStyle = 'rgb(0, 170, 212)';
 
-    // blue shine
-    ctx.beginPath();
-    ctx.moveTo(-2,3);
-    ctx.quadraticCurveTo(-2,5,-1,5);
-    ctx.strokeStyle = "#0033ff";
-    ctx.lineCap = 'round';
-    ctx.stroke();
-
-    // white stem
-    ctx.beginPath();
-    ctx.moveTo(0,-4);
-    ctx.quadraticCurveTo(0,-6,2,-6);
-    ctx.strokeStyle = "#fff";
-    ctx.lineCap = 'round';
-    ctx.stroke();
+// #rect15
+	ctx.beginPath();
+	ctx.rect(3, 7, 4, 2);
+	ctx.fill();
+	
+// #rect16
+	ctx.beginPath();
+	ctx.rect(10, 7, 3, 2);
+	ctx.fill();
+	
+// #rect17
+	ctx.fillStyle = 'rgb(95, 188, 211)';
+	ctx.beginPath();
+	ctx.moveTo(4, 8);
+	ctx.lineTo(4, 9);
+	ctx.lineTo(3, 9);
+	ctx.lineTo(3, 11);
+	ctx.lineTo(8, 11);
+	ctx.lineTo(9, 11);
+	ctx.lineTo(13, 11);
+	ctx.lineTo(13, 9);
+	ctx.lineTo(13, 8);
+	ctx.lineTo(12, 8);
+	ctx.lineTo(12, 9);
+	ctx.lineTo(9, 9);
+	ctx.lineTo(9, 10);
+	ctx.lineTo(8, 10);
+	ctx.lineTo(8, 9);
+	ctx.lineTo(6, 9);
+	ctx.lineTo(6, 8);
+	ctx.lineTo(4, 8);
+	ctx.closePath();
+	ctx.fill();
+	
+// #rect20
+	ctx.fillStyle = 'rgb(135, 205, 222)';
+	ctx.beginPath();
+	ctx.moveTo(7, 10);
+	ctx.lineTo(7, 11);
+	ctx.lineTo(3, 11);
+	ctx.lineTo(3, 13);
+	ctx.lineTo(8, 13);
+	ctx.lineTo(8, 12);
+	ctx.lineTo(9, 12);
+	ctx.lineTo(9, 13);
+	ctx.lineTo(13, 13);
+	ctx.lineTo(13, 11);
+	ctx.lineTo(13, 10);
+	ctx.lineTo(11, 10);
+	ctx.lineTo(11, 11);
+	ctx.lineTo(9, 11);
+	ctx.lineTo(8, 11);
+	ctx.lineTo(8, 10);
+	ctx.lineTo(7, 10);
+	ctx.closePath();
+	ctx.fill();
+	
+// #rect23
+	ctx.fillStyle = 'rgb(170, 238, 255)';
+	ctx.beginPath();
+	ctx.moveTo(4, 12);
+	ctx.lineTo(4, 13);
+	ctx.lineTo(3, 13);
+	ctx.lineTo(3, 15);
+	ctx.lineTo(13, 15);
+	ctx.lineTo(13, 13);
+	ctx.lineTo(6, 13);
+	ctx.lineTo(6, 12);
+	ctx.lineTo(4, 12);
+	ctx.closePath();
+	ctx.fill();
 
     ctx.restore();
 };
 
-// Curlin Pump
-var drawCurlinPump = function(ctx,x,y) {
+// Straighten Pump
+var drawStraightenPump =  function(ctx, x, y) {
     ctx.save();
-    ctx.translate(x,y);
+    ctx.translate(x - 8, y - 9);
 
-    // body
-    ctx.beginPath();
-    ctx.moveTo(-5,5);
-    ctx.quadraticCurveTo(-4,5,-2,6);
-    ctx.bezierCurveTo(2,6,6,2,6,-4);
-    ctx.lineTo(3,-3);
-    ctx.lineTo(3,-2);
-    ctx.lineTo(-4,5);
-    ctx.closePath();
-    ctx.fillStyle = ctx.strokeStyle = "#ffff00";
-    ctx.stroke();
-    ctx.fill();
+    const s = 1.1;
+    ctx.scale(s, s);
 
-    // stem
-    ctx.beginPath();
-    ctx.moveTo(4,-5);
-    ctx.lineTo(5,-6);
-    ctx.strokeStyle="#ffff00";
-    ctx.lineCap='round';
-    ctx.stroke();
+    // Path generated from SVG w/ Inkscape
+	ctx.lineWidth = 1.170032;
+	ctx.lineJoin = 'round';
 
-    // black mark
-    ctx.beginPath();
-    ctx.moveTo(3,-1);
-    ctx.lineTo(-2,4);
-    ctx.strokeStyle = "#000";
-    ctx.lineCap='round';
-    ctx.stroke();
+    // Draw pump
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(200, 190, 183)';
+	ctx.moveTo(1, 1);
+	ctx.lineTo(1, 15);
+	ctx.lineTo(12, 15);
+	ctx.lineTo(12, 7);
+	ctx.lineTo(13, 7);
+	ctx.lineTo(13, 6);
+	ctx.lineTo(14, 6);
+	ctx.lineTo(14, 1);
+	ctx.lineTo(12, 1);
+	ctx.lineTo(1, 1);
+	ctx.closePath();
+	ctx.fill();
+	
+    // Draw Screen
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(153, 153, 153)';
+	ctx.rect(2, 2, 11, 3);
+	ctx.fill();
+	
+    // Sraw Keypad
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(204, 204, 204)';
+	ctx.rect(2, 6, 9, 8);
+	ctx.fill();
+	
+    // Draw colored buttons
+	ctx.fillStyle = 'rgb(255, 102, 0)';
 
-    // shine
-    ctx.beginPath();
-    ctx.moveTo(2,3);
-    ctx.lineTo(0,5);
-    ctx.strokeStyle = "#fff";
-    ctx.lineCap='round';
-    ctx.stroke();
+    // Orange #1
+	ctx.beginPath();
+	ctx.rect(3, 7, 1, 1);
+	ctx.fill();
+	
+    // Orange #2
+	ctx.beginPath();
+	ctx.rect(5, 9, 1, 1);
+	ctx.fill();
+	
+    // Red
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(255, 0, 0)';
+	ctx.rect(9, 7, 1, 1);
+	ctx.fill();
+	
+    // Light Oraneg
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(255, 204, 0)';
+	ctx.rect(7, 13, 1, 1);
+	ctx.fill();
+	
+    // Pink
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(255, 170, 238)';
+	ctx.rect(7, 7, 1, 1);
+	ctx.fill();
+	
+    // Light Green
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(0, 128, 0)';
+	ctx.rect(9, 13, 1, 1);
+	ctx.fill();
+	
+    // Green
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(55, 200, 55)';
+	ctx.rect(7, 9, 1, 1);
+	ctx.fill();
+    
+    // Draw blue/purple buttons
+	ctx.fillStyle = 'rgb(102, 0, 255)';
+
+    // #rect11
+	ctx.beginPath();
+	ctx.rect(3, 9, 1, 1);
+	ctx.fill();
+	
+    // #rect12
+	ctx.beginPath();
+	ctx.rect(3, 11, 1, 1);
+	ctx.fill();
+	
+    // #rect13
+	ctx.beginPath();
+	ctx.rect(3, 13, 1, 1);
+	ctx.fill();
+	
+    // #rect14
+	ctx.beginPath();
+	ctx.rect(5, 13, 1, 1);
+	ctx.fill();
+	
+    // #rect15
+	ctx.beginPath();
+	ctx.rect(5, 11, 1, 1);
+	ctx.fill();
+	
+    // #rect16
+	ctx.beginPath();
+	ctx.rect(7, 11, 1, 1);
+	ctx.fill();
+	
+    // #rect17
+	ctx.beginPath();
+	ctx.rect(9, 11, 1, 1);
+	ctx.fill();
+	
+    // #rect18
+	ctx.beginPath();
+	ctx.rect(9, 9, 1, 1);
+	ctx.fill();
 
     ctx.restore();
 };
+
+// Bandaid
+const drawBandaid = function(ctx, x, y, angle) {
+    ctx.save();
+    ctx.translate(x - (angle < 0 ? 14.3 : 1), y - (angle < 0 ? -1.8 : 14));
+    
+    const s = 0.7;
+    ctx.scale(s, s);
+    ctx.rotate(angle * Math.PI / 180);
+
+    // Path generated from SVG w/ Inkscape
+    // Background
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(250, 181, 137)';
+	ctx.moveTo(3, 9);
+	ctx.lineTo(3, 10);
+	ctx.lineTo(2, 10);
+	ctx.lineTo(2, 11);
+	ctx.lineTo(1, 11);
+	ctx.lineTo(1, 16);
+	ctx.lineTo(2, 16);
+	ctx.lineTo(2, 17);
+	ctx.lineTo(3, 17);
+	ctx.lineTo(3, 18);
+	ctx.lineTo(29, 18);
+	ctx.lineTo(29, 17);
+	ctx.lineTo(30, 17);
+	ctx.lineTo(30, 16);
+	ctx.lineTo(31, 16);
+	ctx.lineTo(31, 11);
+	ctx.lineTo(30, 11);
+	ctx.lineTo(30, 10);
+	ctx.lineTo(29, 10);
+	ctx.lineTo(29, 9);
+	ctx.lineTo(3, 9);
+	ctx.closePath();
+	ctx.fill();
+	
+    // Left Spots
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(211, 143, 110)';
+	ctx.moveTo(4, 10);
+	ctx.lineTo(4, 11);
+	ctx.lineTo(5, 11);
+	ctx.lineTo(5, 10);
+	ctx.lineTo(4, 10);
+	ctx.closePath();
+	ctx.moveTo(8, 10);
+	ctx.lineTo(8, 11);
+	ctx.lineTo(9, 11);
+	ctx.lineTo(9, 10);
+	ctx.lineTo(8, 10);
+	ctx.closePath();
+	ctx.moveTo(6, 11);
+	ctx.lineTo(6, 12);
+	ctx.lineTo(7, 12);
+	ctx.lineTo(7, 11);
+	ctx.lineTo(6, 11);
+	ctx.closePath();
+	ctx.moveTo(4, 12);
+	ctx.lineTo(4, 13);
+	ctx.lineTo(5, 13);
+	ctx.lineTo(5, 12);
+	ctx.lineTo(4, 12);
+	ctx.closePath();
+	ctx.moveTo(8, 12);
+	ctx.lineTo(8, 13);
+	ctx.lineTo(9, 13);
+	ctx.lineTo(9, 12);
+	ctx.lineTo(8, 12);
+	ctx.closePath();
+	ctx.moveTo(6, 13);
+	ctx.lineTo(6, 14);
+	ctx.lineTo(7, 14);
+	ctx.lineTo(7, 13);
+	ctx.lineTo(6, 13);
+	ctx.closePath();
+	ctx.moveTo(4, 14);
+	ctx.lineTo(4, 15);
+	ctx.lineTo(5, 15);
+	ctx.lineTo(5, 14);
+	ctx.lineTo(4, 14);
+	ctx.closePath();
+	ctx.moveTo(8, 14);
+	ctx.lineTo(8, 15);
+	ctx.lineTo(9, 15);
+	ctx.lineTo(9, 14);
+	ctx.lineTo(8, 14);
+	ctx.closePath();
+	ctx.moveTo(6, 15);
+	ctx.lineTo(6, 16);
+	ctx.lineTo(7, 16);
+	ctx.lineTo(7, 15);
+	ctx.lineTo(6, 15);
+	ctx.closePath();
+	ctx.moveTo(4, 16);
+	ctx.lineTo(4, 17);
+	ctx.lineTo(5, 17);
+	ctx.lineTo(5, 16);
+	ctx.lineTo(4, 16);
+	ctx.closePath();
+	ctx.moveTo(8, 16);
+	ctx.lineTo(8, 17);
+	ctx.lineTo(9, 17);
+	ctx.lineTo(9, 16);
+	ctx.lineTo(8, 16);
+	ctx.closePath();
+	ctx.fill();
+	
+    // Right Spots
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(211, 143, 110)';
+	ctx.moveTo(23, 10);
+	ctx.lineTo(23, 11);
+	ctx.lineTo(24, 11);
+	ctx.lineTo(24, 10);
+	ctx.lineTo(23, 10);
+	ctx.closePath();
+	ctx.moveTo(27, 10);
+	ctx.lineTo(27, 11);
+	ctx.lineTo(28, 11);
+	ctx.lineTo(28, 10);
+	ctx.lineTo(27, 10);
+	ctx.closePath();
+	ctx.moveTo(25, 11);
+	ctx.lineTo(25, 12);
+	ctx.lineTo(26, 12);
+	ctx.lineTo(26, 11);
+	ctx.lineTo(25, 11);
+	ctx.closePath();
+	ctx.moveTo(23, 12);
+	ctx.lineTo(23, 13);
+	ctx.lineTo(24, 13);
+	ctx.lineTo(24, 12);
+	ctx.lineTo(23, 12);
+	ctx.closePath();
+	ctx.moveTo(27, 12);
+	ctx.lineTo(27, 13);
+	ctx.lineTo(28, 13);
+	ctx.lineTo(28, 12);
+	ctx.lineTo(27, 12);
+	ctx.closePath();
+	ctx.moveTo(25, 13);
+	ctx.lineTo(25, 14);
+	ctx.lineTo(26, 14);
+	ctx.lineTo(26, 13);
+	ctx.lineTo(25, 13);
+	ctx.closePath();
+	ctx.moveTo(23, 14);
+	ctx.lineTo(23, 15);
+	ctx.lineTo(24, 15);
+	ctx.lineTo(24, 14);
+	ctx.lineTo(23, 14);
+	ctx.closePath();
+	ctx.moveTo(27, 14);
+	ctx.lineTo(27, 15);
+	ctx.lineTo(28, 15);
+	ctx.lineTo(28, 14);
+	ctx.lineTo(27, 14);
+	ctx.closePath();
+	ctx.moveTo(25, 15);
+	ctx.lineTo(25, 16);
+	ctx.lineTo(26, 16);
+	ctx.lineTo(26, 15);
+	ctx.lineTo(25, 15);
+	ctx.closePath();
+	ctx.moveTo(23, 16);
+	ctx.lineTo(23, 17);
+	ctx.lineTo(24, 17);
+	ctx.lineTo(24, 16);
+	ctx.lineTo(23, 16);
+	ctx.closePath();
+	ctx.moveTo(27, 16);
+	ctx.lineTo(27, 17);
+	ctx.lineTo(28, 17);
+	ctx.lineTo(28, 16);
+	ctx.lineTo(27, 16);
+	ctx.closePath();
+	ctx.fill();
+	
+    // Center
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(211, 143, 110)';
+	ctx.moveTo(11, 11);
+	ctx.lineTo(11, 10);
+	ctx.lineTo(21, 10);
+	ctx.lineTo(21, 11);
+	ctx.lineTo(22, 11);
+	ctx.lineTo(22, 16);
+	ctx.lineTo(21, 16);
+	ctx.lineTo(21, 17);
+	ctx.lineTo(11, 17);
+	ctx.lineTo(11, 16);
+	ctx.lineTo(10, 16);
+	ctx.lineTo(10, 11);
+	ctx.closePath();
+	ctx.fill();
+
+    ctx.restore();
+}
+
+// New Energizer Pellet Design
+const drawCrossedBandaids = (ctx, x, y) =>  {
+    drawBandaid(ctx, x, y, 45);
+    drawBandaid(ctx, x, y, -45);
+}
 
 var drawCookie = function(ctx,x,y) {
     ctx.save();
@@ -2428,146 +3037,24 @@ var drawCookieFlash = function(ctx,x,y) {
     ctx.restore();
 };
 
-var getSpriteFuncFromFruitName = function(name) {
+var getSpriteFuncFromBonusName = function(name) {
     var funcs = {
-        'cherry': drawGTube,
-        'strawberry': drawInfinityPump,
-        'orange': drawOmniPump,
-        'apple': drawJoeyPump,
-        'melon': drawInfinityCharger,
-        'galaxian': drawInfinityBag,
-        'bell': drawFormulaBottle,
-        'key': drawExtension,
-        'pretzel': drawEnFitWrench,
-        'pear': drawFlyingSquirrel,
-        'banana': drawCurlinPump,
+        'gtube': drawGTube,
+        'endless_pump': drawEndlessPump,
+        'marsupial_pump': drawMarsupialPump,
+        'jamie_pump': drawJamiePump,
+        'usb_charger': drawUsbCharger,
+        'feeding_bag': drawFeedingBag,
+        'formula_bottle': drawFormulaBottle,
+        'y_extension': drawExtension,
+        'enfit_wrench': drawEnFitWrench,
+        'flying_squirrel': drawFlyingSquirrel,
+        'straighten_pump': drawStraightenPump,
         'cookie': drawCookie,
     };
 
     return funcs[name];
 };
-
-var drawRecordSymbol = function(ctx,x,y,color) {
-    ctx.save();
-    ctx.fillStyle = color;
-    ctx.translate(x,y);
-
-    ctx.beginPath();
-    ctx.arc(0,0,4,0,Math.PI*2);
-    ctx.fill();
-
-    ctx.restore();
-};
-
-var drawRewindSymbol = function(ctx,x,y,color) {
-    ctx.save();
-    ctx.fillStyle = color;
-    ctx.translate(x,y);
-
-    var s = 3;
-    var drawTriangle = function(x) {
-        ctx.beginPath();
-        ctx.moveTo(x,s);
-        ctx.lineTo(x-2*s,0);
-        ctx.lineTo(x,-s);
-        ctx.closePath();
-        ctx.fill();
-    };
-    drawTriangle(0);
-    drawTriangle(2*s);
-
-    ctx.restore();
-};
-
-var drawUpSymbol = function(ctx,x,y,color) {
-    ctx.save();
-    ctx.translate(x,y);
-    var s = tileSize;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(0,-s/2);
-    ctx.lineTo(s/2,s/2);
-    ctx.lineTo(-s/2,s/2);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-};
-
-var drawDownSymbol = function(ctx,x,y,color) {
-    ctx.save();
-    ctx.translate(x,y);
-    var s = tileSize;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(0,s/2);
-    ctx.lineTo(s/2,-s/2);
-    ctx.lineTo(-s/2,-s/2);
-    ctx.closePath();
-    ctx.fill();
-    ctx.restore();
-};
-
-var drawSnail = (function(){
-    var plotSolid = function(points,color) {
-        var len = points.length;
-        var i;
-        ctx.beginPath();
-        ctx.moveTo(points[0],points[1]);
-        for (i=2; i<len; i+=2) {
-            ctx.lineTo(points[i],points[i+1]);
-        }
-        ctx.closePath();
-        ctx.lineWidth = 1.0;
-        ctx.lineJoin = "round";
-        ctx.fillStyle = ctx.strokeStyle = color;
-        ctx.fill();
-        ctx.stroke();
-    };
-    return function(ctx,x,y,color) {
-        ctx.save();
-        ctx.translate(x,y);
-        ctx.beginPath();
-        ctx.moveTo(-7,3);
-        ctx.lineTo(-5,3);
-        ctx.bezierCurveTo(-6,0,-5,-3,-2,-3);
-        ctx.bezierCurveTo(0,-3,2,-2,2,2);
-        ctx.bezierCurveTo(3,-1,3,-2,5,-2);
-        ctx.bezierCurveTo(6,-2,6,0,5,0);
-        ctx.bezierCurveTo(4,1,4,3,2,3);
-        ctx.closePath();
-
-        ctx.lineWidth = 1.0;
-        ctx.lineCap = ctx.lineJoin = "round";
-        ctx.fillStyle = ctx.strokeStyle = color;
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(4,-2);
-        ctx.lineTo(3,-5);
-        ctx.moveTo(5,-1);
-        ctx.lineTo(7,-5);
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(3,-5, 1, 0, Math.PI*2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(7,-5, 1, 0, Math.PI*2);
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.moveTo(-4,1);
-        ctx.bezierCurveTo(-5,-1,-3,-3, -1,-2);
-        ctx.bezierCurveTo(0,-1,0,0,-1,1);
-        ctx.bezierCurveTo(-2,1,-3,0,-2,-0.5);
-        ctx.lineWidth = 0.5;
-        ctx.strokeStyle = "#000";
-        ctx.stroke();
-
-        ctx.restore();
-    };
-})();
 
 var drawHeartSprite = function(ctx,x,y) {
     ctx.save();

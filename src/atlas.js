@@ -3,7 +3,7 @@ var atlas = (function(){
 
     var canvas,ctx;
     var size = 22;
-    var cols = 14; // has to be ONE MORE than intended to fix some sort of CHROME BUG (last cell always blank?)
+    var cols = 15; // has to be ONE MORE than intended to fix some sort of CHROME BUG (last cell always blank?)
     var rows = 22;
 
     var creates = 0;
@@ -69,38 +69,39 @@ var atlas = (function(){
 
         var row = 0;
         drawAtCell(function(x,y) { drawGTube(ctx,x,y); },      row,0);
-        drawAtCell(function(x,y) { drawInfinityPump(ctx,x,y); },  row,1);
-        drawAtCell(function(x,y) { drawOmniPump(ctx,x,y); },      row,2);
-        drawAtCell(function(x,y) { drawJoeyPump(ctx,x,y); },       row,3);
-        drawAtCell(function(x,y) { drawInfinityCharger(ctx,x,y); },       row,4);
-        drawAtCell(function(x,y) { drawInfinityBag(ctx,x,y); },    row,5);
+        drawAtCell(function(x,y) { drawEndlessPump(ctx,x,y); },  row,1);
+        drawAtCell(function(x,y) { drawMarsupialPump(ctx,x,y); },      row,2);
+        drawAtCell(function(x,y) { drawJamiePump(ctx,x,y); },       row,3);
+        drawAtCell(function(x,y) { drawUsbCharger(ctx,x,y); },       row,4);
+        drawAtCell(function(x,y) { drawFeedingBag(ctx,x,y); },    row,5);
         drawAtCell(function(x,y) { drawFormulaBottle(ctx,x,y); },        row,6);
         drawAtCell(function(x,y) { drawExtension(ctx,x,y); },         row,7);
         drawAtCell(function(x,y) { drawEnFitWrench(ctx,x,y); },     row,8);
         drawAtCell(function(x,y) { drawFlyingSquirrel(ctx,x,y); },        row,9);
-        drawAtCell(function(x,y) { drawCurlinPump(ctx,x,y); },      row,10);
+        drawAtCell(function(x,y) { drawStraightenPump(ctx,x,y); },      row,10);
         drawAtCell(function(x,y) { drawCookie(ctx,x,y); },      row,11);
         drawAtCell(function(x,y) { drawCookieFlash(ctx,x,y); },      row,12);
+        drawAtCell(function(x,y) { drawCrossedBandaids(ctx, x, y); }, row, 13)
 
-        var drawGhostCells = function(row,color) {
+        var drawEnemyCells = function(row,color) {
             var i,f;
             var col = 0;
             for (i=0; i<4; i++) { // dirEnum
                 for (f=0; f<2; f++) { // frame
-                    drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, f, i, false, false, false, color); },   row,col);
+                    drawAtCell(function(x,y) { drawEnemySprite(ctx, x,y, f, i, false, false, false, color); },   row,col);
                     col++;
                 }
             }
         };
 
         row++;
-        drawGhostCells(row, "#DE373A");
+        drawEnemyCells(row, "#DE373A");
         row++;
-        drawGhostCells(row, "#55D400");
+        drawEnemyCells(row, "#55D400");
         row++;
-        drawGhostCells(row, "#099EDE");
+        drawEnemyCells(row, "#099EDE");
         row++;
-        drawGhostCells(row, "#FFB851");
+        drawEnemyCells(row, "#FFB851");
 
         row++;
         // draw disembodied eyes
@@ -108,52 +109,25 @@ var atlas = (function(){
             var i;
             var col = 0;
             for (i=0; i<4; i++) { // dirEnum
-                drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 0, i, false, false, true, "#3F3F3F"); },     row,col);
+                drawAtCell(function(x,y) { drawEnemySprite(ctx, x,y, 0, i, false, false, true, "#3F3F3F"); },     row,col);
                 col++;
             }
         })();
 
         // draw ghosts scared
-        drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 0, DIR_UP, true, false, false, "#3F3F3F"); }, row,4);
-        drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 1, DIR_UP, true, false, false, "#3F3F3F"); }, row,5);
-        drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 0, DIR_UP, true, true, false, "#3F3F3F"); },  row,6);
-        drawAtCell(function(x,y) { drawGhostSprite(ctx, x,y, 1, DIR_UP, true, true, false, "#3F3F3F"); },  row,7);
+        drawAtCell(function(x,y) { drawEnemySprite(ctx, x,y, 0, DIR_UP, true, false, false, "#3F3F3F"); }, row,4);
+        drawAtCell(function(x,y) { drawEnemySprite(ctx, x,y, 1, DIR_UP, true, false, false, "#3F3F3F"); }, row,5);
+        drawAtCell(function(x,y) { drawEnemySprite(ctx, x,y, 0, DIR_UP, true, true, false, "#3F3F3F"); },  row,6);
+        drawAtCell(function(x,y) { drawEnemySprite(ctx, x,y, 1, DIR_UP, true, true, false, "#3F3F3F"); },  row,7);
 
-        var drawPacCells = function(row,col,dir) {
-            drawAtCell(function(x,y) { drawPacmanSprite(ctx, x,y, dir, Math.PI/6); }, row, col);
-            drawAtCell(function(x,y) { drawPacmanSprite(ctx, x,y, dir, Math.PI/3); }, row, col+1);
-        };
+
         row++;
 
         // draw player mouth closed
         drawAtCell(function(x,y) { drawPacmanSprite(ctx, x,y, DIR_RIGHT, 0); }, row, 0);
-
+        row ++;
         // draw player directions
-        (function(){
-            var i;
-            var col=1;
-            for (i=0; i<4; i++) {
-                drawPacCells(row,col,i);
-                col+=2;
-            }
-        })();
-
-        var drawMsPacCells = function(row,col,dir) {
-            drawAtCell(function(x,y) { drawMsPacmanSprite(ctx, x,y, dir, 0); }, row, col);
-            drawAtCell(function(x,y) { drawMsPacmanSprite(ctx, x,y, dir, 1); }, row, col+1);
-            drawAtCell(function(x,y) { drawMsPacmanSprite(ctx, x,y, dir, 2); }, row, col+2);
-        };
-        row++;
-        (function(){
-            var i;
-            var col=0;
-            for (i=0; i<4; i++) {
-                drawMsPacCells(row,col,i);
-                col+=3;
-            }
-        })();
-
-        var drawCookieCells = function(row,col,dir) {
+        var drawTubieManCells = function(row,col,dir) {
             drawAtCell(function(x,y) { drawTubieManSprite(ctx, x,y, dir, 0, true); }, row, col);
             drawAtCell(function(x,y) { drawTubieManSprite(ctx, x,y, dir, 1, true); }, row, col+1);
             drawAtCell(function(x,y) { drawTubieManSprite(ctx, x,y, dir, 2, true); }, row, col+2);
@@ -163,7 +137,7 @@ var atlas = (function(){
             var i;
             var col=0;
             for (i=0; i<4; i++) {
-                drawCookieCells(row,col,i);
+                drawTubieManCells(row,col,i);
                 col+=3;
             }
         })();
@@ -203,21 +177,11 @@ var atlas = (function(){
         drawAtCell(function(x,y) { drawMonsterSprite(ctx, x,y, 0, DIR_UP, true, true, false, "#fff"); },  row,6);
         drawAtCell(function(x,y) { drawMonsterSprite(ctx, x,y, 1, DIR_UP, true, true, false, "#fff"); },  row,7);
 
-        var drawOttoCells = function(row,col,dir) {
-            var i;
-            for (i=0; i<4; i++) { // frame
-                drawAtCell(function(x,y) { drawOttoSprite(ctx, x,y, dir, i); }, row, col);
-                col++;
-            }
-        };
-        row++;
-        drawOttoCells(row,0, DIR_UP);
-        drawOttoCells(row,4, DIR_RIGHT);
-        row++;
-        drawOttoCells(row,0, DIR_DOWN);
-        drawOttoCells(row,4, DIR_LEFT);
+        // row++;
+        // row++;
 
-        row++;
+        // row++;
+        row += 3;
         drawAtCell(function(x,y) { drawPacPoints(ctx, x,y, 200, "#33ffff"); }, row, 0);
         drawAtCell(function(x,y) { drawPacPoints(ctx, x,y, 400, "#33ffff"); }, row, 1);
         drawAtCell(function(x,y) { drawPacPoints(ctx, x,y, 800, "#33ffff"); }, row, 2);
@@ -231,36 +195,13 @@ var atlas = (function(){
         drawAtCell(function(x,y) { drawPacPoints(ctx, x,y, 3000, "#ffb8ff"); }, row, 10);
         drawAtCell(function(x,y) { drawPacPoints(ctx, x,y, 5000, "#ffb8ff"); }, row, 11);
         row++;
-        drawAtCell(function(x,y) { drawMsPacPoints(ctx, x,y, 100, "#fff"); }, row, 0);
-        drawAtCell(function(x,y) { drawMsPacPoints(ctx, x,y, 200, "#fff"); }, row, 1);
-        drawAtCell(function(x,y) { drawMsPacPoints(ctx, x,y, 500, "#fff"); }, row, 2);
-        drawAtCell(function(x,y) { drawMsPacPoints(ctx, x,y, 700, "#fff"); }, row, 3);
-        drawAtCell(function(x,y) { drawMsPacPoints(ctx, x,y, 1000, "#fff"); }, row, 4);
-        drawAtCell(function(x,y) { drawMsPacPoints(ctx, x,y, 2000, "#fff"); }, row, 5);
-        drawAtCell(function(x,y) { drawMsPacPoints(ctx, x,y, 5000, "#fff"); }, row, 6);
-
-        row++;
-        drawAtCell(function(x,y) {
-            drawSnail(ctx,x,y, "#0ff");
-        }, row, 0);
-        drawAtCell(function(x,y) {
-            drawSnail(ctx,x,y, "#FFF");
-        }, row, 1);
-
-        var drawMsOttoCells = function(row,col,dir) {
-            var i;
-            for (i=0; i<4; i++) { // frame
-                drawAtCell(function(x,y) { drawMsOttoSprite(ctx, x,y, dir, i); }, row, col);
-                col++;
-            }
-        };
-        row++;
-        drawMsOttoCells(row,0, DIR_UP);
-        drawMsOttoCells(row,4, DIR_RIGHT);
-        row++;
-        drawMsOttoCells(row,0, DIR_DOWN);
-        drawMsOttoCells(row,4, DIR_LEFT);
-
+        drawAtCell(function(x,y) { drawBonusPoints(ctx, x,y, 100, "#fff"); }, row, 0);
+        drawAtCell(function(x,y) { drawBonusPoints(ctx, x,y, 200, "#fff"); }, row, 1);
+        drawAtCell(function(x,y) { drawBonusPoints(ctx, x,y, 500, "#fff"); }, row, 2);
+        drawAtCell(function(x,y) { drawBonusPoints(ctx, x,y, 700, "#fff"); }, row, 3);
+        drawAtCell(function(x,y) { drawBonusPoints(ctx, x,y, 1000, "#fff"); }, row, 4);
+        drawAtCell(function(x,y) { drawBonusPoints(ctx, x,y, 2000, "#fff"); }, row, 5);
+        drawAtCell(function(x,y) { drawBonusPoints(ctx, x,y, 5000, "#fff"); }, row, 6);
     };
 
     var copyCellTo = function(row, col, destCtx, x, y,display) {
@@ -294,34 +235,23 @@ var atlas = (function(){
         }
     };
 
-    var copyPacFruitPoints = function(destCtx,x,y,points) {
-        var row = 16;
-        var col = {
+    var copyBonusPoints = function(destCtx,x,y,points) {
+        // var row = 17;
+        const row = 16;
+        const col = {
             100: 4,
+            200: 0,
             300: 5,
             500: 6,
             700: 7,
+            800: 2,
             1000: 8,
+            1600: 3,
             2000: 9,
             3000: 10,
             5000: 11,
         }[points];
-        if (col != undefined) {
-            copyCellTo(row, col, destCtx, x, y);
-        }
-    };
 
-    var copyMsPacFruitPoints = function(destCtx,x,y,points) {
-        var row = 17;
-        var col = {
-            100: 0,
-            200: 1,
-            500: 2,
-            700: 3,
-            1000: 4,
-            2000: 5,
-            5000: 6,
-        }[points];
         if (col != undefined) {
             copyCellTo(row, col, destCtx, x, y);
         }
@@ -361,17 +291,7 @@ var atlas = (function(){
     };
 
     var copySyringeSprite = function(destCtx,x,y,frame,dirEnum,scared,flash,eyes_only,color) {
-        if (scared) {
-            if (flash) {
-                copyFruitSprite(destCtx,x,y,"cookieface");
-            }
-            else {
-                copyFruitSprite(destCtx,x,y,"cookie");
-            }
-        }
-        else {
             copyGhostSprite(destCtx,x,y,frame,dirEnum,scared,flash,eyes_only,color);
-        }
     };
 
     var copyMonsterSprite = function(destCtx,x,y,frame,dirEnum,scared,flash,eyes_only,color) {
@@ -413,20 +333,20 @@ var atlas = (function(){
         copyCellTo(row,col,destCtx,x,y);
     };
 
-    var copyFruitSprite = function(destCtx,x,y,name) {
+    var copyBonusSprite = function(destCtx,x,y,name) {
         var row = 0;
         var col = {
-            "cherry": 0,
-            "strawberry": 1,
-            "orange": 2,
-            "apple": 3,
-            "melon": 4,
-            "galaxian": 5,
-            "bell": 6,
-            "key": 7,
-            "pretzel": 8,
-            "pear": 9,
-            "banana": 10,
+            "gtube": 0,
+            "endless_pump": 1,
+            "marsupial_pump": 2,
+            "jamie_pump": 3,
+            "usb_charger": 4,
+            "feeding_bag": 5,
+            "formula_bottle": 6,
+            "y_extension": 7,
+            "enfit_wrench": 8,
+            "flying_squirrel": 9,
+            "straighten_pump": 10,
             "cookie": 11,
             "cookieface": 12,
         }[name];
@@ -434,15 +354,21 @@ var atlas = (function(){
         copyCellTo(row,col,destCtx,x,y);
     };
 
+    const copyCrossedBandaids = (destCtx, x, y) => {
+        const row = 0;
+        const col = 13;
+        copyCellTo(row, col, destCtx, x, y);
+    }
+
     return {
         create: create,
         getCanvas: function() { return canvas; },
         drawMonsterSprite: copyMonsterSprite,
         drawSyringeSprite: copySyringeSprite,
         drawTubieManSprite: copyTubieManSprite,
-        drawFruitSprite: copyFruitSprite,
-        drawGhostPoints: copyGhostPoints,
-        drawPacFruitPoints: copyPacFruitPoints,
-        drawMsPacFruitPoints: copyMsPacFruitPoints
+        drawBonusSprite: copyBonusSprite,
+        drawEnemyPoints: copyGhostPoints,
+        drawBonusPoints: copyBonusPoints,
+        drawCrossedBandaids: copyCrossedBandaids
     };
 })();

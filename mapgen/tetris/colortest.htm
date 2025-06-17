@@ -261,7 +261,7 @@ player.pixel = {
 // Sprites
 // (sprites are created using canvas paths)
 
-var drawGhostSprite = (function(){
+var drawEnemySprite = (function(){
 
     // add top of the ghost head to the current canvas path
     var addHead = (function() {
@@ -538,7 +538,7 @@ var drawPacmanSprite = function(ctx,dirEnum,angle,mouthShift,scale,centerShift,a
     ctx.restore();
 };
 
-var drawGhosts = function(ctx) {
+var drawEnemys = function(ctx) {
     var i=0;
     var actorSize = (tileSize-1)*2;
     for (i=0;i<4;i++) {
@@ -546,7 +546,7 @@ var drawGhosts = function(ctx) {
         ctx.save();
         ctx.translate(g.pixel.x-actorSize/2+1, g.pixel.y-actorSize/2);
         var frame = 0;
-        drawGhostSprite(ctx,frame,g.dirEnum,g.scared,false,false,g.color);
+        drawEnemySprite(ctx,frame,g.dirEnum,g.scared,false,false,g.color);
         ctx.restore();
     }
 };
@@ -560,7 +560,7 @@ var drawPlayer = function(ctx) {
 };
 
 var drawActors = function(ctx) {
-    drawGhosts(ctx);
+    drawEnemys(ctx);
     drawPlayer(ctx);
 };
 

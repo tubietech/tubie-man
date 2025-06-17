@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <style>
+    <!-- <style>
         @font-face {
             font-family: 'PressStart2P';
             src: url('PressStart2P.ttf');
@@ -10,12 +10,12 @@
             font-family: 'ArcadeR';
             src: url('Arcade-Rounded.otf');
         }
-    </style>
+    </style> -->
 </head>
 
 <body>
-    <div style='font-family: PressStart2P'> </div>
-    <div style='font-family: ArcadeR'> </div>
+    <div style='font-family: "Press Start 2P"'> </div>
+    <div style='font-family: "Press Start 2P"'> </div>
 <canvas id='canvas' width=800 height=800 style='background:black'></canvas>
 <script>
 
@@ -24,14 +24,14 @@
         var canvas = document.getElementById('canvas');
         var ctx = canvas.getContext('2d');
 
-        ctx.font = "30px PressStart2P";
+        ctx.font = "30px 'Press Start 2P'";
         ctx.fillStyle = "red";
         ctx.textBaseline = 'top';
         ctx.fillText('GAME OVER',10,10);
         ctx.fillStyle = "yellow";
         ctx.fillText('READY!',10,50);
 
-        ctx.font = "30px ArcadeR";
+        ctx.font = "30px 'Press Start 2P'";
         ctx.fillStyle = "red";
         ctx.fillText('GAME OVER',10,90);
         ctx.fillStyle = "yellow";

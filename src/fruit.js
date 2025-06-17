@@ -53,7 +53,7 @@ BaseFruit.prototype = {
         if (this.isPresent() && this.isCollide()) {
             addScore(this.getPoints());
             audio.silence(true);
-            audio.eatingFruit.play();
+            audio.eatingBonus.play();
             setTimeout(ghosts[0].playSounds, 500);
             this.reset();
             this.scoreFramesLeft = this.scoreDuration*60;
@@ -61,122 +61,26 @@ BaseFruit.prototype = {
     },
 };
 
-// PAC-MAN FRUIT
-
-var PacFruit = function() {
-    BaseFruit.call(this);
-    this.fruits = [
-        {name:'cherry',     points:100},
-        {name:'strawberry', points:300},
-        {name:'orange',     points:500},
-        {name:'apple',      points:700},
-        {name:'melon',      points:1000},
-        {name:'galaxian',   points:2000},
-        {name:'bell',       points:3000},
-        {name:'key',        points:5000},
-    ];
-
-    this.order = [
-        0,  // level 1
-        1,  // level 2 
-        2,  // level 3
-        2,  // level 4
-        3,  // level 5
-        3,  // level 6
-        4,  // level 7
-        4,  // level 8
-        5,  // level 9
-        5,  // level 10
-        6,  // level 11
-        6,  // level 12
-        7]; // level 13+
-
-    this.dotLimit1 = 70;
-    this.dotLimit2 = 170;
-
-    this.duration = 9; // number of seconds that the fruit is on the screen
-    this.framesLeft; // frames left until fruit is off the screen
-
-    this.savedFramesLeft = {};
-};
-
-PacFruit.prototype = newChildObject(BaseFruit.prototype, {
-
-    onNewLevel: function() {
-        this.setCurrentFruit(this.getFruitIndexFromLevel(level));
-        BaseFruit.prototype.onNewLevel.call(this);
-    },
-
-    getFruitFromLevel: function(i) {
-        return this.fruits[this.getFruitIndexFromLevel(i)];
-    },
-
-    getFruitIndexFromLevel: function(i) {
-        if (i > 13) {
-            i = 13;
-        }
-        return this.order[i-1];
-    },
-
-    buildFruitHistory: function() {
-        this.fruitHistory = {};
-        var i;
-        for (i=1; i<= level; i++) {
-            this.fruitHistory[i] = this.fruits[this.getFruitIndexFromLevel(i)];
-        }
-    },
-
-    initiate: function() {
-        var x = 13;
-        var y = 20;
-        this.pixel.x = tileSize*(1+x)-1;
-        this.pixel.y = tileSize*y + midTile.y;
-        this.framesLeft = 60*this.duration;
-    },
-
-    isPresent: function() {
-        return this.framesLeft > 0;
-    },
-
-    reset: function() {
-        BaseFruit.prototype.reset.call(this);
-
-        this.framesLeft = 0;
-    },
-
-    update: function() {
-        BaseFruit.prototype.update.call(this);
-
-        if (this.framesLeft > 0)
-            this.framesLeft--;
-    },
-
-    save: function(t) {
-        BaseFruit.prototype.save.call(this,t);
-        this.savedFramesLeft[t] = this.framesLeft;
-    },
-    load: function(t) {
-        BaseFruit.prototype.load.call(this,t);
-        this.framesLeft = this.savedFramesLeft[t];
-    },
-});
-
-// MS. PAC-MAN FRUIT
+// Tubie-Man Fruits
 
 var PATH_ENTER = 0;
 var PATH_PEN = 1;
 var PATH_EXIT = 2;
 
-var MsPacFruit = function() {
+var TMFruit = function() {
     BaseFruit.call(this);
     this.fruits = [
-        {name: 'cherry',     points: 100},
-        {name: 'strawberry', points: 200},
-        {name: 'orange',     points: 500},
-        {name: 'pretzel',    points: 700},
-        {name: 'apple',      points: 1000},
-        {name: 'pear',       points: 2000},
-        {name: 'banana',     points: 5000},
+        {name: 'gtube',     points: 100},
+        {name: 'endless_pump', points: 200},
+        {name: 'marsupial_pump',     points: 300},
+        {name: 'jamie_pump',    points: 500},
+        {name: 'usb_charger',      points: 700},
+        {name: 'feeding_bag',       points: 800},
+        {name: 'formula_bottle',     points: 1000},
+        {name: 'y_extension',      points: 1600},
+        {name: 'enfit_wrench',       points: 2000},
+        {name: 'flying_squirrel',     points: 3000},
+        {name: 'straighten_pump',      points: 5000}
     ];
 
     this.dotLimit1 = 64;
@@ -192,14 +96,19 @@ var MsPacFruit = function() {
     this.savedPath = {};
 };
 
-MsPacFruit.prototype = newChildObject(BaseFruit.prototype, {
+TMFruit.prototype = newChildObject(BaseFruit.prototype, {
+
+    getNumFruit: function() {
+        return this.fruits.length + 1; // Offset by 1 b/c levels don't start at 0
+    },
 
     shouldRandomizeFruit: function() {
-        return level > 7;
+        // return level > 11;
+        return level > this.getNumFruit();
     },
 
     getFruitFromLevel: function(i) {
-        if (i <= 7) {
+        if (i <= this.getNumFruit()) {
             return this.fruits[i-1];
         }
         else {
@@ -220,7 +129,7 @@ MsPacFruit.prototype = newChildObject(BaseFruit.prototype, {
     buildFruitHistory: function() {
         this.fruitHistory = {};
         var i;
-        for (i=1; i<= Math.max(level,7); i++) {
+        for (i=1; i<= Math.max(level, this.getNumFruit()); i++) {
             this.fruitHistory[i] = this.fruits[i-1];
         }
     },
@@ -241,8 +150,9 @@ MsPacFruit.prototype = newChildObject(BaseFruit.prototype, {
 
     initiate: function() {
         if (this.shouldRandomizeFruit()) {
-            this.setCurrentFruit(getRandomInt(0,6));
+            this.setCurrentFruit(getRandomInt(0, this.getNumFruit() - 1));
         }
+
         var entrances = map.fruitPaths.entrances;
         var e = entrances[getRandomInt(0,entrances.length-1)];
         this.initiatePath(e.path);
@@ -334,4 +244,4 @@ MsPacFruit.prototype = newChildObject(BaseFruit.prototype, {
     },
 });
 
-var fruit = new MsPacFruit();
+var fruit = new TMFruit();

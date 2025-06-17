@@ -31,12 +31,11 @@ var getGameDescription = function() {
         ];
 };
 
-var getGhostNames = function() {
-    ///return ["sticky","pricky","icky","asher"];
+var getEnemyNames = function() {
     return ghosts.map((ghost) => ghost.name)
 }
 
-var getGhostDrawFunc = function() { return atlas.drawSyringeSprite; }
+var getEnemyDrawFunc = function() { return atlas.drawSyringeSprite; }
 
 var getPlayerDrawFunc = function() { return atlas.drawTubieManSprite; }
 
@@ -117,7 +116,8 @@ var scores = [
 var highScores = [
     10000,10000, // pacman
     10000,10000, // mspac
-    10000,10000, // tubie
+    // 10000,10000, // tubie
+    0, 0,
     10000,10000, // otto
     ];
 

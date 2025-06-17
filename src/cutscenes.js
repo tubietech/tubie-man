@@ -66,7 +66,7 @@ var tubieManCutscene1 = newChildObject(scriptState, {
                 renderer.blitMap();
                 renderer.beginMapClip();
                 renderer.drawPlayer();
-                renderer.drawGhost(enemy1);
+                renderer.drawEnemy(enemy1);
                 renderer.endMapClip();
             },
         },
@@ -113,7 +113,7 @@ var tubieManCutscene1 = newChildObject(scriptState, {
                     ctx.translate(x,y);
                     var s = 16/6;
                     ctx.scale(s,s);
-                    drawCookie(ctx,0,0);
+                    renderer.drawEnemy(enemy1);
                     ctx.restore();
                 });
                 renderer.endMapClip();
@@ -149,7 +149,7 @@ var tubieManCutscene2 = (function() {
     */
 
     // create new players pac and mspac for this scene
-    var pac = new Ghost();
+    var pac = new Enemy();
     pac.scared = true;
     pac.mode = GHOST_OUTSIDE;
     var mspac = new Player();
@@ -175,8 +175,8 @@ var tubieManCutscene2 = (function() {
             drawPlayer(ctx,pac);
             drawPlayer(ctx,mspac);
         });
-        renderer.drawGhost(enemy3);
-        renderer.drawGhost(enemy2);
+        renderer.drawEnemy(enemy3);
+        renderer.drawEnemy(enemy2);
         renderer.endMapClip();
     };
 
@@ -453,10 +453,10 @@ var tubieManCutscene2 = (function() {
                             drawPlayer(ctx,mspac);
                         });
                         if (enemy3BounceFrame < enemy3BounceFrameLen) {
-                            renderer.drawGhost(enemy3);
+                            renderer.drawEnemy(enemy3);
                         }
                         if (enemy2BounceFrame < enemy2BounceFrameLen) {
-                            renderer.drawGhost(enemy2);
+                            renderer.drawEnemy(enemy2);
                         }
                         if (playerMode == PLAYER_MEET) {
                             renderer.renderFunc(function(ctx) {

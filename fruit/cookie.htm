@@ -27,11 +27,11 @@ window.onload = function() {
 
     var drawMap = function(map,x,y) {
         map.draw(ctx,x,y,true);
-        map.drawFruitPaths(ctx,x,y,'entrances');
+        map.drawBonusPaths(ctx,x,y,'entrances');
 
         x += tileSize*30;
         map.draw(ctx,x,y,true);
-        map.drawFruitPaths(ctx,x,y,'exits');
+        map.drawBonusPaths(ctx,x,y,'exits');
     };
 
     drawMap(mapgen(),x,y);

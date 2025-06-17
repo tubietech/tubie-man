@@ -200,7 +200,7 @@ var vcr = (function() {
         seekUpBtn.disable();
         seekDownBtn.disable();
         seekToggleBtn.setIcon(function(ctx,x,y,frame) {
-            drawRewindSymbol(ctx,x,y,"#FFF");
+            drawStraightenPump(ctx,x,y,"#FFF");
         });
         seekToggleBtn.setText();
     };
@@ -237,14 +237,14 @@ var vcr = (function() {
             nextSpeed(1);
         });
     seekUpBtn.setIcon(function(ctx,x,y,frame) {
-        drawUpSymbol(ctx,x,y,"#FFF");
+        drawStraightenPump(ctx,x,y,"#FFF");
     });
     var seekDownBtn = new Button(x,y+h+pad,w,h,
         function() {
             nextSpeed(-1);
         });
     seekDownBtn.setIcon(function(ctx,x,y,frame) {
-        drawDownSymbol(ctx,x,y,"#FFF");
+        drawStraightenPumpmbol(ctx,x,y,"#FFF");
     });
     var seekToggleBtn = new ToggleButton(x,y,w,h,
         function() {
@@ -254,9 +254,9 @@ var vcr = (function() {
             on ? startSeeking() : startRecording();
         });
     seekToggleBtn.setIcon(function(ctx,x,y,frame) {
-        drawRewindSymbol(ctx,x,y,"#FFF");
+        drawStraightenPump(ctx,x,y,"#FFF");
     });
-    seekToggleBtn.setFont((tileSize-1)+"px ArcadeR", "#FFF");
+    seekToggleBtn.setFont((tileSize-1)+"px 'Press Start 2P'", "#FFF");
     var slowBtn = new ToggleButton(-w-pad-1,y,w,h,
         function() {
             return executive.getFramePeriod() == 1000/15;

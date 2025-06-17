@@ -38,7 +38,7 @@ const InputSources = Object.freeze({
     _typeName: "InputSources", // Used to identify the object 'type' at runtime. Used for typechecking params
     KEYBOARD: "keyboard",
     SWIPE: "swipe",
-    CONTROLLER: "controller"
+    GAMEPAD: "controller"
 });
 
 const Actions = Object.freeze({
@@ -51,10 +51,15 @@ const Actions = Object.freeze({
     EXIT: "exit",
     MENU_UP: "menuUp",
     MENU_DOWN: "menuDown",
-    MENU_CLOSE: "menuClose",
+    MENU_LEFT: "menuLeft",
+    MENU_RIGHT: "menuRight",
+    MENU_OPEN: "menuOpen",
     PAUSE: "pause",
     CHEAT: "cheat",
-    UNUSED: "unused"
+    UNUSED: "unused",
+    TOGGLE_MUTE: "toggleMute",
+    VOLUME_UP: "volumeUp",
+    VOLUME_DOWN: "volumeDown"
 });
 
 const Keys = Object.freeze({
@@ -126,11 +131,37 @@ const Keys = Object.freeze({
     NUM_7: "Numpad7",
     NUM_8: "Numpad8",
     NUM_9: "Numpad9",
-    NUM_ENTER: "NumpadEnterA"
+    NUM_ENTER: "NumpadEnter",
+    NUM_ADD: "NumpadAdd",
+    NUM_SUBTRACT: "NumpadSubtract",
+
+    //Gamepad 'Left' Joystick
+    JOYSTICK_RIGHT: "JoystickRight",
+    JOYSTICK_LEFT: "JoystickLeft",
+    JOYSTICK_UP: "JoystickUp",
+    JOYSTICK_DOWN: "JoystickDown",
+
+    // Gamepad Buttons
+    GAMEPAD_0: "GamepadButton0",
+    GAMEPAD_1: "GamepadButton1",
+    GAMEPAD_2: "GamepadButton2",
+    GAMEPAD_3: "GamepadButton3",
+    GAMEPAD_4: "GamepadButton4",
+    GAMEPAD_5: "GamepadButton5",
+    GAMEPAD_6: "GamepadButton6",
+    GAMEPAD_7: "GamepadButton7",
+    GAMEPAD_8: "GamepadButton8",
+    GAMEPAD_9: "GamepadButton9",
+    GAMEPAD_10: "GamepadButton10",
+    GAMEPAD_11: "GamepadButton11",
+    GAMEPAD_12: "GamepadButton12",
 });
 
 // Maps Keys to Input Types
 const KeyInputMap = {};
+
+// Map of Active Gamepads. Maps their ID to the GamePad object
+const gamepads = {};
 
 // Immutable representation of an input
 class Input {
@@ -274,7 +305,8 @@ class InputQueue {
         if(input.isInstantaneous() === false)
             throw new Error("Only instaneous inputs may be passed to this function");
 
-        if(input.evaluateCondition()) {
+        const res = input.evaluateCondition();
+        if(res) {
             const inputHash = input.getHash();
         
             if(this.#instantaneousInputHandlers.hasOwnProperty(inputHash))
@@ -282,6 +314,7 @@ class InputQueue {
             else
                 console.log(`A handler does not exist for the input ${input.getValue()} with hash ${inputHash}`);            
         }
+        return res !== undefined && res !== false && res !== null;
     }
 
     removeInstantaneousInputHandler(input) {
@@ -296,13 +329,15 @@ class InputQueue {
         // TODO: Test functionality of removing volatile inputs when enquing instantaneous ones. We may want to only remove volatile for non-instantaneous inptus
         this.#removeVolatileInputs();
         this.#removeExistingInputInstances(input);
-        
+
+        let wasHandled = false;
         if(input.isInstantaneous())
-            this.handleInstaneousInput(input);
+            wasHandled = this.handleInstaneousInput(input);
         else
             this.#queue.push(input);
 
-        this.#updateHistory(input);        
+        this.#updateHistory(input);   
+        return wasHandled;     
     }
 
     dequeue(input) {
@@ -365,7 +400,7 @@ const addKeyInputMapentry = (key, input) => {
 }
 
 (function(){
-    var addKeyDownHandler = (key, inputType, isInstantaneous, handler, conditionFunc) => {
+    var addKeyDownHandler = (key, inputType, isGamepadInput, isInstantaneous, handler, conditionFunc) => {
         if(!Object.values(Keys).includes(key))
             throw new Error(`Unable to add Keyhandler for the Key ${key}, as it does not exist in the Keys type`);
         if(!Object.values(Actions).includes(inputType))
@@ -373,10 +408,10 @@ const addKeyInputMapentry = (key, input) => {
         if(!(conditionFunc === null || conditionFunc === undefined) && !(typeof conditionFunc === "function"))
             throw new Error("If a condidionFunc is provided, it must be of type 'function'");
 
-        const input = new Input(inputType, InputSources.KEYBOARD, false, isInstantaneous, conditionFunc);
+        const input = new Input(inputType, isGamepadInput ? InputSources.GAMEPAD : InputSources.KEYBOARD, false, isInstantaneous, conditionFunc);
 
         if(isInstantaneous && typeof handler === "function")
-            inputQueue.addInstantaneousInputHandler(input, handler)
+            inputQueue.addInstantaneousInputHandler(input, handler);
 
         addKeyInputMapentry(key, input);
     }
@@ -387,7 +422,11 @@ const addKeyInputMapentry = (key, input) => {
         
         if(keyInputMap.hasOwnProperty(keyCode)) {
             const inputs = keyInputMap[keyCode];
-            inputs.forEach((input) => inputQueue.enqueue(input));
+            for(let inpt of inputs) {
+                const res = inputQueue.enqueue(inpt);
+                if(res === true)
+                    break;
+            };
         } else {
             console.log(`No input is mapped to the key ${keyCode}`);
         }
@@ -403,12 +442,14 @@ const addKeyInputMapentry = (key, input) => {
 
     // Menu Navigation Keys
     var _INPUT_menu;
+    var _INPUT_state;
     
     var isInMenu = function() {
         _INPUT_menu = (state.getMenu && state.getMenu());
         if (!_INPUT_menu && inGameMenu.isOpen()) {
             _INPUT_menu = inGameMenu.getMenu();
         }
+        
         return _INPUT_menu;
     };
 
@@ -423,31 +464,63 @@ const addKeyInputMapentry = (key, input) => {
 
     //addKeyDownHandler(KEY, INPUT_TYPE, IS_INSTANTANEOUS, HANDLER, ?CONDITION_FUNC);
 
+    // Global Keys
+    addKeyDownHandler(Keys.M, Actions.TOGGLE_MUTE, false, true, function(){if(audio.isPlaying()) audio.toggleMute()}, () => true);
+    addKeyDownHandler(Keys.NUM_ADD, Actions.VOLUME_UP, false, true, function(){if(audio.isPlaying()) audio.volumeUp()}, () => true);
+    addKeyDownHandler(Keys.NUM_SUBTRACT, Actions.VOLUME_DOWN, false, true, function(){if(audio.isPlaying()) audio.volumeDown()}, () => true);
+    
+    addKeyDownHandler(Keys.GAMEPAD_3, Actions.TOGGLE_MUTE, true, true, function(){if(audio.isPlaying()) audio.toggleMute()}, () => true);
+    addKeyDownHandler(Keys.GAMEPAD_7, Actions.VOLUME_UP, true, true, function(){if(audio.isPlaying()) audio.volumeUp()}, () => true);
+    addKeyDownHandler(Keys.GAMEPAD_6, Actions.VOLUME_DOWN, true, true, function(){if(audio.isPlaying()) audio.volumeDown()}, () => true);
+
     // Menu Navigation & Interaction Keys
-    addKeyDownHandler(Keys.ESC, Actions.EXIT, true, function(){_INPUT_menu.backButton ? _INPUT_menu.backButton.onclick():0; return true}, isInMenu);
-    addKeyDownHandler(Keys.ENTER, Actions.ENTER, true, function(){_INPUT_menu.clickCurrentOption()}, isInMenu);
-    addKeyDownHandler(Keys.NUM_ENTER, Actions.ENTER, true, function(){_INPUT_menu.clickCurrentOption()}, isInMenu);
-    addKeyDownHandler(Keys.UP, Actions.MENU_UP, true, function(){_INPUT_menu.selectPrevOption()}, isMenuKeysAllowed);
-    addKeyDownHandler(Keys.DOWN, Actions.MENU_DOWN, true, function(){_INPUT_menu.selectNextOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.ESC, Actions.EXIT, false, true, function(){_INPUT_menu.backButton ? _INPUT_menu.backButton.onclick():0; return true}, isInMenu);
+    addKeyDownHandler(Keys.GAMEPAD_2, Actions.EXIT, true, true, function(){_INPUT_menu.backButton ? _INPUT_menu.backButton.onclick():0; return true}, isInMenu);
+    
+    addKeyDownHandler(Keys.ENTER, Actions.ENTER, false, true, function(){_INPUT_menu.clickCurrentOption()}, isInMenu);
+    addKeyDownHandler(Keys.NUM_ENTER, Actions.ENTER, false, true, function(){_INPUT_menu.clickCurrentOption()}, isInMenu);
+    addKeyDownHandler(Keys.GAMEPAD_5, Actions.ENTER, true, true, function(){_INPUT_menu.clickCurrentOption()}, isInMenu);
+   
+    addKeyDownHandler(Keys.UP, Actions.MENU_UP, false, true, function(){_INPUT_menu.selectPrevOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.DOWN, Actions.MENU_DOWN, false, true, function(){_INPUT_menu.selectNextOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.RIGHT, Actions.MENU_RIGHT, false, true, function(){_INPUT_menu.selectNextTitleOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.LEFT, Actions.MENU_LEFT, false, true, function(){_INPUT_menu.selectPrevTitleOption()}, isMenuKeysAllowed);
+   
+    addKeyDownHandler(Keys.W, Actions.MENU_UP, false, true, function(){_INPUT_menu.selectPrevOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.A, Actions.MENU_LEFT, false, true, function(){_INPUT_menu.selectPrevTitleOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.S, Actions.MENU_DOWN, false, true, function(){_INPUT_menu.selectNextOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.D, Actions.MENU_RIGHT, false, true, function(){_INPUT_menu.selectNextTitleOption()}, isMenuKeysAllowed);
+
+    addKeyDownHandler(Keys.JOYSTICK_UP, Actions.MENU_UP, true, true, function(){_INPUT_menu.selectPrevOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.JOYSTICK_LEFT, Actions.MENU_LEFT, true, true, function(){_INPUT_menu.selectPrevTitleOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.JOYSTICK_DOWN, Actions.MENU_DOWN, true, true, function(){_INPUT_menu.selectNextOption()}, isMenuKeysAllowed);
+    addKeyDownHandler(Keys.JOYSTICK_RIGHT, Actions.MENU_RIGHT, true, true, function(){_INPUT_menu.selectNextTitleOption()}, isMenuKeysAllowed);
 
     // Open In-Game Menu
-    addKeyDownHandler(Keys.ESC, Actions.MENU_CLOSE, true, function(){inGameMenu.getMenuButton().onclick(); return true}, isInGameMenuButtonClickable);
-    addKeyDownHandler(Keys.SPACE, Actions.MENU_CLOSE, true, function(){inGameMenu.getMenuButton().onclick(); return true}, isInGameMenuButtonClickable);
+    addKeyDownHandler(Keys.ESC, Actions.MENU_OPEN, false, true, function(){inGameMenu.getMenuButton().onclick(); return true}, isInGameMenuButtonClickable);
+    addKeyDownHandler(Keys.SPACE, Actions.MENU_OPEN, false, true, function(){inGameMenu.getMenuButton().onclick(); return true}, isInGameMenuButtonClickable);
+    addKeyDownHandler(Keys.GAMEPAD_2, Actions.MENU_OPEN, true, true, function(){inGameMenu.getMenuButton().onclick(); return true}, isInGameMenuButtonClickable);
 
     // Move Player
     var isPlayState = function() { return state == learnState || state == newGameState || state == playState || state == readyNewState || state == readyRestartState; };
    
     // Arrow Key Movement
-    addKeyDownHandler(Keys.LEFT, Actions.LEFT, false, function(){player.setInputDir(DIR_LEFT)}, isPlayState);
-    addKeyDownHandler(Keys.RIGHT, Actions.RIGHT, false, function(){player.setInputDir(DIR_RIGHT)}, isPlayState);
-    addKeyDownHandler(Keys.UP, Actions.UP, false, function(){player.setInputDir(DIR_UP)}, isPlayState);
-    addKeyDownHandler(Keys.DOWN, Actions.DOWN, false, function(){player.setInputDir(DIR_DOWN)}, isPlayState);
+    addKeyDownHandler(Keys.LEFT, Actions.LEFT,false, false, function(){player.setInputDir(DIR_LEFT)}, isPlayState);
+    addKeyDownHandler(Keys.RIGHT, Actions.RIGHT, false, false, function(){player.setInputDir(DIR_RIGHT)}, isPlayState);
+    addKeyDownHandler(Keys.UP, Actions.UP, false, false, function(){player.setInputDir(DIR_UP)}, isPlayState);
+    addKeyDownHandler(Keys.DOWN, Actions.DOWN, false, false, function(){player.setInputDir(DIR_DOWN)}, isPlayState);
 
     // WASD Movement
-    addKeyDownHandler(Keys.A, Actions.LEFT, false, function(){player.setInputDir(DIR_LEFT)}, isPlayState);
-    addKeyDownHandler(Keys.D, Actions.RIGHT, false, function(){player.setInputDir(DIR_RIGHT)}, isPlayState);
-    addKeyDownHandler(Keys.W, Actions.UP, false, function(){player.setInputDir(DIR_UP)}, isPlayState);
-    addKeyDownHandler(Keys.S, Actions.DOWN, false, function(){player.setInputDir(DIR_DOWN)}, isPlayState);
+    addKeyDownHandler(Keys.W, Actions.UP, false, false, function(){player.setInputDir(DIR_UP)}, isPlayState);
+    addKeyDownHandler(Keys.A, Actions.LEFT, false, false, function(){player.setInputDir(DIR_LEFT)}, isPlayState);
+    addKeyDownHandler(Keys.S, Actions.DOWN, false, false, function(){player.setInputDir(DIR_DOWN)}, isPlayState);
+    addKeyDownHandler(Keys.D, Actions.RIGHT, false, false, function(){player.setInputDir(DIR_RIGHT)}, isPlayState);
+
+    // Joystick Player Movement
+    addKeyDownHandler(Keys.JOYSTICK_UP, Actions.UP, true, false, function(){player.setInputDir(DIR_UP)}, isPlayState);
+    addKeyDownHandler(Keys.JOYSTICK_LEFT, Actions.LEFT, true, false, function(){player.setInputDir(DIR_LEFT)}, isPlayState);
+    addKeyDownHandler(Keys.JOYSTICK_DOWN, Actions.DOWN, true, false, function(){player.setInputDir(DIR_DOWN)}, isPlayState);
+    addKeyDownHandler(Keys.JOYSTICK_RIGHT, Actions.RIGHT, true, false, function(){player.setInputDir(DIR_RIGHT)}, isPlayState);
 })();
 
 var initSwipe = function() {
@@ -496,18 +569,16 @@ var initSwipe = function() {
 
                 // register direction
                 if (Math.abs(dx) >= Math.abs(dy)) {
-                    //player.setInputDir(dx>0 ? DIR_RIGHT : DIR_LEFT);
                     const rightInput = new Input(Actions.RIGHT, InputSources.SWIPE, true, false);
                     const leftInput = new Input(Actions.LEFT, InputSources.SWIPE, true, false);
 
                     inputQueue.enqueue(dx > 0 ? rightInput : leftInput);
                 }
                 else {
-                    //player.setInputDir(dy>0 ? DIR_DOWN : DIR_UP);
                     const upInput = new Input(Actions.UP, InputSources.SWIPE, true, false);
                     const downInput = new Input(Actions.DOWN, InputSources.SWIPE, true, false);
 
-                    inputQueue.enqueue(dx > 0 ? downInput : upInput);
+                    inputQueue.enqueue(dy > 0 ? downInput : upInput);
                 }
             }
         }
@@ -538,30 +609,150 @@ var initSwipe = function() {
     document.ontouchcancel = touchCancel;
 };
 
-const gamepads = {};
-
 const gamepadConnectionHandler = (event, connected) => {
     // Code from MDN: https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API/Using_the_Gamepad_API
     const gamepad = event.gamepad;
-  
+
     if (connected) {
-      gamepads[gamepad.index] = gamepad;
+        gamepads[gamepad.index] = gamepad;
+        console.log("Gamepad connected from index %d: %s", gamepad.index, gamepad.id);
     } else {
       delete gamepads[gamepad.index];
+        console.log("Gamepad disconnnected from index %d: %s", gamepad.index, gamepad.id);
     }
 }
 
 const initGamepad = () => {
-    window.addEventListener("gamepadconnected", (e) => gamepadHandler(e, true), false);
-    window.addEventListener("gamepaddisconnected", (e) => gamepadHandler(e, true), false); 
+    window.addEventListener("gamepadconnected", (e) => gamepadConnectionHandler(e, true), false);
+    window.addEventListener("gamepaddisconnected", (e) => gamepadConnectionHandler(e, false), false); 
+}
+
+// Defines the 'size' of a deadzone for analog axis. If the absolute value of the axis
+// is less than the deadzone, the input is ignored
+const AXIS_DEADZONE = 0.75;
+
+// If an axis is above this, it will be ignored.
+const AXIS_MAX = 1;
+
+
+// Buttons
+/// (top console)
+/// 0, 1, 2
+/// 3, 4, 5
+/// (front panel)
+/// 6, 7, 8, 9 (inside case)
+
+// Axis
+// Up : axes[1] = -1
+// Down: axes[1] = 1
+// Left: axes[0] = -1
+// Right: axes[0] = 1
+
+// Tracks previous state of controller axis and buttons, allowing for 'keyup' and 'keydown' like functionality 
+const currentGamepadInputState = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    0: false,
+    1: false,
+    2: false,
+    3: false,
+    4: false,
+    5: false,
+    6: false,
+    7: false,
+    8: false,
+    9: false
+}
+
+const debounceControllerInput = (key, input) => {
+    if(currentGamepadInputState[key] !== input) {
+        currentGamepadInputState[key] = input;
+        return true;
+    }
+    return false;
 }
 
 const checkGamepad = (gamepad) => {
+    if(typeof gamepad === "object" && Array.isArray(gamepad.buttons)) {
+        gamepad.buttons.forEach((button, index) => { 
+            if(debounceControllerInput(index, button.pressed)) {
+                window.dispatchEvent(new KeyboardEvent(button.pressed ?  "keydown" : "keyup", {
+                        key: `gamepad_${index}`,
+                        code: `GamepadButton${index}`,
+                        keyCode: `gamepad_${index}`
+                    }
+                ));
+            }
+        });
+        
+        gamepad.axes.forEach((axis, index) => {
+        let up,down,left,right;
+            if(index === 0) {
+                // X
+                if(axis >= AXIS_DEADZONE && axis <= AXIS_MAX) {
+                    right = true;
+                    left = false;
+                } else if(axis <= -AXIS_DEADZONE && axis >= -AXIS_MAX) {
+                    left = true;
+                    right = false;
+                } else {
+                    left = false;
+                    right = false;
+                }
 
+                if(debounceControllerInput("right", right))
+                    window.dispatchEvent(new KeyboardEvent(right ?  "keydown" : "keyup", {
+                        key: "right",
+                        code: Keys.JOYSTICK_RIGHT,
+                        keyCode: "right"
+                    }
+                ));
+
+                if(debounceControllerInput("left", left))
+                    window.dispatchEvent(new KeyboardEvent(left ?  "keydown" : "keyup", {
+                    key: "left",
+                    code: Keys.JOYSTICK_LEFT,
+                    keyCode: "left"
+                    }
+                ));
+            } 
+            else if(index === 1) {
+                // Y
+                if(axis >= AXIS_DEADZONE && axis <= AXIS_MAX) {
+                    down = true;
+                    up = false;
+                } else if(axis <= -AXIS_DEADZONE && axis >= -AXIS_MAX) {
+                    up = true;
+                    down = false;
+                } else {
+                    up = false;
+                    down = false;
+                }
+
+                if(debounceControllerInput("down", down))
+                    window.dispatchEvent(new KeyboardEvent(down ?  "keydown" : "keyup", {
+                    key: "down",
+                    code: Keys.JOYSTICK_DOWN,
+                    keyCode: "down"
+                    }
+                ));
+
+                if(debounceControllerInput("up", up))
+                    window.dispatchEvent(new KeyboardEvent(up ?  "keydown" : "keyup", {
+                    key: "up",
+                    code: Keys.JOYSTICK_UP,
+                    keyCode: "up"
+                    }
+                ));
+            }
+        })
+    }
 }
 
-const checkGamepads = (gamepads) => {
+const checkGamepads = () => {
     if(gamepads && Object.keys(gamepads).length > 0) {
-        gamepads.array.forEach((gamepad) => checkGamepad(gamepad));
+        Object.values(gamepads).forEach((gamepad) => checkGamepad(gamepad));
     }
 }
